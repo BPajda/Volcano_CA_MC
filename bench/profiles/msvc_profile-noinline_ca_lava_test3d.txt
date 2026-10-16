@@ -1,0 +1,29 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile-noinline, wariant ca_lava_test3d
+# argumenty: --config configs/test_3d.json --set output.format=none
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    71.86     1326902  engine.exe!volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates
+    17.84      329369  engine.exe!volcano::LavaCA<volcano::VectorStorage>::updateLava
+     2.59       47744  engine.exe!volcano::LavaCA<volcano::VectorStorage>::computeDescent
+     2.35       43338  engine.exe!volcano::LavaCA<volcano::VectorStorage>::tryPonding
+     1.88       34652  engine.exe!volcano::Neighborhood::offsetsFor
+     1.33       24540  engine.exe!volcano::Boundary::apply<volcano::VectorStorage>
+     1.18       21822  ntoskrnl.exe!"Unknown"
+     0.20        3766  engine.exe!volcano::LavaCA<volcano::VectorStorage>::hasSupport
+     0.16        3026  ntdll.dll!"Unknown"
+     0.11        2005  engine.exe!volcano::LavaCA<volcano::VectorStorage>::dropDepth
+     0.08        1508  engine.exe!volcano::LavaCA<volcano::VectorStorage>::descent
+     0.04         740  iocbios2.sys!"Unknown"
+     0.04         719  apphelp.dll!"Unknown"
+     0.03         506  engine.exe!volcano::toMicrostructure<volcano::VectorStorage>
+     0.03         506  vgk.sys!"Unknown"
+     0.03         503  vcruntime140.dll!"Unknown"
+     0.03         501  Ntfs.sys!"Unknown"
+     0.02         423  nvlddmkm.sys!"Unknown"
+     0.01         257  dxgkrnl.sys!"Unknown"
+     0.01         256  engine.exe!volcano::Simulation::runWith<volcano::VectorStorage>
+     0.01         256  engine.exe!std::_Pop_heap_hole_by_index<std::pair<int,unsigned __int64> *,std::pair<int,unsigned __int64>,std::greater<std::pair<int,unsigned __int64> > >
+     0.01         255  engine.exe!volcano::TerrainGenerator::cone
+     0.01         254  intelppm.sys!"Unknown"
+     0.01         253  engine.exe!volcano::Simulation::buildStats
+     0.01         253  WdFilter.sys!"Unknown"

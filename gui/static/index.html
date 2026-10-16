@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="pl" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wulkan CA + MC</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M3 43 17.6 17.2c1-1.7 2.6-1.9 3.8-.5l1.2 1.4c.8.9 2 .9 2.8 0l1.2-1.4c1.2-1.4 2.8-1.2 3.8.5L45 43Z' fill='%233a3632'/%3E%3Cpath d='M22.6 18.1c.8.9 2 .9 2.8 0l.9 6.1c-1.1 2.3.4 4.6.9 7.1.5 2.4-.4 4.6-1.6 6.7-1.4-2-2.6-4.2-3-6.7-.4-2.4-.9-4.8.1-7.1Z' fill='%23ff6a1f'/%3E%3Cpath d='M24 3.5c2.6 3.7 3.6 5.5 3.6 7.1a3.6 3.6 0 0 1-7.2 0c0-1.6 1-3.4 3.6-7.1Z' fill='%23ffb02e'/%3E%3C/svg%3E">
+  <!-- Motyw przed pierwszym malowaniem (bez mignięcia): wybór z localStorage, inaczej ustawienie systemu
+       (prefers-color-scheme). Pełna obsługa przełącznika: js/theme.js. -->
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('volcano.theme'); } catch (e) { /* tryb prywatny — bez zapamiętania */ }
+      if (t !== 'dark' && t !== 'light') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Biblioteki i fonty lokalnie (gui/static/vendor, wersje w vendor/README.md) — GUI działa bez internetu. -->
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js",
+                   "three/addons/OrbitControls.js": "./vendor/three/OrbitControls.js" } }
+  </script>
+  <script src="vendor/chartjs/chart.umd.js"></script>
+</head>
+<body>
+<!-- Ikony (własne, proste SVG) — używane przez <use href="#i-…">, także z JS (js/icons.js). -->
+<svg class="icon-sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-lava" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc24a"/><stop offset="0.55" stop-color="#ff7a22"/><stop offset="1" stop-color="#e8401a"/>
+    </linearGradient>
+    <linearGradient id="g-cone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--logo-cone-top)"/><stop offset="1" stop-color="var(--logo-cone-bottom)"/>
+    </linearGradient>
+  </defs>
+  <symbol id="i-volcano" viewBox="0 0 48 48">
+    <path d="M3 43 17.6 17.2c1-1.7 2.6-1.9 3.8-.5l1.2 1.4c.8.9 2 .9 2.8 0l1.2-1.4c1.2-1.4 2.8-1.2 3.8.5L45 43Z" fill="url(#g-cone)"/>
+    <path d="M22.6 18.1c.8.9 2 .9 2.8 0l.9 6.1c-1.1 2.3.4 4.6.9 7.1.5 2.4-.4 4.6-1.6 6.7-1.4-2-2.6-4.2-3-6.7-.4-2.4-.9-4.8.1-7.1Z" fill="url(#g-lava)"/>
+    <path d="M24 3.5c2.6 3.7 3.6 5.5 3.6 7.1a3.6 3.6 0 0 1-7.2 0c0-1.6 1-3.4 3.6-7.1Z" fill="url(#g-lava)"/>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4.2" height="15" rx="1.2" fill="currentColor"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2.8c.6 3.3 4.6 5.6 4.6 10a4.6 4.6 0 0 1-9.2 0c0-1.9.9-3.4 1.9-4.3.2 1.6 1 2.6 2 3-.4-2.9.2-5.9.7-8.7Z" fill="currentColor"/><path d="M5.5 20.5h13" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9.5v5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.4" r="1.25" fill="currentColor"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.25" fill="currentColor"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-run" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/><path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.3 8.3 0 1 0 10.6 10.6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="m4 17 5-5 4 4 2.5-2.5L20 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="15.5" cy="9" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.5 5v14M16.5 5v14M3.5 9.5h4M3.5 14.5h4M16.5 9.5h4M16.5 14.5h4" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4.5 3.5v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12A7.5 7.5 0 1 1 17.3 6.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19.5 3.5v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.3 3 7.7 7 9.5 4-1.8 7-5.2 7-9.5V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m8.8 12 2.3 2.3 4.4-4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 4 8.5 4.5L12 13 3.5 8.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m3.5 12.5 8.5 4.5 8.5-4.5M3.5 16.5 12 21l8.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10" stroke="currentColor" stroke-width="1.8"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-row">
+    <a class="brand" href="#form" title="Nowa symulacja">
+      <svg class="brand-logo" aria-hidden="true"><use href="#i-volcano"></use></svg>
+      <span class="brand-text">
+        <span class="brand-title">Wulkan — spływ lawy (CA) i krystalizacja bazaltu (MC)</span>
+        <span class="brand-sub">Automat komórkowy + Monte Carlo (model Pottsa)</span>
+      </span>
+    </a>
+    <div class="topbar-tools">
+      <div id="engine-status" class="engine-status" title=""></div>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Przełącz motyw">
+        <svg class="i i-theme-dark" aria-hidden="true"><use href="#i-moon"></use></svg>
+        <svg class="i i-theme-light" aria-hidden="true"><use href="#i-sun"></use></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Zakładki">
+    <span class="tab-group-label" aria-hidden="true">Przygotuj</span>
+    <button class="tab" data-tab="form" role="tab">Nowa symulacja</button>
+    <button class="tab" data-tab="series" role="tab">Seria</button>
+    <span class="tab-sep" aria-hidden="true"></span>
+    <span class="tab-group-label" aria-hidden="true">Licz</span>
+    <button class="tab" data-tab="jobs" role="tab">Zadania <span id="jobs-badge" class="badge" hidden></span></button>
+    <span class="tab-sep" aria-hidden="true"></span>
+    <span class="tab-group-label" aria-hidden="true">Analizuj</span>
+    <button class="tab" data-tab="results" role="tab">Wyniki</button>
+    <button class="tab" data-tab="compare" role="tab">Porównanie</button>
+    <button class="tab" data-tab="view2d" role="tab">Podgląd 2D</button>
+    <button class="tab" data-tab="view3d" role="tab">Podgląd 3D</button>
+    <button class="tab" data-tab="stats" role="tab">Czasy i statystyki</button>
+  </nav>
+</header>
+
+<div id="app-warnings" class="app-warnings" hidden></div>
+
+<main>
+  <!-- ======================= 1. Nowa symulacja ======================= -->
+  <section id="tab-form" class="tab-panel" hidden>
+    <div class="form-layout">
+      <div class="form-main">
+        <div class="card toolbar-card">
+          <div class="card-head"><h3>Preset i plik konfiguracyjny</h3>
+            <span class="hint">gotowy config z <code>configs/</code> albo własny plik JSON</span></div>
+          <div class="toolbar">
+            <label class="field-inline">Preset
+              <select id="preset-select"><option value="">— wybierz plik z configs/ —</option></select>
+            </label>
+            <button id="btn-preset-load" class="btn">Wczytaj preset</button>
+            <span class="sep"></span>
+            <button id="btn-import" class="btn"><svg class="i" aria-hidden="true"><use href="#i-upload"></use></svg>Importuj z pliku…</button>
+            <input id="import-file" type="file" accept=".json,application/json" hidden>
+            <button id="btn-export" class="btn"><svg class="i" aria-hidden="true"><use href="#i-download"></use></svg>Eksportuj do JSON</button>
+            <button id="btn-defaults" class="btn btn-ghost">Wartości domyślne</button>
+          </div>
+          <p id="preset-description" class="hint"></p>
+        </div>
+
+        <div class="card">
+          <div class="job-row">
+            <label class="field-block job-name">Nazwa zadania
+              <input id="job-name" type="text" maxlength="60" placeholder="np. etna_10_kraterow" autocomplete="off">
+              <span class="hint">Używana w nazwie configu i folderu wyników: <code id="job-id-preview">…</code></span>
+            </label>
+            <label class="field-block mc-from">Źródło danych
+              <select id="mc-from-select">
+                <option value="">nowa symulacja (teren → CA → opcjonalnie MC)</option>
+              </select>
+              <span class="hint">albo samo Monte Carlo na gotowym wyniku CA (<code>engine --mc-from</code>): wymiary
+                i bazalt z pliku <code>ca_result.bin</code>, parametry MC z formularza (np. preset <code>mc_basalt</code>)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Mapa wysokości terenu z pliku (etap 5): wybór z configs/heightmaps/ + import CSV / PNG / JPG -->
+        <div class="card" id="hm-card">
+          <div class="card-head">
+            <h3>Mapa wysokości terenu</h3>
+            <span class="hint">teren z pliku CSV (<code>terrain.type = file</code>) zamiast stożka z generatora</span>
+          </div>
+          <div class="hm-row">
+            <canvas id="hm-thumb" class="hm-thumb" width="160" height="120" title="podgląd mapy (jasne = wyżej)"></canvas>
+            <div class="hm-main">
+              <div class="toolbar">
+                <label class="field-inline">Mapa
+                  <select id="hm-select"><option value="">— stożek z generatora (terrain.type = cone) —</option></select>
+                </label>
+                <button id="hm-import-open" class="btn"><svg class="i" aria-hidden="true"><use href="#i-upload"></use></svg>Importuj mapę (CSV / PNG / JPG)…</button>
+              </div>
+              <p id="hm-info" class="hint"></p>
+            </div>
+          </div>
+          <div id="hm-import" class="hm-import" hidden>
+            <div class="toolbar">
+              <label class="field-inline">Plik <input id="hm-file" type="file" accept=".csv,.txt,.png,.jpg,.jpeg,image/png,image/jpeg"></label>
+              <label class="field-inline">Nazwa mapy <input id="hm-name" type="text" maxlength="40" placeholder="np. moja_kaldera"></label>
+            </div>
+            <div id="hm-image-opts" class="hm-opts" hidden>
+              <label class="field-inline">nx <input id="hm-nx" type="number" min="1" class="num-small"></label>
+              <label class="field-inline">ny <input id="hm-ny" type="number" min="1" class="num-small"></label>
+              <label class="field-inline">nz <input id="hm-nz" type="number" min="1" class="num-small"></label>
+              <label class="field-inline" title="wysokość dla białego piksela">wysokość maks. <input id="hm-max" type="number" min="1" step="1" value="60" class="num-small"></label>
+              <label class="field-inline" title="wysokość dla czarnego piksela">podstawa <input id="hm-base" type="number" min="0" step="1" value="0" class="num-small"></label>
+              <label class="field-inline" title="promień wygładzania w komórkach (0 = bez)">wygładzanie <input id="hm-smooth" type="number" min="0" max="50" step="1" value="1" class="num-small"></label>
+              <label class="field-inline"><input id="hm-invert" type="checkbox"> odwróć (ciemne = wysoko)</label>
+              <label class="field-inline"><input id="hm-normalize" type="checkbox"> rozciągnij zakres jasności</label>
+            </div>
+            <div id="hm-csv-opts" class="hm-opts" hidden>
+              <label class="field-inline"><input id="hm-resize" type="checkbox"> przeskaluj do nx × ny z formularza</label>
+              <span class="hint">CSV: <code>ny</code> wierszy × <code>nx</code> wartości (wysokość w komórkach), separatory , ; spacja tab, wiersze „#” pomijane</span>
+            </div>
+            <div class="hm-row">
+              <img id="hm-src-preview" class="hm-thumb" alt="" hidden>
+              <div class="toolbar">
+                <button id="hm-import-run" class="btn btn-primary">Importuj do configs/heightmaps/</button>
+                <button id="hm-import-cancel" class="btn btn-ghost">Zamknij</button>
+              </div>
+            </div>
+            <div id="hm-import-msg" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <!-- Kratery w zadanych miejscach (etap 6): vents.placement = positions — kliknięcie na mapie -->
+        <div class="card" id="vp-card" hidden>
+          <div class="card-head">
+            <h3>Kratery na mapie</h3>
+            <span class="hint"><code>vents.placement = positions</code>: kliknięcie dodaje krater w kolumnie (x, y),
+              kliknięcie na znaczniku go usuwa; lista trafia do <code>vents.positions</code>, liczba — do <code>vents.count</code></span>
+          </div>
+          <div class="vp-row">
+            <canvas id="vp-canvas" class="vp-canvas" width="520" height="520"></canvas>
+            <div class="vp-side">
+              <p id="vp-info" class="hint"></p>
+              <p id="vp-hover" class="vp-hover">&nbsp;</p>
+              <ol id="vp-list" class="vp-list"></ol>
+              <div class="toolbar">
+                <button id="vp-undo" class="btn btn-small" type="button">Cofnij ostatni</button>
+                <button id="vp-clear" class="btn btn-small btn-ghost" type="button">Wyczyść</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form id="config-form" class="config-form" autocomplete="off" onsubmit="return false"></form>
+      </div>
+
+      <aside class="form-side">
+        <div class="card sticky">
+          <h3>Podsumowanie i szacunek</h3>
+          <div id="estimate"></div>
+          <div class="actions">
+            <button id="btn-validate" class="btn"><svg class="i" aria-hidden="true"><use href="#i-shield"></use></svg>Sprawdź</button>
+            <button id="btn-run" class="btn btn-primary btn-glow"><svg class="i" aria-hidden="true"><use href="#i-flame"></use></svg>Uruchom</button>
+          </div>
+          <div id="validation" class="validation" aria-live="polite"></div>
+          <div id="run-result" class="run-result" aria-live="polite"></div>
+          <details class="json-preview">
+            <summary>Config, który zostanie zapisany (JSON)</summary>
+            <pre id="config-preview"></pre>
+          </details>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ======================= 2. Seria (etap 5) ======================= -->
+  <section id="tab-series" class="tab-panel" hidden>
+    <div class="form-layout">
+      <div class="form-main">
+        <div class="card">
+          <div class="card-head"><h3>Gotowe szablony serii</h3><span class="hint">jeden klik ustawia config bazowy i parametry zmienne</span></div>
+          <div id="series-templates" class="template-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3><span class="step-no">1</span>Config bazowy</h3><span class="hint">parametry wspólne dla wszystkich zadań serii</span></div>
+          <div class="toolbar">
+            <label class="field-inline"><input type="radio" name="series-base" value="form"> aktualny formularz „Nowa symulacja”</label>
+            <label class="field-inline"><input type="radio" name="series-base" value="preset"> preset
+              <select id="series-preset"></select></label>
+            <label class="field-inline"><input type="radio" name="series-base" value="file"> plik
+              <button id="series-import" class="btn btn-small">Wybierz…</button>
+              <input id="series-import-file" type="file" accept=".json,application/json" hidden></label>
+            <label class="field-inline"><input type="radio" name="series-base" value="template" disabled> z szablonu</label>
+          </div>
+          <p id="series-base-summary" class="hint"></p>
+          <details class="json-preview"><summary>Config bazowy (JSON)</summary><pre id="series-base-json"></pre></details>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3><span class="step-no">2</span>Parametry zmienne (osie serii, 1–3)</h3>
+            <button id="series-add-axis" class="btn btn-small"><svg class="i" aria-hidden="true"><use href="#i-plus"></use></svg>dodaj parametr</button>
+          </div>
+          <div id="series-axes"></div>
+          <div class="hint series-help">
+            Zadania serii to <b>iloczyn kartezjański</b> wartości wszystkich osi. <b>Parowanie:</b> kilka kluczy w jednej osi
+            zmienia się razem — np. <code>space.nx</code> + <code>space.ny</code> dla siatek kwadratowych.
+            Wartości: <code>100, 200, 500</code> (przy kluczach sparowanych ta sama wartość trafia do wszystkich),
+            krotka <code>100;100;1</code> (kolejno dla kolejnych kluczy), etykieta <code>[CA] false;basalt</code>,
+            teksty bez cudzysłowów (<code>moore, von_neumann</code>), <code>true</code>/<code>false</code>.
+            Zakres: od, do, krok; potęgi: od, do, mnożnik (1, 1000, 10 → 1, 10, 100, 1000).
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3><span class="step-no">3</span>Podgląd zadań</h3><span id="series-count" class="hint"></span></div>
+          <div class="table-scroll"><table class="table" id="series-preview-table"><thead></thead><tbody></tbody></table></div>
+          <p id="series-preview-empty" class="empty" hidden>Dodaj parametr zmienny, żeby zobaczyć zadania.</p>
+        </div>
+      </div>
+
+      <aside class="form-side">
+        <div class="card sticky">
+          <h3>Seria</h3>
+          <label class="field-block">Nazwa serii
+            <input id="series-name" type="text" maxlength="60" placeholder="np. ca_vs_mc" autocomplete="off">
+            <span class="hint">pliki: <code id="series-paths">configs/gui/series/&lt;id&gt;/</code></span>
+          </label>
+          <div id="series-estimate"></div>
+          <div id="series-messages" aria-live="polite"></div>
+          <div id="series-queue-note"></div>
+          <div class="actions">
+            <button id="series-run" class="btn btn-primary btn-glow"><svg class="i" aria-hidden="true"><use href="#i-flame"></use></svg>Uruchom serię</button>
+          </div>
+          <div id="series-result" aria-live="polite"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ======================= 3. Zadania (kolejka) ======================= -->
+  <section id="tab-jobs" class="tab-panel" hidden>
+    <div class="card queue-card">
+      <div class="toolbar">
+        <span id="queue-status" class="queue-status"></span>
+        <button id="queue-pause" class="btn">Wstrzymaj kolejkę</button>
+        <label class="field-inline" title="Ile zadań liczy się jednocześnie">Workery
+          <select id="queue-workers"></select></label>
+        <label class="field-inline" id="queue-pin-label" title="Jak w pomiarach profilu: proces silnika przypięty do jednego rdzenia P, wysoki priorytet">
+          <input id="queue-pin" type="checkbox"><span>przypnij silnik do rdzenia P (<span id="queue-pin-cpus"></span>) + wysoki priorytet</span></label>
+        <span class="sep"></span>
+        <label class="field-inline">Status
+          <select id="jobs-filter">
+            <option value="">wszystkie</option>
+            <option value="active">aktywne (oczekuje + działa)</option>
+            <option value="queued">oczekuje</option>
+            <option value="running">działa</option>
+            <option value="done">gotowe</option>
+            <option value="error">błąd</option>
+            <option value="cancelled">anulowane</option>
+            <option value="interrupted">przerwane</option>
+          </select></label>
+        <label class="field-inline"><input id="jobs-group" type="checkbox" checked> grupuj po serii</label>
+      </div>
+      <div id="queue-warning"></div>
+      <p class="hint">Stan kolejki (zadania, kolejność oczekujących, pauza, workery, przypięcie) jest w
+        <code>results/gui/jobs.json</code> i przeżywa restart GUI.</p>
+    </div>
+    <div class="card card-table">
+      <div class="table-scroll table-tall">
+        <table class="table" id="jobs-table">
+          <thead><tr>
+            <th>Zadanie</th><th>Status</th><th class="col-progress">Postęp</th><th class="num">Czas</th><th>Parametry</th><th>Pliki</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="jobs-empty" class="empty" hidden>Brak zadań — utwórz je w zakładce „Nowa symulacja” albo „Seria”.</p>
+    </div>
+  </section>
+
+  <!-- ======================= 4. Wyniki ======================= -->
+  <section id="tab-results" class="tab-panel" hidden>
+    <div class="card card-table">
+      <div class="card-head">
+        <h3>Wyniki</h3>
+        <div class="toolbar">
+          <input id="results-filter" type="search" placeholder="Filtruj po nazwie…" aria-label="Filtruj wyniki po nazwie">
+          <select id="results-mode" aria-label="Tryb">
+            <option value="">wszystkie tryby</option>
+            <option value="lava">lava</option>
+            <option value="classic">classic</option>
+            <option value="mc">z Monte Carlo</option>
+          </select>
+          <select id="results-source" aria-label="Źródło">
+            <option value="">GUI, serie i linia poleceń</option>
+            <option value="gui">tylko z GUI (bez serii)</option>
+            <option value="series">tylko serie</option>
+            <option value="cli">tylko z linii poleceń</option>
+          </select>
+          <button id="btn-results-refresh" class="btn"><svg class="i" aria-hidden="true"><use href="#i-refresh"></use></svg>Odśwież</button>
+        </div>
+      </div>
+      <div class="table-scroll table-tall">
+        <table class="table sortable" id="results-table">
+          <thead><tr>
+            <th data-sort="name">Nazwa</th><th data-sort="dims">Wymiary</th><th data-sort="mode">Tryb</th>
+            <th data-sort="neighborhood">Sąsiedztwo / brzeg</th><th data-sort="steps" class="num">Kroki / MCS</th>
+            <th data-sort="caSim" class="num">CA [ms]</th><th data-sort="mcSim" class="num">MC [ms]</th>
+            <th data-sort="size" class="num">Pliki</th><th data-sort="modified">Data</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="results-empty" class="empty" hidden>Brak wyników w <code>results/</code> — uruchom symulację w zakładce „Nowa symulacja”.</p>
+      <p class="hint">ZIP — cały folder wyniku (config_used, wyniki, times, stats, log). VTK — plik <code>.vti</code>
+        (ImageData, pola komórek <code>type</code>, <code>flowId</code>, <code>temp</code>, <code>crystal</code>…) do ParaView.
+        MC — samo Monte Carlo na tym wyniku CA (<code>--mc-from</code>).</p>
+    </div>
+  </section>
+
+  <!-- ======================= 5. Porównanie (wyniki serii, CA vs MC) ======================= -->
+  <section id="tab-compare" class="tab-panel" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <label class="field-inline">Seria <select id="cmp-source"></select></label>
+        <button id="cmp-refresh" class="btn"><svg class="i" aria-hidden="true"><use href="#i-refresh"></use></svg>Odśwież</button>
+        <span id="cmp-info" class="hint"></span>
+      </div>
+      <details id="cmp-pick" class="cmp-pick">
+        <summary>…albo porównaj dowolne wyniki z listy</summary>
+        <div class="toolbar"><input id="cmp-pick-filter" type="search" placeholder="Filtruj…" aria-label="Filtruj listę wyników">
+          <button id="cmp-pick-apply" class="btn btn-small">Porównaj zaznaczone</button></div>
+        <div id="cmp-pick-list" class="pick-list"></div>
+      </details>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3 id="cmp-chart-title">Wykres</h3>
+        <div class="toolbar">
+          <label class="field-inline">X <select id="cmp-x"></select></label>
+          <label class="field-inline">Y <select id="cmp-y"></select></label>
+          <label class="field-inline">serie <select id="cmp-series"></select></label>
+          <label class="field-inline">osobne wykresy <select id="cmp-panel"></select></label>
+          <label class="field-inline"><input id="cmp-logx" type="checkbox"> log X</label>
+          <label class="field-inline"><input id="cmp-logy" type="checkbox"> log Y</label>
+          <button id="cmp-default" class="btn btn-small btn-ghost">Widok domyślny</button>
+          <button id="cmp-png" class="btn"><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>Eksport PNG</button>
+        </div>
+      </div>
+      <div id="cmp-charts" class="cmp-charts"></div>
+      <p id="cmp-chart-note" class="hint"></p>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3>Tabela wyników</h3>
+        <div class="toolbar">
+          <label class="field-inline">kolumny <select id="cmp-cols">
+            <option value="times">czasy i kroki</option>
+            <option value="resources">pamięć i pliki</option>
+            <option value="stats">statystyki mikrostruktury</option>
+            <option value="all">wszystkie</option>
+          </select></label>
+          <button id="cmp-csv" class="btn"><svg class="i" aria-hidden="true"><use href="#i-table"></use></svg>Eksport CSV</button>
+        </div>
+      </div>
+      <div class="table-scroll table-tall"><table class="table sortable" id="cmp-table"><thead></thead><tbody></tbody></table></div>
+      <p id="cmp-empty" class="empty" hidden>Wybierz serię, np. uruchom szablon „CA vs MC: rozmiar siatki” w zakładce „Seria”.</p>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3>Galeria mikrostruktur</h3>
+        <span class="hint">przekroje 2D wszystkich wyników — kliknij miniaturę, aby otworzyć podgląd 2D</span>
+        <div class="toolbar">
+          <label class="field-inline">Pole <select id="cmp-gal-field">
+            <option value="auto">automatycznie (kryształ MC / ziarno CA)</option>
+            <option value="type">typ komórki</option>
+            <option value="flowId">krater / ziarno (flowId)</option>
+            <option value="crystal">kryształ (MC)</option>
+          </select></label>
+        </div>
+      </div>
+      <div id="cmp-gallery" class="gallery"></div>
+    </div>
+  </section>
+
+  <!-- ======================= wspólny pasek wybranego wyniku ======================= -->
+  <div id="result-bar" class="result-bar" hidden>
+    <label class="field-inline result-pick">Wynik
+      <select id="result-select"></select>
+    </label>
+    <span id="result-info" class="result-info"></span>
+    <span class="result-downloads">
+      <a id="result-zip" class="btn btn-small" href="#" download><svg class="i" aria-hidden="true"><use href="#i-download"></use></svg>Pobierz ZIP</a>
+      <a id="result-vtk" class="btn btn-small" href="#" download><svg class="i" aria-hidden="true"><use href="#i-cube"></use></svg>Eksport VTK</a>
+    </span>
+  </div>
+
+  <!-- ======================= 6. Podgląd 2D ======================= -->
+  <section id="tab-view2d" class="tab-panel" hidden>
+    <div class="viewer-layout">
+      <div class="card viewer-card">
+        <div class="toolbar">
+          <label class="field-inline">Pole <select id="v2-field"></select></label>
+          <span class="field-inline" id="v2-axis-group">Przekrój ⟂ osi
+            <span class="seg">
+              <label><input type="radio" name="v2-axis" value="x"><span>x</span></label>
+              <label><input type="radio" name="v2-axis" value="y"><span>y</span></label>
+              <label><input type="radio" name="v2-axis" value="z"><span>z</span></label>
+            </span>
+          </span>
+          <label class="field-inline grow">Warstwa
+            <input id="v2-index" type="range" min="0" max="0" value="0" aria-label="warstwa przekroju">
+            <input id="v2-index-num" type="number" min="0" value="0" class="num-small" aria-label="numer warstwy">
+            <span id="v2-index-max" class="hint"></span>
+          </label>
+          <label class="field-inline"><input id="v2-boundaries" type="checkbox"> granice ziaren</label>
+          <label class="field-inline replay-toggle"><input id="v2-replay-on" type="checkbox"> odtwarzanie erupcji</label>
+          <span class="toolbar-end">
+            <button id="v2-fit" class="btn" title="Dopasuj do okna"><svg class="i" aria-hidden="true"><use href="#i-expand"></use></svg>Dopasuj</button>
+            <button id="v2-png" class="btn"><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>Eksport PNG</button>
+          </span>
+        </div>
+        <div class="replay-bar" id="v2-replay-bar" hidden>
+          <select id="v2-replay-source" title="Co odtwarzać: erupcję (kroki CA) albo krystalizację (migawki MC)"></select>
+          <button id="v2-replay-play" class="btn btn-primary btn-small replay-play"><svg class="i" aria-hidden="true"><use href="#i-play"></use></svg>Odtwórz</button>
+          <input id="v2-replay-time" class="replay-time" type="range" min="0" max="0" value="0" aria-label="krok odtwarzania">
+          <span id="v2-replay-label" class="replay-label">krok —</span>
+          <label class="field-inline">prędkość <select id="v2-replay-speed"></select></label>
+          <label class="field-inline" title="Żar: kolor płynnej lawy z temperatury w tym kroku; krater: kolor flowId">kolor
+            <select id="v2-replay-color"><option value="glow">żar (temperatura)</option><option value="flow">krater (flowId)</option></select></label>
+          <span id="v2-replay-counts" class="replay-counts"></span>
+          <span class="replay-export">
+            <button id="v2-replay-frames" class="btn btn-small" title="Sekwencja klatek PNG (do 200, równomiernie) w pliku ZIP"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg>Klatki PNG (ZIP)</button>
+            <button id="v2-replay-webm" class="btn btn-small" title="Film WebM z odtwarzania (MediaRecorder, 25 kl./s)"><svg class="i" aria-hidden="true"><use href="#i-film"></use></svg>Nagraj WebM</button>
+            <span id="v2-replay-msg" class="hint"></span>
+          </span>
+        </div>
+        <div class="canvas-wrap" id="v2-wrap">
+          <canvas id="v2-canvas"></canvas>
+          <div id="v2-tooltip" class="tooltip" hidden></div>
+          <div id="v2-loading" class="loading" hidden>wczytywanie…</div>
+        </div>
+        <p class="hint viewer-status" id="v2-status">Kółko myszy — powiększenie, przeciąganie — przesuwanie.</p>
+      </div>
+      <aside class="card legend-card"><h3>Legenda</h3><div id="v2-legend"></div></aside>
+    </div>
+  </section>
+
+  <!-- ======================= 7. Podgląd 3D ======================= -->
+  <section id="tab-view3d" class="tab-panel" hidden>
+    <div class="viewer-layout">
+      <div class="card viewer-card">
+        <div class="toolbar">
+          <span class="field-inline">Widok
+            <span class="seg">
+              <label title="Rzut 6 ścian zewnętrznych bloku"><input type="radio" name="v3-mode" value="faces" checked><span>ściany</span></label>
+              <label title="Najwyższa niepusta komórka w każdej kolumnie"><input type="radio" name="v3-mode" value="surface"><span>powierzchnia</span></label>
+              <label title="Woksele lawy i bazaltu (InstancedMesh)"><input type="radio" name="v3-mode" value="voxels"><span>woksele</span></label>
+            </span>
+          </span>
+          <label class="field-inline">Pole <select id="v3-field"></select></label>
+          <label class="field-inline" id="v3-top-group" title="Górna warstwa wulkanu to prawie samo powietrze — rzut z góry pokazuje najwyższą niepustą komórkę każdej kolumny">
+            <input id="v3-top-surface" type="checkbox"> górna ściana = rzut z góry</label>
+          <label class="field-inline" id="v3-exag-group" hidden>Przewyższenie
+            <input id="v3-exag" type="range" min="0.5" max="3" step="0.25" value="1">
+            <span id="v3-exag-val" class="hint">×1</span></label>
+          <label class="field-inline replay-toggle"><input id="v3-replay-on" type="checkbox"> odtwarzanie erupcji</label>
+          <span class="toolbar-end">
+            <button id="v3-reset" class="btn"><svg class="i" aria-hidden="true"><use href="#i-rotate"></use></svg>Reset kamery</button>
+            <button id="v3-png" class="btn"><svg class="i" aria-hidden="true"><use href="#i-image"></use></svg>Eksport PNG</button>
+          </span>
+        </div>
+        <div class="replay-bar" id="v3-replay-bar" hidden>
+          <select id="v3-replay-source" title="Co odtwarzać: erupcję (kroki CA) albo krystalizację (migawki MC)"></select>
+          <button id="v3-replay-play" class="btn btn-primary btn-small replay-play"><svg class="i" aria-hidden="true"><use href="#i-play"></use></svg>Odtwórz</button>
+          <input id="v3-replay-time" class="replay-time" type="range" min="0" max="0" value="0" aria-label="krok odtwarzania">
+          <span id="v3-replay-label" class="replay-label">krok —</span>
+          <label class="field-inline">prędkość <select id="v3-replay-speed"></select></label>
+          <label class="field-inline" title="Żar: kolor płynnej lawy z temperatury w tym kroku; krater: kolor flowId">kolor
+            <select id="v3-replay-color"><option value="glow">żar (temperatura)</option><option value="flow">krater (flowId)</option></select></label>
+          <span id="v3-replay-counts" class="replay-counts"></span>
+          <span class="replay-export">
+            <button id="v3-replay-frames" class="btn btn-small" title="Sekwencja klatek PNG (do 200, równomiernie) w pliku ZIP"><svg class="i" aria-hidden="true"><use href="#i-layers"></use></svg>Klatki PNG (ZIP)</button>
+            <button id="v3-replay-webm" class="btn btn-small" title="Film WebM z odtwarzania (MediaRecorder, 25 kl./s)"><svg class="i" aria-hidden="true"><use href="#i-film"></use></svg>Nagraj WebM</button>
+            <span id="v3-replay-msg" class="hint"></span>
+          </span>
+        </div>
+        <div class="canvas-wrap sky" id="v3-wrap">
+          <div id="v3-loading" class="loading" hidden>wczytywanie…</div>
+        </div>
+        <p class="hint viewer-status" id="v3-status">Lewy przycisk — obrót, prawy — przesuwanie, kółko — powiększenie.</p>
+      </div>
+      <aside class="card legend-card"><h3>Legenda</h3><div id="v3-legend"></div></aside>
+    </div>
+  </section>
+
+  <!-- ======================= 8. Czasy i statystyki ======================= -->
+  <section id="tab-stats" class="tab-panel" hidden>
+    <div id="stats-content" class="stats-grid"></div>
+  </section>
+</main>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+{
+  "name": "etna",
+  "description": "Etna (Sycylia)",
+  "source": {
+    "name": "AWS Terrain Tiles (Tilezen/Mapzen Terrain Tiles), format Terrarium PNG",
+    "urlTemplate": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+    "zoom": 11,
+    "tiles": 12,
+    "tileRange": {
+      "x": [
+        1108,
+        1110
+      ],
+      "y": [
+        790,
+        793
+      ]
+    },
+    "decoding": "R*256 + G + B/256 - 32768 [m]",
+    "attributionDoc": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+    "attribution": [
+      "ArcticDEM terrain data DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736",
+      "Australia terrain data © Commonwealth of Australia (Geoscience Australia) 2017",
+      "Austria terrain data © offene Daten Österreichs – Digitales Geländemodell (DGM) Österreich",
+      "Canada terrain data contains information licensed under the Open Government Licence – Canada",
+      "Europe terrain data produced using Copernicus data and information funded by the European Union - EU-DEM layers",
+      "Global ETOPO1 terrain data U.S. National Oceanic and Atmospheric Administration",
+      "Mexico terrain data source: INEGI, Continental relief, 2016",
+      "New Zealand terrain data Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government (All rights reserved)",
+      "Norway terrain data © Kartverket",
+      "United Kingdom terrain data © Environment Agency copyright and/or database right 2015. All rights reserved",
+      "United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey"
+    ]
+  },
+  "fetched": "2026-10-13",
+  "tool": "tools/fetch_dem.py",
+  "bbox": {
+    "south": 37.58,
+    "west": 14.8,
+    "north": 37.92,
+    "east": 15.22
+  },
+  "grid": {
+    "nx": 160,
+    "ny": 160,
+    "nz": 70,
+    "x": "x = 0 zachód (W) … nx − 1 wschód (E)",
+    "y": "y = 0 południe (S) … ny − 1 północ (N)",
+    "cellToLatLon": "lat = S + (y + 0.5)/ny·(N − S), lon = W + (x + 0.5)/nx·(E − W)"
+  },
+  "horizontal": {
+    "metersPerCellX": 231.34,
+    "metersPerCellY": 235.86,
+    "metersPerCell": 233.6,
+    "metersPerCellZ": 55.056,
+    "verticalExaggeration": 4.243,
+    "tilePixelMeters": 60.44,
+    "tilePixelsPerCell": 3.82,
+    "widthKm": 37.015,
+    "heightKm": 37.737
+  },
+  "vertical": {
+    "baseMeters": 0.0,
+    "peakMeters": 3275.86,
+    "metersPerCell": 55.056,
+    "peakCells": 59.5,
+    "rule": "komórki = (wysokość − baseMeters) / metersPerCell, przycięte do [0, nz]; baseMeters = max(0, minimum obszaru)"
+  },
+  "elevation": {
+    "minMeters": -0.02,
+    "maxMeters": 3275.86,
+    "meanMeters": 849.52,
+    "maxAt": {
+      "x": 74,
+      "y": 82,
+      "lat": 37.75531,
+      "lon": 14.99556
+    },
+    "belowBase": 49
+  }
+}

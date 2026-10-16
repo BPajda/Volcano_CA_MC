@@ -1,0 +1,44 @@
+{
+  "_opis": "Mapa wysokości z pliku: stożek z krętym kanionem na południowy wschód (configs/heightmaps/kanion.csv).",
+  "_uwaga": "Krater szczytowy przelewa się do kanionu, a lawa płynie jego dnem i nie wychodzi na zbocza.",
+  "space": {
+    "nx": 100,
+    "ny": 100,
+    "nz": 45
+  },
+  "grid": "vector",
+  "boundary": "absorbing",
+  "neighborhood": "moore",
+  "rngSeed": 42,
+  "terrain": {
+    "type": "file",
+    "file": "configs/heightmaps/kanion.csv",
+    "peakHeight": 70,
+    "baseRadius": 90,
+    "craterRadius": 2,
+    "craterDepth": 4,
+    "noise": 0.05
+  },
+  "vents": {
+    "count": 1,
+    "placement": "crater",
+    "eruptionSteps": 120,
+    "eruptTemp": 1200
+  },
+  "ca": {
+    "mode": "lava",
+    "maxSteps": 5000,
+    "coolingAmbient": 3.0,
+    "coolingLateral": 10.0,
+    "coolingFall": 6.0,
+    "solidusTemp": 800,
+    "ponding": true
+  },
+  "mc": {
+    "enabled": false
+  },
+  "output": {
+    "format": "bin",
+    "snapshotsEvery": 0
+  }
+}

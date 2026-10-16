@@ -1,0 +1,81 @@
+{
+  "name": "wezuwiusz",
+  "description": "Wezuwiusz z Monte Somma (Kampania)",
+  "source": {
+    "name": "AWS Terrain Tiles (Tilezen/Mapzen Terrain Tiles), format Terrarium PNG",
+    "urlTemplate": "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+    "zoom": 12,
+    "tiles": 6,
+    "tileRange": {
+      "x": [
+        2211,
+        2212
+      ],
+      "y": [
+        1537,
+        1539
+      ]
+    },
+    "decoding": "R*256 + G + B/256 - 32768 [m]",
+    "attributionDoc": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+    "attribution": [
+      "ArcticDEM terrain data DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736",
+      "Australia terrain data © Commonwealth of Australia (Geoscience Australia) 2017",
+      "Austria terrain data © offene Daten Österreichs – Digitales Geländemodell (DGM) Österreich",
+      "Canada terrain data contains information licensed under the Open Government Licence – Canada",
+      "Europe terrain data produced using Copernicus data and information funded by the European Union - EU-DEM layers",
+      "Global ETOPO1 terrain data U.S. National Oceanic and Atmospheric Administration",
+      "Mexico terrain data source: INEGI, Continental relief, 2016",
+      "New Zealand terrain data Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government (All rights reserved)",
+      "Norway terrain data © Kartverket",
+      "United Kingdom terrain data © Environment Agency copyright and/or database right 2015. All rights reserved",
+      "United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey"
+    ]
+  },
+  "fetched": "2026-10-13",
+  "tool": "tools/fetch_dem.py",
+  "bbox": {
+    "south": 40.77,
+    "west": 14.36,
+    "north": 40.87,
+    "east": 14.49
+  },
+  "grid": {
+    "nx": 140,
+    "ny": 140,
+    "nz": 50,
+    "x": "x = 0 zachód (W) … nx − 1 wschód (E)",
+    "y": "y = 0 południe (S) … ny − 1 północ (N)",
+    "cellToLatLon": "lat = S + (y + 0.5)/ny·(N − S), lon = W + (x + 0.5)/nx·(E − W)"
+  },
+  "horizontal": {
+    "metersPerCellX": 78.34,
+    "metersPerCellY": 79.32,
+    "metersPerCell": 78.83,
+    "metersPerCellZ": 29.067,
+    "verticalExaggeration": 2.712,
+    "tilePixelMeters": 28.92,
+    "tilePixelsPerCell": 2.7,
+    "widthKm": 10.967,
+    "heightKm": 11.105
+  },
+  "vertical": {
+    "baseMeters": 0.0,
+    "peakMeters": 1235.36,
+    "metersPerCell": 29.067,
+    "peakCells": 42.5,
+    "rule": "komórki = (wysokość − baseMeters) / metersPerCell, przycięte do [0, nz]; baseMeters = max(0, minimum obszaru)"
+  },
+  "elevation": {
+    "minMeters": -0.01,
+    "maxMeters": 1235.36,
+    "meanMeters": 310.0,
+    "maxAt": {
+      "x": 75,
+      "y": 73,
+      "lat": 40.8225,
+      "lon": 14.43011
+    },
+    "belowBase": 38
+  }
+}

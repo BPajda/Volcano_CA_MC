@@ -1,0 +1,16 @@
+{
+  "_opis": "Test 3D: blok 64x64x48 z wulkanem w środku, 3 kratery boczne (szczeliny na zboczu).",
+  "_uwaga": "Kratery boczne (random), bo przy symetrycznym stożku krater szczytowy przelewa się równo na wszystkie strony.",
+  "space":        { "nx": 64, "ny": 64, "nz": 48 },
+  "grid":         "vector",
+  "boundary":     "absorbing",
+  "neighborhood": "moore",
+  "rngSeed":      42,
+  "terrain": { "type": "cone", "peakHeight": 36, "baseRadius": 30,
+               "craterRadius": 4, "craterDepth": 3, "noise": 0.08, "file": null },
+  "vents":   { "count": 3, "placement": "random", "eruptionSteps": 150, "eruptTemp": 1200 },
+  "ca":      { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 3.0,
+               "coolingLateral": 25.0, "coolingFall": 20.0, "solidusTemp": 800, "ponding": true },
+  "mc":      { "enabled": false },
+  "output":  { "format": "both", "snapshotsEvery": 0 }
+}

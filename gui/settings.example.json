@@ -1,0 +1,10 @@
+{
+  "_opis": "Wzór gui/settings.json (plik lokalny, poza repozytorium). Wszystkie pola są opcjonalne; ścieżki względem volcano-ca-mc. pinCpus — procesory logiczne do przypinania zadań („przypnij silnik do rdzenia P” w zakładce Zadania).",
+  "engine": "build/Release/engine.exe",
+  "port": 8000,
+  "workers": 1,
+  "pinCpus": [
+    2,
+    4
+  ]
+}

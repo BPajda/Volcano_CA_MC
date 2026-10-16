@@ -1,0 +1,17 @@
+{
+  "_opis": "Erupcja 2D (przekrój x–z 240x1x80) + krystalizacja bazaltu Monte Carlo z mobilnością ze stygnięcia.",
+  "_uwaga": "Szeroki i głęboki krater (promień 16, głębokość 9) wypełnia się jeziorem lawy grubości do 9 komórek, które długo pozostaje płynne -> duże kryształy; jęzory na zboczach mają grubość 1 komórki i zastygają szybko -> drobne kryształy.",
+  "space":        { "nx": 240, "ny": 1, "nz": 80 },
+  "grid":         "vector",
+  "boundary":     "absorbing",
+  "neighborhood": "moore",
+  "rngSeed":      42,
+  "terrain": { "type": "cone", "peakHeight": 60, "baseRadius": 110,
+               "craterRadius": 16, "craterDepth": 9, "noise": 0.05, "file": null },
+  "vents":   { "count": 1, "placement": "crater", "eruptionSteps": 300, "eruptTemp": 1200 },
+  "ca":      { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 2.0,
+               "coolingLateral": 4.0, "coolingFall": 2.0, "solidusTemp": 800, "ponding": true },
+  "mc":      { "enabled": true, "domain": "basalt", "Q": 50, "mcs": 300, "J": 1.0, "kT": 0.0,
+               "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10 },
+  "output":  { "format": "both", "snapshotsEvery": 0 }
+}

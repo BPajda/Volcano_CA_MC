@@ -1,0 +1,848 @@
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/ca_lava_test3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 4611562177
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/test_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/ca_lava_test3d/out (PID 632, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                      
+--------------------------------------------------------------------------------
+33,975,633,084 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                       file:function
+--------------------------------------------------------------------------------
+18,447,183,790 (54.30%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const [<repo>/build-gcc-o2/bin/engine]
+ 9,310,007,901 (27.40%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+ 1,798,009,214 ( 5.29%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava()
+ 1,118,769,234 ( 3.29%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+ 1,077,476,265 ( 3.17%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava() [<repo>/build-gcc-o2/bin/engine]
+   705,861,939 ( 2.08%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent() [<repo>/build-gcc-o2/bin/engine]
+   622,566,244 ( 1.83%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent()
+   268,664,540 ( 0.79%)  engine/src/terrain/TerrainGenerator.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+   134,332,270 ( 0.40%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+   112,462,250 ( 0.33%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::updateLava()
+    89,432,796 ( 0.26%)  engine/src/core/Neighborhood.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_vector.h
+--------------------------------------------------------------------------------
+Ir                   
+
+-- line 96 ----------------------------------------
+          .           
+          1 ( 0.00%)  	_Vector_impl_data() _GLIBCXX_NOEXCEPT
+      1,460 ( 0.00%)  	: _M_start(), _M_finish(), _M_end_of_storage()
+          .           	{ }
+-- line 99 ----------------------------------------
+-- line 102 ----------------------------------------
+          .           	_Vector_impl_data(_Vector_impl_data&& __x) noexcept
+          8 ( 0.00%)  	: _M_start(__x._M_start), _M_finish(__x._M_finish),
+          7 ( 0.00%)  	  _M_end_of_storage(__x._M_end_of_storage)
+          9 ( 0.00%)  	{ __x._M_start = __x._M_finish = __x._M_end_of_storage = pointer(); }
+          .           #endif
+-- line 106 ----------------------------------------
+-- line 110 ----------------------------------------
+          .           	{
+      5,784 ( 0.00%)  	  _M_start = __x._M_start;
+      5,751 ( 0.00%)  	  _M_finish = __x._M_finish;
+      5,768 ( 0.00%)  	  _M_end_of_storage = __x._M_end_of_storage;
+          .           	}
+-- line 114 ----------------------------------------
+-- line 332 ----------------------------------------
+          .           
+          1 ( 0.00%)        ~_Vector_base() _GLIBCXX_NOEXCEPT
+          .                 {
+-- line 334 ----------------------------------------
+-- line 335 ----------------------------------------
+          .           	_M_deallocate(_M_impl._M_start,
+      1,069 ( 0.00%)  		      _M_impl._M_end_of_storage - _M_impl._M_start);
+          1 ( 0.00%)        }
+          .           
+-- line 338 ----------------------------------------
+-- line 342 ----------------------------------------
+          .                 pointer
+         16 ( 0.00%)        _M_allocate(size_t __n)
+          .                 {
+-- line 344 ----------------------------------------
+-- line 345 ----------------------------------------
+          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+      1,235 ( 0.00%)  	return __n != 0 ? _Tr::allocate(_M_impl, __n) : pointer();
+          .                 }
+-- line 347 ----------------------------------------
+-- line 352 ----------------------------------------
+          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+      1,700 ( 0.00%)  	if (__p)
+          .           	  _Tr::deallocate(_M_impl, __p, __n);
+-- line 354 ----------------------------------------
+-- line 360 ----------------------------------------
+          .                 {
+        127 ( 0.00%)  	this->_M_impl._M_start = this->_M_allocate(__n);
+        122 ( 0.00%)  	this->_M_impl._M_finish = this->_M_impl._M_start;
+        276 ( 0.00%)  	this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+          .                 }
+-- line 364 ----------------------------------------
+-- line 552 ----------------------------------------
+          .                  */
+         10 ( 0.00%)        vector(const vector& __x)
+          .                 : _Base(__x.size(),
+-- line 554 ----------------------------------------
+-- line 556 ----------------------------------------
+          .                 {
+        120 ( 0.00%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_copy_a(__x.begin(), __x.end(),
+-- line 558 ----------------------------------------
+-- line 560 ----------------------------------------
+          .           				      _M_get_Tp_allocator());
+          8 ( 0.00%)        }
+          .           
+-- line 562 ----------------------------------------
+-- line 624 ----------------------------------------
+          .                  */
+         24 ( 0.00%)        vector(initializer_list<value_type> __l,
+          .           	     const allocator_type& __a = allocator_type())
+-- line 626 ----------------------------------------
+-- line 630 ----------------------------------------
+          .           			    random_access_iterator_tag());
+         22 ( 0.00%)        }
+          .           #endif
+-- line 632 ----------------------------------------
+-- line 677 ----------------------------------------
+          .                  */
+         10 ( 0.00%)        ~vector() _GLIBCXX_NOEXCEPT
+          .                 {
+        598 ( 0.00%)  	std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
+          .           		      _M_get_Tp_allocator());
+-- line 681 ----------------------------------------
+-- line 682 ----------------------------------------
+          .           	_GLIBCXX_ASAN_ANNOTATE_BEFORE_DEALLOC;
+         12 ( 0.00%)        }
+     12,281 ( 0.00%)  => ???:0x000000000010dde0 (1x)
+          5 ( 0.00%)  => /usr/include/c++/11/bits/stl_vector.h:std::_Vector_base<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*, std::allocator<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*> >::~_Vector_base() (1x)
+          .           
+-- line 684 ----------------------------------------
+-- line 749 ----------------------------------------
+          .                 assign(size_type __n, const value_type& __val)
+         58 ( 0.00%)        { _M_fill_assign(__n, __val); }
+  1,573,556 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<unsigned short, std::allocator<unsigned short> >::_M_fill_assign(unsigned long, unsigned short const&) (2x)
+    786,778 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<int, std::allocator<int> >::_M_fill_assign(unsigned long, int const&) (1x)
+    786,777 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<float, std::allocator<float> >::_M_fill_assign(unsigned long, float const&) (1x)
+    196,975 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::CellType, std::allocator<volcano::CellType> >::_M_fill_assign(unsigned long, volcano::CellType const&) (1x)
+          .           
+-- line 751 ----------------------------------------
+-- line 917 ----------------------------------------
+          .                 size_type
+        131 ( 0.00%)        size() const _GLIBCXX_NOEXCEPT
+313,899,618 ( 0.92%)        { return size_type(this->_M_impl._M_finish - this->_M_impl._M_start); }
+          .           
+-- line 920 ----------------------------------------
+-- line 938 ----------------------------------------
+          .                 {
+          2 ( 0.00%)  	if (__new_size > size())
+          2 ( 0.00%)  	  _M_default_append(__new_size - size());
+     16,766 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<int, std::allocator<int> >::_M_default_append(unsigned long) (1x)
+          .           	else if (__new_size < size())
+-- line 941 ----------------------------------------
+-- line 958 ----------------------------------------
+          .                 {
+          6 ( 0.00%)  	if (__new_size > size())
+         21 ( 0.00%)  	  _M_fill_insert(end(), __new_size - size(), __x);
+        740 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::LavaCA<volcano::VectorStorage>::Coord, std::allocator<volcano::LavaCA<volcano::VectorStorage>::Coord> >::_M_fill_insert(__gnu_cxx::__normal_iterator<volcano::LavaCA<volcano::VectorStorage>::Coord*, std::vector<volcano::LavaCA<volcano::VectorStorage>::Coord, std::allocator<volcano::LavaCA<volcano::VectorStorage>::Coord> > >, unsigned long, volcano::LavaCA<volcano::VectorStorage>::Coord const&) (3x)
+          .           	else if (__new_size < size())
+-- line 961 ----------------------------------------
+-- line 999 ----------------------------------------
+          .                 { return size_type(this->_M_impl._M_end_of_storage
+      1,157 ( 0.00%)  			 - this->_M_impl._M_start); }
+          .           
+-- line 1001 ----------------------------------------
+-- line 1045 ----------------------------------------
+          .           	__glibcxx_requires_subscript(__n);
+166,862,550 ( 0.49%)  	return *(this->_M_impl._M_start + __n);
+          .                 }
+-- line 1047 ----------------------------------------
+-- line 1063 ----------------------------------------
+          .           	__glibcxx_requires_subscript(__n);
+862,285,634 ( 2.54%)  	return *(this->_M_impl._M_start + __n);
+          .                 }
+-- line 1065 ----------------------------------------
+-- line 1188 ----------------------------------------
+          .                 {
+      1,957 ( 0.00%)  	if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
+          .           	  {
+-- line 1190 ----------------------------------------
+-- line 1193 ----------------------------------------
+          .           				     __x);
+      1,104 ( 0.00%)  	    ++this->_M_impl._M_finish;
+          .           	    _GLIBCXX_ASAN_ANNOTATE_GREW(1);
+-- line 1195 ----------------------------------------
+-- line 1197 ----------------------------------------
+          .           	else
+        439 ( 0.00%)  	  _M_realloc_insert(end(), __x);
+      9,049 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:void std::vector<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>, std::allocator<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> > >::_M_realloc_insert<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&>(__gnu_cxx::__normal_iterator<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*, std::vector<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>, std::allocator<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> > > >, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&) (6x)
+          .                 }
+-- line 1199 ----------------------------------------
+-- line 1203 ----------------------------------------
+          .                 push_back(value_type&& __x)
+         15 ( 0.00%)        { emplace_back(std::move(__x)); }
+      1,586 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:volcano::MemoryModel::Block& std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> >::emplace_back<volcano::MemoryModel::Block>(volcano::MemoryModel::Block&&) [clone .isra.0] (6x)
+          .           
+-- line 1205 ----------------------------------------
+-- line 1224 ----------------------------------------
+          .                 void
+      8,192 ( 0.00%)        pop_back() _GLIBCXX_NOEXCEPT
+          .                 {
+-- line 1226 ----------------------------------------
+-- line 1227 ----------------------------------------
+          .           	__glibcxx_requires_nonempty();
+     11,319 ( 0.00%)  	--this->_M_impl._M_finish;
+          .           	_Alloc_traits::destroy(this->_M_impl, this->_M_impl._M_finish);
+-- line 1229 ----------------------------------------
+-- line 1430 ----------------------------------------
+          .                 erase(const_iterator __position)
+          8 ( 0.00%)        { return _M_erase(begin() + (__position - cbegin())); }
+        191 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> >::_M_erase(__gnu_cxx::__normal_iterator<volcano::MemoryModel::Block*, std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> > >) (2x)
+          .           #else
+-- line 1432 ----------------------------------------
+-- line 1498 ----------------------------------------
+          .                 clear() _GLIBCXX_NOEXCEPT
+        439 ( 0.00%)        { _M_erase_at_end(this->_M_impl._M_start); }
+          .           
+-- line 1500 ----------------------------------------
+-- line 1581 ----------------------------------------
+          .           	  this->_M_impl._M_start
+         25 ( 0.00%)  	    = this->_M_allocate(_S_check_init_len(__n, _M_get_Tp_allocator()));
+         50 ( 0.00%)  	  this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+         25 ( 0.00%)  	  this->_M_impl._M_finish =
+          .           	    std::__uninitialized_copy_a(__first, __last,
+-- line 1585 ----------------------------------------
+-- line 1594 ----------------------------------------
+          .                 {
+          8 ( 0.00%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_fill_n_a(this->_M_impl._M_start, __n, __value,
+-- line 1596 ----------------------------------------
+-- line 1757 ----------------------------------------
+          .                 {
+      3,201 ( 0.00%)  	if (max_size() - size() < __n)
+          .           	  __throw_length_error(__N(__s));
+-- line 1759 ----------------------------------------
+-- line 1760 ----------------------------------------
+          .           
+        315 ( 0.00%)  	const size_type __len = size() + (std::max)(size(), __n);
+        878 ( 0.00%)  	return (__len < size() || __len > max_size()) ? max_size() : __len;
+          .                 }
+-- line 1763 ----------------------------------------
+-- line 1768 ----------------------------------------
+          .                 {
+        108 ( 0.00%)  	if (__n > _S_max_size(_Tp_alloc_type(__a)))
+          .           	  __throw_length_error(
+-- line 1770 ----------------------------------------
+-- line 1793 ----------------------------------------
+          .                 {
+        895 ( 0.00%)  	if (size_type __n = this->_M_impl._M_finish - __pos)
+          .           	  {
+-- line 1795 ----------------------------------------
+-- line 1797 ----------------------------------------
+          .           			  _M_get_Tp_allocator());
+        549 ( 0.00%)  	    this->_M_impl._M_finish = __pos;
+          .           	    _GLIBCXX_ASAN_ANNOTATE_SHRINK(__n);
+-- line 1799 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Neighborhood.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 21 ----------------------------------------
+         .           
+         6 ( 0.00%)  class Neighborhood {
+       413 ( 0.00%)  => /usr/include/c++/11/bits/stl_vector.h:std::vector<std::vector<volcano::Offset, std::allocator<volcano::Offset> >, std::allocator<std::vector<volcano::Offset, std::allocator<volcano::Offset> > > >::vector(std::vector<std::vector<volcano::Offset, std::allocator<volcano::Offset> >, std::allocator<std::vector<volcano::Offset, std::allocator<volcano::Offset> > > > const&) (1x)
+         .           public:
+-- line 23 ----------------------------------------
+-- line 42 ----------------------------------------
+         .               int variantFor(std::uint64_t seed, std::uint64_t step, std::uint64_t cellIndex) const {
+89,432,796 ( 0.26%)          if (variants_.size() == 1) {
+         .                       return 0;
+-- line 44 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Storage.hpp
+--------------------------------------------------------------------------------
+Ir                     
+
+-- line 39 ----------------------------------------
+            .               explicit VectorStorage(const Dims& d)
+            8 ( 0.00%)          : dims_(d),
+            6 ( 0.00%)            sx_(static_cast<std::size_t>(d.nx) + 2),
+           24 ( 0.00%)            sy_(static_cast<std::size_t>(d.ny) + 2) {
+            8 ( 0.00%)          const std::size_t n = sx_ * sy_ * (static_cast<std::size_t>(d.nz) + 2);
+            2 ( 0.00%)          type_.assign(n, CellType::Air);
+            2 ( 0.00%)          flowId_.assign(n, 0);
+            2 ( 0.00%)          temp_.assign(n, 0.0f);
+            4 ( 0.00%)          solidStep_.assign(n, 0);
+            4 ( 0.00%)          arrivalStep_.assign(n, 0);
+            .               }
+-- line 49 ----------------------------------------
+-- line 51 ----------------------------------------
+            .               const Dims& dims() const { return dims_; }
+          568 ( 0.00%)      int nx() const { return dims_.nx; }
+          852 ( 0.00%)      int ny() const { return dims_.ny; }
+          568 ( 0.00%)      int nz() const { return dims_.nz; }
+            .           
+-- line 55 ----------------------------------------
+-- line 56 ----------------------------------------
+            .               // --- dostęp do pól (współrzędne od -1 do n włącznie) ---
+  985,530,795 ( 2.90%)      CellType type(int x, int y, int z) const { return type_[index(x, y, z)]; }
+       58,870 ( 0.00%)      std::int32_t flowId(int x, int y, int z) const { return flowId_[index(x, y, z)]; }
+      255,478 ( 0.00%)      float temp(int x, int y, int z) const { return temp_[index(x, y, z)]; }
+            .               std::uint16_t solidStep(int x, int y, int z) const { return solidStep_[index(x, y, z)]; }
+-- line 60 ----------------------------------------
+-- line 62 ----------------------------------------
+            .           
+       35,949 ( 0.00%)      void setType(int x, int y, int z, CellType v) { type_[index(x, y, z)] = v; }
+            .               void setFlowId(int x, int y, int z, std::int32_t v) { flowId_[index(x, y, z)] = v; }
+-- line 64 ----------------------------------------
+-- line 71 ----------------------------------------
+            .                   const std::size_t i = index(x, y, z);
+  446,687,056 ( 1.31%)          return CellState{type_[i], flowId_[i], temp_[i], solidStep_[i], arrivalStep_[i]};
+            .               }
+-- line 73 ----------------------------------------
+-- line 75 ----------------------------------------
+            .                   const std::size_t i = index(x, y, z);
+  108,343,764 ( 0.32%)          type_[i] = c.type;
+  109,243,476 ( 0.32%)          flowId_[i] = c.flowId;
+  110,817,972 ( 0.33%)          temp_[i] = c.temp;
+  113,466,870 ( 0.33%)          solidStep_[i] = c.solidStep;
+  127,404,348 ( 0.37%)          arrivalStep_[i] = c.arrivalStep;
+            .               }
+-- line 81 ----------------------------------------
+-- line 104 ----------------------------------------
+            .                   assert(x >= -1 && x <= dims_.nx && y >= -1 && y <= dims_.ny && z >= -1 && z <= dims_.nz);
+1,813,004,655 ( 5.34%)          return static_cast<std::size_t>(x + 1) +
+7,992,210,025 (23.52%)                 sx_ * (static_cast<std::size_t>(y + 1) + sy_ * static_cast<std::size_t>(z + 1));
+            .               }
+-- line 107 ----------------------------------------
+-- line 212 ----------------------------------------
+            .           template <class Storage>
+           10 ( 0.00%)  VOLCANO_NOINLINE Microstructure toMicrostructure(const Storage& s) {
+            .               Microstructure m;
+-- line 214 ----------------------------------------
+-- line 215 ----------------------------------------
+            .               m.resize(s.dims());
+            1 ( 0.00%)      std::size_t i = 0;
+          245 ( 0.00%)      for (int z = 0; z < s.nz(); ++z) {
+       12,528 ( 0.00%)          for (int y = 0; y < s.ny(); ++y) {
+      798,720 ( 0.00%)              for (int x = 0; x < s.nx(); ++x, ++i) {
+      393,216 ( 0.00%)                  m.type[i] = s.type(x, y, z);
+      393,216 ( 0.00%)                  m.flowId[i] = s.flowId(x, y, z);
+      196,608 ( 0.00%)                  m.temp[i] = s.temp(x, y, z);
+      393,216 ( 0.00%)                  m.solidStep[i] = s.solidStep(x, y, z);
+      393,216 ( 0.00%)                  m.arrivalStep[i] = s.arrivalStep(x, y, z);
+            .                       }
+-- line 225 ----------------------------------------
+-- line 228 ----------------------------------------
+            .               return m;
+           12 ( 0.00%)  }
+            .           
+-- line 230 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/ca/LavaCA.hpp
+--------------------------------------------------------------------------------
+Ir                     
+
+-- line 28 ----------------------------------------
+            .           // Czasy faz kroku [ms], sumowane po krokach — tylko przy --timing-detail (etap 3).
+            4 ( 0.00%)  struct CaPhaseTimes {
+            .               double frame = 0.0;    // wypełnienie ramki (warunki brzegowe)
+-- line 30 ----------------------------------------
+-- line 36 ----------------------------------------
+            .           template <class Storage>
+            8 ( 0.00%)  class LavaCA {
+            .           public:
+-- line 38 ----------------------------------------
+-- line 39 ----------------------------------------
+            .               // Alokuje oba bufory (cur, next) — cała przestrzeń AIR.
+           12 ( 0.00%)      LavaCA(const Dims& dims, const CaParams& params, const Neighborhood& nb, const Boundary& bc)
+           22 ( 0.00%)          : dims_(dims), p_(params), nb_(nb), bc_(bc), cur_(dims), next_(dims) {
+            3 ( 0.00%)          if (params.mode == CaMode::Lava) {
+            1 ( 0.00%)              descent_.assign(dims.cells(), -1);
+            .                   }
+-- line 44 ----------------------------------------
+-- line 45 ----------------------------------------
+            .                   // Poziomi sąsiedzi (oś pionowa to z) — używani przez regułę wypełniania zagłębień.
+            3 ( 0.00%)          horizontal_.push_back(Offset{-1, 0, 0});
+            2 ( 0.00%)          horizontal_.push_back(Offset{1, 0, 0});
+            2 ( 0.00%)          if (dims.ny > 1) {
+            3 ( 0.00%)              horizontal_.push_back(Offset{0, -1, 0});
+            3 ( 0.00%)              horizontal_.push_back(Offset{0, 1, 0});
+            .                   }
+-- line 51 ----------------------------------------
+-- line 53 ----------------------------------------
+            .                   // suma po wszystkich wariantach, więc wynik nie zależy od wylosowanego wariantu.
+            7 ( 0.00%)          for (int v = 0; v < nb_.variantCount(); ++v) {
+           94 ( 0.00%)              for (const Offset& o : nb_.variant(v)) {
+           78 ( 0.00%)                  if (o.dz == 0) {
+            .                               addUnique(sideOffsets_, o);
+           72 ( 0.00%)                  } else if (o.dz == -1 && (o.dx != 0 || o.dy != 0)) {
+           16 ( 0.00%)                      diagonalFalls_ = true;
+            .                           }
+-- line 60 ----------------------------------------
+-- line 62 ----------------------------------------
+            .                   }
+           11 ( 0.00%)      }
+            .           
+-- line 64 ----------------------------------------
+-- line 67 ----------------------------------------
+            .               void applyTerrain(const Heightmap& hm) {
+          326 ( 0.00%)          for (int y = 0; y < dims_.ny; ++y) {
+       12,802 ( 0.00%)              for (int x = 0; x < dims_.nx; ++x) {
+            .                           const int h = std::min(hm.at(x, y), dims_.nz);
+      123,517 ( 0.00%)                  for (int z = 0; z < h; ++z) {
+            .                               cur_.setType(x, y, z, CellType::Rock);
+-- line 72 ----------------------------------------
+-- line 75 ----------------------------------------
+            .                   }
+            5 ( 0.00%)          spill_ = TerrainGenerator::fillDepressions(hm, bc_.periodicX(), bc_.periodicY());
+    1,957,768 ( 0.01%)  => <repo>/engine/src/terrain/TerrainGenerator.cpp:volcano::TerrainGenerator::fillDepressions(volcano::Heightmap const&, bool, bool) (1x)
+            .               }
+-- line 77 ----------------------------------------
+-- line 80 ----------------------------------------
+            .               // Wywołać po applyTerrain — ustala też stan początkowy liczników i warunku końca.
+           14 ( 0.00%)      void placeSeeds(const std::vector<Vent>& vents) {
+            4 ( 0.00%)          const float temp = (p_.mode == CaMode::Lava) ? p_.eruptTemp : 0.0f;
+            1 ( 0.00%)          ventByFlow_.clear();
+           11 ( 0.00%)          for (const Vent& v : vents) {
+            3 ( 0.00%)              cur_.setCell(v.x, v.y, v.z, CellState{CellType::Lava, v.flowId, temp, 0, 0});
+            .                       // Szybkie rozpoznanie krateru po flowId: krater f leży w ventByFlow_[f].
+            9 ( 0.00%)              if (v.flowId >= static_cast<std::int32_t>(ventByFlow_.size())) {
+            9 ( 0.00%)                  ventByFlow_.resize(static_cast<std::size_t>(v.flowId) + 1, Coord{-1, -1, -1});
+            .                       }
+           21 ( 0.00%)              ventByFlow_[static_cast<std::size_t>(v.flowId)] = Coord{v.x, v.y, v.z};
+            .                   }
+-- line 91 ----------------------------------------
+-- line 92 ----------------------------------------
+            .                   countInitialState();
+           11 ( 0.00%)      }
+            .           
+-- line 94 ----------------------------------------
+-- line 96 ----------------------------------------
+            .               bool step() {
+            3 ( 0.00%)          if (finished()) {
+            .                       return false;
+-- line 98 ----------------------------------------
+-- line 99 ----------------------------------------
+            .                   }
+          568 ( 0.00%)          if (phaseTiming_) {
+            .                       stepTimed();
+          852 ( 0.00%)          } else if (p_.mode == CaMode::Lava) {
+            .                       stepLava();
+-- line 103 ----------------------------------------
+-- line 111 ----------------------------------------
+            .               void run() {
+          852 ( 0.00%)          while (step()) {
+            .                   }
+-- line 113 ----------------------------------------
+-- line 128 ----------------------------------------
+            .               // Wynik w postaci płaskiej mikrostruktury (bez ramki).
+            4 ( 0.00%)      Microstructure result() const { return toMicrostructure(cur_); }
+    6,189,322 ( 0.02%)  => <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::VectorStorage>(volcano::VectorStorage const&) (1x)
+            .           
+-- line 130 ----------------------------------------
+-- line 133 ----------------------------------------
+            .               // Pomiar czasów faz kroku (--timing-detail): kroki idą wtedy przez stepTimed(). Domyślnie wyłączony.
+            2 ( 0.00%)      void enablePhaseTiming(bool on) { phaseTiming_ = on; }
+            .               const CaPhaseTimes& phaseTimes() const { return phases_; }
+-- line 135 ----------------------------------------
+-- line 137 ----------------------------------------
+            .               // Pamięć obu buforów z ramką [B] (dane komórek; MatrixStorage bez narzutu alokacji wierszy).
+            3 ( 0.00%)      std::size_t gridBytes() const { return cur_.bytes() + next_.bytes(); }
+            .               // Pamięć tablic pomocniczych [B]: D(n) (tryb lava) i poziomy przelewu niecek.
+-- line 139 ----------------------------------------
+-- line 140 ----------------------------------------
+            .               std::size_t auxBytes() const {
+            2 ( 0.00%)          return descent_.size() * sizeof(std::int8_t) + spill_.height.size() * sizeof(int);
+            .               }
+-- line 142 ----------------------------------------
+-- line 153 ----------------------------------------
+            .               bool isVent(std::int32_t flowId, int x, int y, int z) const {
+    1,212,202 ( 0.00%)          if (flowId <= 0 || flowId >= static_cast<std::int32_t>(ventByFlow_.size())) {
+            .                       return false;
+-- line 155 ----------------------------------------
+-- line 156 ----------------------------------------
+            .                   }
+      125,951 ( 0.00%)          const Coord& v = ventByFlow_[static_cast<std::size_t>(flowId)];
+      390,085 ( 0.00%)          return v.x == x && v.y == y && v.z == z;
+            .               }
+-- line 159 ----------------------------------------
+-- line 161 ----------------------------------------
+            .               // Zawija współrzędną z ramki (-1 lub n) do wnętrza — bez kosztownego dzielenia modulo.
+   17,172,253 ( 0.05%)      static int wrap(int v, int n) { return v < 0 ? v + n : (v >= n ? v - n : v); }
+            .           
+-- line 163 ----------------------------------------
+-- line 164 ----------------------------------------
+            .               // Poziom przelewu kolumny (x, y); współrzędne z ramki periodycznej są zawijane.
+      242,648 ( 0.00%)      int spillAt(int x, int y) const { return spill_.at(wrap(x, dims_.nx), wrap(y, dims_.ny)); }
+            .           
+-- line 166 ----------------------------------------
+-- line 172 ----------------------------------------
+            .               VOLCANO_NOINLINE bool hasSupport(int x, int y, int z) const {
+    1,323,938 ( 0.00%)          if (z == 0) {
+            .                       return true;
+-- line 174 ----------------------------------------
+-- line 176 ----------------------------------------
+            .                   const CellType below = cur_.type(x, y, z - 1);
+    1,245,020 ( 0.00%)          if (isSolidGround(below)) {
+            .                       return true;
+-- line 178 ----------------------------------------
+-- line 179 ----------------------------------------
+            .                   }
+    2,354,647 ( 0.01%)          return below == CellType::Lava && !spill_.empty() && z - 1 < spillAt(x, y);
+            .               }
+-- line 181 ----------------------------------------
+-- line 186 ----------------------------------------
+            .               VOLCANO_NOINLINE int dropDepth(int x, int y, int z) const {
+    2,734,966 ( 0.01%)          for (int d = 0; d <= kMaxDrop && z - d >= 0; ++d) {
+    1,396,323 ( 0.00%)              if (d > 0 && cur_.type(x, y, z - d) != CellType::Air) {
+    1,414,198 ( 0.00%)                  return -1;
+            .                       }
+-- line 190 ----------------------------------------
+-- line 203 ----------------------------------------
+            .               VOLCANO_NOINLINE int descent(int x, int y, int z) const {
+      895,951 ( 0.00%)          int best = 0;
+    3,583,804 ( 0.01%)          for (const Offset& h : sideOffsets_) {
+    6,361,390 ( 0.02%)              if (cur_.type(x + h.dx, y + h.dy, z) == CellType::Air) {
+            .                           best = std::max(best, dropDepth(x + h.dx, y + h.dy, z));
+-- line 207 ----------------------------------------
+-- line 214 ----------------------------------------
+            .               static void addUnique(std::vector<Offset>& list, const Offset& o) {
+          100 ( 0.00%)          for (const Offset& e : list) {
+           91 ( 0.00%)              if (e.dx == o.dx && e.dy == o.dy && e.dz == o.dz) {
+            .                           return;
+-- line 217 ----------------------------------------
+-- line 225 ----------------------------------------
+            .               VOLCANO_NOINLINE void tryPonding(int x, int y, int z, CandidateVote& vote) const {
+  223,581,990 ( 0.66%)          if (spill_.empty() || z > spill_.at(x, y)) {
+            .                       return;  // c ponad poziomem przelewu niecki (albo brak terenu)
+-- line 227 ----------------------------------------
+-- line 229 ----------------------------------------
+            .                   const int bz = z - 1;
+    1,535,492 ( 0.00%)          if (cur_.type(x, y, bz) != CellType::Lava) {
+            .                       return;
+-- line 231 ----------------------------------------
+-- line 245 ----------------------------------------
+            .               // Zbiera kandydatów (lawa, która może wpłynąć do komórki AIR c) — reguła 1 z CaRules.hpp.
+  581,313,174 ( 1.71%)      VOLCANO_NOINLINE void gatherLavaCandidates(int x, int y, int z, std::uint64_t t, std::uint64_t idx,
+            .                                                          CandidateVote& vote) const {
+-- line 247 ----------------------------------------
+-- line 248 ----------------------------------------
+            .                   vote.clear();
+   89,432,796 ( 0.26%)          int cDrop = kUnknown;  // spadek z komórki c — liczony leniwie
+3,666,744,636 (10.79%)          for (const Offset& o : nb_.offsetsFor(p_.seed, t, idx)) {
+3,487,879,044 (10.27%)              if (o.dz < 0) {
+            .                           // Lawa się nie wspina: sąsiad poniżej nie wpływa do c.
+-- line 252 ----------------------------------------
+-- line 253 ----------------------------------------
+            .                           // Wyjątek: wypełnianie zagłębienia z komórki dokładnie pod c.
+2,414,685,492 ( 7.11%)                  if (p_.ponding && o.dx == 0 && o.dy == 0) {
+            .                               tryPonding(x, y, z, vote);
+-- line 255 ----------------------------------------
+-- line 258 ----------------------------------------
+            .                       }
+1,520,357,532 ( 4.47%)              const int sz = z + o.dz;
+6,081,430,128 (17.90%)              if (cur_.type(x + o.dx, y + o.dy, sz) != CellType::Lava) {
+            .                           continue;  // (ramka absorbująca to VOID — nigdy nie jest lawą)
+-- line 261 ----------------------------------------
+-- line 264 ----------------------------------------
+            .                       // dalsze sprawdzenia sięgają do sąsiadów źródła, czyli poza ramkę.
+    1,179,812 ( 0.00%)              const int sx = wrap(x + o.dx, dims_.nx);
+      589,906 ( 0.00%)              const int sy = wrap(y + o.dy, dims_.ny);
+            .                       float cooling;
+    1,182,868 ( 0.00%)              if (o.dz > 0 && o.dx == 0 && o.dy == 0) {
+        3,056 ( 0.00%)                  cooling = p_.coolingFall;  // swobodny spadek pionowo — zawsze
+            .                       } else {
+-- line 270 ----------------------------------------
+-- line 271 ----------------------------------------
+            .                           // Największy spadek źródła policzony na początku kroku (-1: źródło bez podparcia).
+    1,765,134 ( 0.01%)                  const int d = descent_[static_cast<std::size_t>(globalIndex(dims_, sx, sy, sz))];
+    1,176,756 ( 0.00%)                  if (d < 0) {
+            .                               continue;
+-- line 274 ----------------------------------------
+-- line 275 ----------------------------------------
+            .                           }
+      642,915 ( 0.00%)                  if (cDrop == kUnknown) {
+            .                               cDrop = dropDepth(x, y, z);  // liczone raz na komórkę c, tylko gdy potrzebne
+-- line 277 ----------------------------------------
+-- line 278 ----------------------------------------
+            .                           }
+      336,078 ( 0.00%)                  if (o.dz > 0) {
+            .                               // Spływ po skosie w dół stoku: c ma grunt pod sobą, a największy spadek
+-- line 280 ----------------------------------------
+-- line 281 ----------------------------------------
+            .                               // dostępny dla źródła to 1 poziom.
+      148,795 ( 0.00%)                      if (cDrop != 0 || d != 1) {
+            .                                   continue;
+-- line 283 ----------------------------------------
+-- line 284 ----------------------------------------
+            .                               }
+        6,997 ( 0.00%)                      cooling = p_.coolingFall;
+            .                           } else {
+-- line 286 ----------------------------------------
+-- line 289 ----------------------------------------
+            .                               // sąsiedztwo ma przekątne).
+      451,645 ( 0.00%)                      if (cDrop != d || (d == 1 && diagonalFalls_)) {
+            .                                   continue;
+-- line 291 ----------------------------------------
+-- line 292 ----------------------------------------
+            .                               }
+       41,820 ( 0.00%)                      cooling = p_.coolingLateral;
+            .                           }
+-- line 294 ----------------------------------------
+-- line 295 ----------------------------------------
+            .                       }
+       58,870 ( 0.00%)              vote.add(cur_.flowId(sx, sy, sz), cur_.temp(sx, sy, sz) - cooling);
+            .                   }
+  357,731,184 ( 1.05%)      }
+            .           
+-- line 299 ----------------------------------------
+-- line 303 ----------------------------------------
+            .               // ten przebieg też da się zrównoleglić.
+        2,272 ( 0.00%)      VOLCANO_NOINLINE void computeDescent() {
+          284 ( 0.00%)          std::size_t i = 0;
+       83,212 ( 0.00%)          for (int z = 0; z < dims_.nz; ++z) {
+    4,553,088 ( 0.01%)              for (int y = 0; y < dims_.ny; ++y) {
+  341,999,616 ( 1.01%)                  for (int x = 0; x < dims_.nx; ++x, ++i) {
+   55,836,672 ( 0.16%)                      std::int8_t d = -1;
+  111,673,344 ( 0.33%)                      if (cur_.type(x, y, z) == CellType::Lava && hasSupport(x, y, z)) {
+      383,979 ( 0.00%)                          d = static_cast<std::int8_t>(descent(x, y, z));
+            .                               }
+  167,510,016 ( 0.49%)                      descent_[i] = d;
+            .                           }
+-- line 314 ----------------------------------------
+-- line 316 ----------------------------------------
+            .                   }
+        1,988 ( 0.00%)      }
+            .           
+-- line 318 ----------------------------------------
+-- line 327 ----------------------------------------
+            .               VOLCANO_NOINLINE void stepLava() {
+          852 ( 0.00%)          bc_.apply(cur_);
+  147,466,716 ( 0.43%)  => <repo>/engine/src/core/Boundary.hpp:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const (284x)
+          568 ( 0.00%)          computeDescent();
+1,386,947,895 ( 4.08%)  => engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent() (284x)
+        1,988 ( 0.00%)          finishStep(updateLava());
+32,409,823,107 (95.39%)  => engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava() (284x)
+       38,814 ( 0.00%)  => engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::finishStep(volcano::LavaCA<volcano::VectorStorage>::StepCounts const&) (284x)
+            .               }
+-- line 331 ----------------------------------------
+-- line 334 ----------------------------------------
+            .               VOLCANO_NOINLINE void stepClassic() {
+            1 ( 0.00%)          bc_.apply(cur_);
+            .                   finishStep(updateClassic());
+-- line 336 ----------------------------------------
+-- line 359 ----------------------------------------
+            .               // Reguły lawy dla wszystkich komórek: czyta cur_, pisze next_, zlicza lawę i zmiany.
+        3,408 ( 0.00%)      VOLCANO_NOINLINE StepCounts updateLava() {
+        1,136 ( 0.00%)          const std::uint64_t t = static_cast<std::uint64_t>(steps_);
+          568 ( 0.00%)          const bool erupting = steps_ < p_.eruptionSteps;
+            .                   // Znacznik kroku dla solidStep i arrivalStep (uint16 — stąd ca.maxSteps <= 65535).
+        1,136 ( 0.00%)          const std::uint16_t stamp = static_cast<std::uint16_t>(std::min(steps_, 65535));
+          568 ( 0.00%)          std::uint64_t lava = 0;
+          284 ( 0.00%)          std::uint64_t air = 0;
+          284 ( 0.00%)          std::uint64_t changed = 0;
+          284 ( 0.00%)          std::uint64_t idx = 0;  // globalIndex(x, y, z) — pętle idą w kolejności pamięci
+            .                   CandidateVote vote;
+-- line 369 ----------------------------------------
+-- line 370 ----------------------------------------
+            .           
+       55,948 ( 0.00%)          for (int z = 0; z < dims_.nz; ++z) {
+    3,612,480 ( 0.01%)              for (int y = 0; y < dims_.ny; ++y) {
+  175,362,048 ( 0.52%)                  for (int x = 0; x < dims_.nx; ++x, ++idx) {
+            .                               const CellType type = cur_.type(x, y, z);
+  111,673,344 ( 0.33%)                      if (type == CellType::Air) {
+  491,880,378 ( 1.45%)                          gatherLavaCandidates(x, y, z, t, idx, vote);
+29,421,322,557 (86.60%)  => engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const (44,716,398x)
+  223,581,990 ( 0.66%)                          if (!vote.empty()) {
+       91,375 ( 0.00%)                              const int w = vote.winner(p_.seed, t, idx);
+      511,700 ( 0.00%)  => <repo>/engine/src/ca/CaRules.hpp:volcano::CandidateVote::winner(unsigned long, unsigned long, unsigned long) const (18,275x)
+            .                                       const float temp = vote.maxTemp(w);
+       36,550 ( 0.00%)                              if (temp >= p_.solidusTemp) {
+            .                                           next_.setCell(x, y, z,
+-- line 381 ----------------------------------------
+-- line 382 ----------------------------------------
+            .                                                         CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp});
+        4,287 ( 0.00%)                                  ++lava;
+        4,287 ( 0.00%)                                  ++changed;
+        4,287 ( 0.00%)                                  continue;
+            .                                       }
+-- line 386 ----------------------------------------
+-- line 388 ----------------------------------------
+            .                                   next_.setCell(x, y, z, cur_.cell(x, y, z));
+   44,712,111 ( 0.13%)                          ++air;
+   22,240,548 ( 0.07%)                      } else if (type == CellType::Lava) {
+            .                                   CellState c = cur_.cell(x, y, z);
+-- line 391 ----------------------------------------
+-- line 393 ----------------------------------------
+            .                                   if (erupting && isVent(c.flowId, x, y, z)) {
+          900 ( 0.00%)                              c.temp = p_.eruptTemp;  // krater zasilany z komina
+            .                                   } else {
+      383,220 ( 0.00%)                              c.temp -= p_.coolingAmbient;
+            .                                   }
+      576,180 ( 0.00%)                          if (c.temp < p_.solidusTemp) {
+        4,290 ( 0.00%)                              c.type = CellType::Basalt;
+        4,290 ( 0.00%)                              c.solidStep = stamp;
+        4,290 ( 0.00%)                              ++changed;
+            .                                   } else {
+      187,770 ( 0.00%)                              ++lava;
+    1,314,390 ( 0.00%)                              changed += (c.temp != before) ? 1 : 0;
+            .                                   }
+-- line 405 ----------------------------------------
+-- line 412 ----------------------------------------
+            .                   }
+        1,988 ( 0.00%)          return StepCounts{lava, air, changed};
+        3,408 ( 0.00%)      }
+            .           
+-- line 415 ----------------------------------------
+-- line 458 ----------------------------------------
+            .               // Zamiana buforów, zapis historii i sprawdzenie warunku końca.
+        1,704 ( 0.00%)      VOLCANO_NOINLINE void finishStep(const StepCounts& c) {
+            .                   cur_.swap(next_);
+          284 ( 0.00%)          ++steps_;
+           10 ( 0.00%)          activeHistory_.push_back(c.active);
+           20 ( 0.00%)          changedHistory_.push_back(c.changed);
+        1,420 ( 0.00%)          if (p_.mode == CaMode::Lava && c.active == 0) {
+            1 ( 0.00%)              stop_ = StopReason::NoLava;
+            .                   } else if (p_.mode == CaMode::Classic && c.air == 0) {
+-- line 466 ----------------------------------------
+-- line 467 ----------------------------------------
+            .                       stop_ = StopReason::NoAir;
+          566 ( 0.00%)          } else if (c.changed == 0 && !nb_.isRandom()) {
+            .                       // Przy sąsiedztwie losowym krok bez zmian nie oznacza stanu końcowego —
+-- line 469 ----------------------------------------
+-- line 471 ----------------------------------------
+            .                       stop_ = StopReason::NoChange;
+          849 ( 0.00%)          } else if (steps_ >= p_.maxSteps) {
+            .                       stop_ = StopReason::MaxSteps;
+-- line 473 ----------------------------------------
+-- line 474 ----------------------------------------
+            .                   }
+        1,136 ( 0.00%)      }
+            .           
+-- line 476 ----------------------------------------
+-- line 478 ----------------------------------------
+            .               void countInitialState() {
+            3 ( 0.00%)          std::uint64_t lava = 0;
+            1 ( 0.00%)          std::uint64_t air = 0;
+          147 ( 0.00%)          for (int z = 0; z < dims_.nz; ++z) {
+        9,315 ( 0.00%)              for (int y = 0; y < dims_.ny; ++y) {
+      596,160 ( 0.00%)                  for (int x = 0; x < dims_.nx; ++x) {
+            .                               const CellType t = cur_.type(x, y, z);
+      393,219 ( 0.00%)                      lava += (t == CellType::Lava) ? 1 : 0;
+      393,210 ( 0.00%)                      air += (t == CellType::Air) ? 1 : 0;
+            .                           }
+-- line 487 ----------------------------------------
+-- line 489 ----------------------------------------
+            .                   }
+            1 ( 0.00%)          stop_ = StopReason::Running;
+            5 ( 0.00%)          if (p_.mode == CaMode::Lava && lava == 0) {
+            .                       stop_ = StopReason::NoLava;
+-- line 492 ----------------------------------------
+-- line 494 ----------------------------------------
+            .                       stop_ = StopReason::NoAir;
+            3 ( 0.00%)          } else if (p_.maxSteps <= 0) {
+            .                       stop_ = StopReason::MaxSteps;
+-- line 496 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/terrain/TerrainGenerator.hpp
+--------------------------------------------------------------------------------
+Ir                   
+
+-- line 19 ----------------------------------------
+          .           // Kolumna o wysokości h ma ROCK w z = 0..h-1, a pierwsza komórka AIR to z = h.
+          5 ( 0.00%)  struct Heightmap {
+          .               int nx = 0;
+-- line 21 ----------------------------------------
+-- line 25 ----------------------------------------
+          .               int at(int x, int y) const {
+269,593,086 ( 0.79%)          return height[static_cast<std::size_t>(x) + static_cast<std::size_t>(nx) * static_cast<std::size_t>(y)];
+          .               }
+-- line 27 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_iterator.h
+--------------------------------------------------------------------------------
+Ir                   
+
+-- line 183 ----------------------------------------
+          .                 explicit _GLIBCXX17_CONSTEXPR
+          1 ( 0.00%)        reverse_iterator(iterator_type __x) : current(__x) { }
+          .           
+-- line 185 ----------------------------------------
+-- line 1023 ----------------------------------------
+          .                 _GLIBCXX_CONSTEXPR __normal_iterator() _GLIBCXX_NOEXCEPT
+         68 ( 0.00%)        : _M_current(_Iterator()) { }
+          .           
+-- line 1025 ----------------------------------------
+-- line 1026 ----------------------------------------
+          .                 explicit _GLIBCXX20_CONSTEXPR
+        185 ( 0.00%)        __normal_iterator(const _Iterator& __i) _GLIBCXX_NOEXCEPT
+134,972,163 ( 0.40%)        : _M_current(__i) { }
+          .           
+-- line 1029 ----------------------------------------
+-- line 1053 ----------------------------------------
+          .                 {
+        163 ( 0.00%)  	++_M_current;
+          .           	return *this;
+-- line 1055 ----------------------------------------
+-- line 1067 ----------------------------------------
+          .                 {
+      4,098 ( 0.00%)  	--_M_current;
+          .           	return *this;
+-- line 1069 ----------------------------------------
+-- line 1090 ----------------------------------------
+          .                 operator+(difference_type __n) const _GLIBCXX_NOEXCEPT
+    243,762 ( 0.00%)        { return __normal_iterator(_M_current + __n); }
+          .           
+-- line 1092 ----------------------------------------
+-- line 1100 ----------------------------------------
+          .                 operator-(difference_type __n) const _GLIBCXX_NOEXCEPT
+      1,517 ( 0.00%)        { return __normal_iterator(_M_current - __n); }
+          .           
+-- line 1102 ----------------------------------------
+-- line 1165 ----------------------------------------
+          .               _GLIBCXX_NOEXCEPT
+         47 ( 0.00%)      { return __lhs.base() == __rhs.base(); }
+          .           
+-- line 1167 ----------------------------------------
+-- line 1178 ----------------------------------------
+          .               inline bool
+          1 ( 0.00%)      operator!=(const __normal_iterator<_Iterator, _Container>& __lhs,
+          .           	       const __normal_iterator<_Iterator, _Container>& __rhs)
+-- line 1180 ----------------------------------------
+-- line 1181 ----------------------------------------
+          .               _GLIBCXX_NOEXCEPT
+          2 ( 0.00%)      { return __lhs.base() != __rhs.base(); }
+          .           
+-- line 1183 ----------------------------------------
+-- line 1270 ----------------------------------------
+          .               _GLIBCXX_NOEXCEPT
+     37,766 ( 0.00%)      { return __lhs.base() - __rhs.base(); }
+          .           
+-- line 1272 ----------------------------------------
+
+--------------------------------------------------------------------------------
+Ir                      
+--------------------------------------------------------------------------------
+33,879,093,813 (99.72%)  events annotated
+

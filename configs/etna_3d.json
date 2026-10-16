@@ -1,0 +1,15 @@
+{
+  "_opis": "Większy wulkan 3D (150x150x80) z 5 kraterami bocznymi — demonstracja i pomiary wydajności.",
+  "space":        { "nx": 150, "ny": 150, "nz": 80 },
+  "grid":         "vector",
+  "boundary":     "absorbing",
+  "neighborhood": "moore",
+  "rngSeed":      2026,
+  "terrain": { "type": "cone", "peakHeight": 55, "baseRadius": 70,
+               "craterRadius": 6, "craterDepth": 4, "noise": 0.08, "file": null },
+  "vents":   { "count": 5, "placement": "random", "eruptionSteps": 150, "eruptTemp": 1200 },
+  "ca":      { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 3.0,
+               "coolingLateral": 16.0, "coolingFall": 12.0, "solidusTemp": 800, "ponding": true },
+  "mc":      { "enabled": false },
+  "output":  { "format": "bin", "snapshotsEvery": 0 }
+}

@@ -1,0 +1,52 @@
+{
+  "_opis": "Mapa wysokości z pliku: kaldera z wyłomem na wschód (configs/heightmaps/kaldera_wylom.csv) + krystalizacja MC.",
+  "_uwaga": "Lawa z krateru w kalderze wypełnia ją do poziomu wyłomu i wypływa tylko przez wyłom doliną na wschód — inaczej niż stożek z generatora, który przelewa się równo na wszystkie strony. terrain.craterRadius wyznacza tu tylko obszar, w którym losowane są kratery (placement = crater).",
+  "space": {
+    "nx": 100,
+    "ny": 100,
+    "nz": 45
+  },
+  "grid": "vector",
+  "boundary": "absorbing",
+  "neighborhood": "moore",
+  "rngSeed": 42,
+  "terrain": {
+    "type": "file",
+    "file": "configs/heightmaps/kaldera_wylom.csv",
+    "peakHeight": 70,
+    "baseRadius": 90,
+    "craterRadius": 5,
+    "craterDepth": 4,
+    "noise": 0.05
+  },
+  "vents": {
+    "count": 1,
+    "placement": "crater",
+    "eruptionSteps": 100,
+    "eruptTemp": 1200
+  },
+  "ca": {
+    "mode": "lava",
+    "maxSteps": 5000,
+    "coolingAmbient": 3.0,
+    "coolingLateral": 14.0,
+    "coolingFall": 10.0,
+    "solidusTemp": 800,
+    "ponding": true
+  },
+  "mc": {
+    "enabled": true,
+    "domain": "basalt",
+    "Q": 50,
+    "mcs": 100,
+    "J": 1.0,
+    "kT": 0.0,
+    "mobilityFromCooling": true,
+    "mobilityMin": 0.05,
+    "statsEvery": 10
+  },
+  "output": {
+    "format": "bin",
+    "snapshotsEvery": 0
+  }
+}

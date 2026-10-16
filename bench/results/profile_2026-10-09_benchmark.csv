@@ -1,0 +1,11 @@
+siatka,komorki,ziarna,kroki,vector_ms,macierz_ms,mac_vec,zgodne,tryb,sasiedztwo,brzeg,powtorzenia
+10x10x10,1000,10,9,0.0715,0.0981,1.37203,tak,classic/vn,von_neumann,periodic,5
+10x10x10,1000,10,4,0.1322,0.1418,1.07262,tak,classic/moore,moore,periodic,5
+25x25x25,15625,62,10,1.2526,1.56,1.24541,tak,classic/vn,von_neumann,periodic,5
+25x25x25,15625,62,6,2.1204,2.2234,1.04858,tak,classic/moore,moore,periodic,5
+50x50x50,125000,100,19,16.3398,21.3847,1.30875,tak,classic/vn,von_neumann,periodic,5
+100x100x100,1000000,100,43,266.023,355.348,1.33578,tak,classic/vn,von_neumann,periodic,5
+100x100,10000,10,39,3.3254,5.4546,1.64028,tak,classic/vn,von_neumann,periodic,5
+1000x1000,1000000,100,190,1509.95,2524.87,1.67215,tak,classic/vn,von_neumann,periodic,5
+200x1x100,20000,1,351,94.8932,112.237,1.18277,tak,lava/moore,moore,absorbing,5
+64x64x48,196608,3,284,1643.22,1863.61,1.13412,tak,lava/moore,moore,absorbing,5

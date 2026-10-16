@@ -1,0 +1,44 @@
+{
+  "_opis": "Mapa wysokości z pliku: dwa wulkany — główny w środku i niższy na północnym wschodzie (configs/heightmaps/podwojny_wulkan.csv).",
+  "_uwaga": "Krawędź krateru jest obniżona w stronę przełęczy: lawa spływa na przełęcz, a starszy stożek rozdziela strumień.",
+  "space": {
+    "nx": 100,
+    "ny": 100,
+    "nz": 45
+  },
+  "grid": "vector",
+  "boundary": "absorbing",
+  "neighborhood": "moore",
+  "rngSeed": 42,
+  "terrain": {
+    "type": "file",
+    "file": "configs/heightmaps/podwojny_wulkan.csv",
+    "peakHeight": 70,
+    "baseRadius": 90,
+    "craterRadius": 3,
+    "craterDepth": 4,
+    "noise": 0.05
+  },
+  "vents": {
+    "count": 1,
+    "placement": "crater",
+    "eruptionSteps": 80,
+    "eruptTemp": 1200
+  },
+  "ca": {
+    "mode": "lava",
+    "maxSteps": 5000,
+    "coolingAmbient": 3.0,
+    "coolingLateral": 16.0,
+    "coolingFall": 12.0,
+    "solidusTemp": 800,
+    "ponding": true
+  },
+  "mc": {
+    "enabled": false
+  },
+  "output": {
+    "format": "bin",
+    "snapshotsEvery": 0
+  }
+}

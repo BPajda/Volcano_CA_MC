@@ -1,0 +1,152 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": { "major": 3, "minor": 20, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "msvc-base",
+      "hidden": true,
+      "description": "Visual Studio 2022 (MSVC), x64. Generator wielokonfiguracyjny: Release i Debug w jednym katalogu build/.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": { "value": "x64", "strategy": "set" },
+      "binaryDir": "${sourceDir}/build"
+    },
+    {
+      "name": "msvc-release",
+      "inherits": "msvc-base",
+      "displayName": "MSVC Release (x64)",
+      "cacheVariables": { "CMAKE_CONFIGURATION_TYPES": "Release;Debug" }
+    },
+    {
+      "name": "msvc-debug",
+      "inherits": "msvc-base",
+      "displayName": "MSVC Debug (x64)",
+      "cacheVariables": { "CMAKE_CONFIGURATION_TYPES": "Release;Debug" }
+    },
+    {
+      "name": "msvc-o1",
+      "inherits": "msvc-base",
+      "displayName": "MSVC Release /O1 (profil, etap 3)",
+      "description": "Porównanie poziomów optymalizacji: Release z /O1 (minimalny rozmiar) zamiast /O2.",
+      "binaryDir": "${sourceDir}/build-msvc-o1",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "/DNDEBUG",
+        "VOLCANO_OPT_FLAG": "/O1"
+      }
+    },
+    {
+      "name": "msvc-profile",
+      "inherits": "msvc-base",
+      "displayName": "MSVC Release + PDB (profiler Visual Studio, etap 3)",
+      "description": "Ten sam kod co Release (/O2 /Ob2), dodatkowo symbole /Zi + /DEBUG, żeby profiler pokazał nazwy funkcji.",
+      "binaryDir": "${sourceDir}/build-msvc-profile",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "/Ob2 /DNDEBUG /Zi",
+        "CMAKE_EXE_LINKER_FLAGS_RELEASE": "/DEBUG /INCREMENTAL:NO /OPT:REF /OPT:ICF"
+      }
+    },
+    {
+      "name": "msvc-profile-noinline",
+      "inherits": "msvc-profile",
+      "displayName": "MSVC Release + PDB, kluczowe funkcje bez inline (profil, etap 3)",
+      "binaryDir": "${sourceDir}/build-msvc-profile-noinline",
+      "cacheVariables": { "VOLCANO_PROFILE_NOINLINE": "ON" }
+    },
+    {
+      "name": "gcc-base",
+      "hidden": true,
+      "description": "GCC/Clang na Linuksie/WSL (Makefile, jedna konfiguracja na katalog).",
+      "generator": "Unix Makefiles",
+      "cacheVariables": { "CMAKE_CXX_COMPILER": "g++" }
+    },
+    {
+      "name": "gcc-release",
+      "inherits": "gcc-base",
+      "displayName": "GCC Release",
+      "binaryDir": "${sourceDir}/build-gcc-release",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "gcc-debug",
+      "inherits": "gcc-base",
+      "displayName": "GCC Debug",
+      "binaryDir": "${sourceDir}/build-gcc-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "gcc-o0",
+      "inherits": "gcc-base",
+      "displayName": "GCC Release -O0 (profil, etap 3)",
+      "description": "Porównanie poziomów optymalizacji: bez optymalizacji, ale z NDEBUG (bez asercji, inaczej niż Debug).",
+      "binaryDir": "${sourceDir}/build-gcc-o0",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "-DNDEBUG",
+        "VOLCANO_OPT_FLAG": "-O0"
+      }
+    },
+    {
+      "name": "gcc-o2",
+      "inherits": "gcc-base",
+      "displayName": "GCC Release -O2 -g (profil, etap 3; też callgrind)",
+      "description": "Porównanie -O2 vs -O3. Symbole -g nie zmieniają kodu GCC, a pozwalają callgrind przypisać koszt do linii źródła.",
+      "binaryDir": "${sourceDir}/build-gcc-o2",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "-DNDEBUG -g",
+        "VOLCANO_OPT_FLAG": "-O2"
+      }
+    },
+    {
+      "name": "gcc-o2-noinline",
+      "inherits": "gcc-o2",
+      "displayName": "GCC -O2 -g, kluczowe funkcje bez inline (callgrind, etap 3)",
+      "description": "Jak gcc-o2, ale z VOLCANO_PROFILE_NOINLINE i bez -pg (program z -pg ginie pod valgrindem od SIGPROF).",
+      "binaryDir": "${sourceDir}/build-gcc-o2-noinline",
+      "cacheVariables": { "VOLCANO_PROFILE_NOINLINE": "ON" }
+    },
+    {
+      "name": "gcc-profile",
+      "inherits": "gcc-base",
+      "displayName": "GCC -O2 -pg (gprof, etap 3)",
+      "binaryDir": "${sourceDir}/build-gcc-profile",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "-DNDEBUG -g -pg",
+        "CMAKE_EXE_LINKER_FLAGS": "-pg",
+        "VOLCANO_OPT_FLAG": "-O2"
+      }
+    },
+    {
+      "name": "gcc-profile-noinline",
+      "inherits": "gcc-profile",
+      "displayName": "GCC -O2 -pg, kluczowe funkcje bez inline (gprof, etap 3)",
+      "binaryDir": "${sourceDir}/build-gcc-profile-noinline",
+      "cacheVariables": { "VOLCANO_PROFILE_NOINLINE": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "msvc-release", "configurePreset": "msvc-release", "configuration": "Release" },
+    { "name": "msvc-debug",   "configurePreset": "msvc-debug",   "configuration": "Debug" },
+    { "name": "msvc-o1",      "configurePreset": "msvc-o1",      "configuration": "Release" },
+    { "name": "msvc-profile", "configurePreset": "msvc-profile", "configuration": "Release" },
+    { "name": "msvc-profile-noinline", "configurePreset": "msvc-profile-noinline", "configuration": "Release" },
+    { "name": "gcc-release",  "configurePreset": "gcc-release" },
+    { "name": "gcc-debug",    "configurePreset": "gcc-debug" },
+    { "name": "gcc-o0",       "configurePreset": "gcc-o0" },
+    { "name": "gcc-o2",       "configurePreset": "gcc-o2" },
+    { "name": "gcc-o2-noinline", "configurePreset": "gcc-o2-noinline" },
+    { "name": "gcc-profile",  "configurePreset": "gcc-profile" },
+    { "name": "gcc-profile-noinline", "configurePreset": "gcc-profile-noinline" }
+  ],
+  "testPresets": [
+    { "name": "msvc-release", "configurePreset": "msvc-release", "configuration": "Release", "output": { "outputOnFailure": true } },
+    { "name": "msvc-debug",   "configurePreset": "msvc-debug",   "configuration": "Debug",   "output": { "outputOnFailure": true } },
+    { "name": "msvc-o1",      "configurePreset": "msvc-o1",      "configuration": "Release", "output": { "outputOnFailure": true } },
+    { "name": "gcc-release",  "configurePreset": "gcc-release",  "output": { "outputOnFailure": true } },
+    { "name": "gcc-debug",    "configurePreset": "gcc-debug",    "output": { "outputOnFailure": true } },
+    { "name": "gcc-o0",       "configurePreset": "gcc-o0",       "output": { "outputOnFailure": true } },
+    { "name": "gcc-o2",       "configurePreset": "gcc-o2",       "output": { "outputOnFailure": true } }
+  ]
+}

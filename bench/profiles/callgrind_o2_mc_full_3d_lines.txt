@@ -1,0 +1,812 @@
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/mc_full_3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 969801178
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/mc_full_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/mc_full_3d/out (PID 656, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+5,634,834,413 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+3,625,000,000 (64.33%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::sweep()
+  694,244,887 (12.32%)  engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*) [<repo>/build-gcc-o2/bin/engine]
+  398,750,000 ( 7.08%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::totalEnergy() const
+  287,501,600 ( 5.10%)  engine/src/core/Rng.hpp:volcano::PottsMC::sweep()
+  225,871,592 ( 4.01%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::sweep() [<repo>/build-gcc-o2/bin/engine]
+  178,750,077 ( 3.17%)  engine/src/core/Types.hpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+   87,500,200 ( 1.55%)  /usr/include/c++/11/bits/stl_vector.h:volcano::PottsMC::sweep()
+   32,043,513 ( 0.57%)  /usr/include/c++/11/bits/stl_vector.h:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+   12,500,200 ( 0.22%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::PottsMC::sweep()
+   12,500,000 ( 0.22%)  engine/src/core/Neighborhood.hpp:volcano::PottsMC::sweep()
+   11,641,291 ( 0.21%)  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S:__memset_avx2_unaligned_erms [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   11,000,308 ( 0.20%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::totalEnergy() const [<repo>/build-gcc-o2/bin/engine]
+   10,045,392 ( 0.18%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::syncFrame(unsigned long) [<repo>/build-gcc-o2/bin/engine]
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Neighborhood.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 21 ----------------------------------------
+         .           
+         5 ( 0.00%)  class Neighborhood {
+       411 ( 0.00%)  => /usr/include/c++/11/bits/stl_vector.h:std::vector<std::vector<volcano::Offset, std::allocator<volcano::Offset> >, std::allocator<std::vector<volcano::Offset, std::allocator<volcano::Offset> > > >::vector(std::vector<std::vector<volcano::Offset, std::allocator<volcano::Offset> >, std::allocator<std::vector<volcano::Offset, std::allocator<volcano::Offset> > > > const&) (1x)
+         .           public:
+-- line 23 ----------------------------------------
+-- line 42 ----------------------------------------
+         .               int variantFor(std::uint64_t seed, std::uint64_t step, std::uint64_t cellIndex) const {
+16,625,000 ( 0.30%)          if (variants_.size() == 1) {
+         .                       return 0;
+-- line 44 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_vector.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 96 ----------------------------------------
+         .           
+        12 ( 0.00%)  	_Vector_impl_data() _GLIBCXX_NOEXCEPT
+     1,283 ( 0.00%)  	: _M_start(), _M_finish(), _M_end_of_storage()
+         .           	{ }
+-- line 99 ----------------------------------------
+-- line 102 ----------------------------------------
+         .           	_Vector_impl_data(_Vector_impl_data&& __x) noexcept
+        52 ( 0.00%)  	: _M_start(__x._M_start), _M_finish(__x._M_finish),
+        29 ( 0.00%)  	  _M_end_of_storage(__x._M_end_of_storage)
+        42 ( 0.00%)  	{ __x._M_start = __x._M_finish = __x._M_end_of_storage = pointer(); }
+         .           #endif
+-- line 106 ----------------------------------------
+-- line 110 ----------------------------------------
+         .           	{
+        58 ( 0.00%)  	  _M_start = __x._M_start;
+        38 ( 0.00%)  	  _M_finish = __x._M_finish;
+        45 ( 0.00%)  	  _M_end_of_storage = __x._M_end_of_storage;
+         .           	}
+-- line 114 ----------------------------------------
+-- line 332 ----------------------------------------
+         .           
+         1 ( 0.00%)        ~_Vector_base() _GLIBCXX_NOEXCEPT
+         .                 {
+-- line 334 ----------------------------------------
+-- line 335 ----------------------------------------
+         .           	_M_deallocate(_M_impl._M_start,
+     1,130 ( 0.00%)  		      _M_impl._M_end_of_storage - _M_impl._M_start);
+         1 ( 0.00%)        }
+         .           
+-- line 338 ----------------------------------------
+-- line 342 ----------------------------------------
+         .                 pointer
+        17 ( 0.00%)        _M_allocate(size_t __n)
+         .                 {
+-- line 344 ----------------------------------------
+-- line 345 ----------------------------------------
+         .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+     1,358 ( 0.00%)  	return __n != 0 ? _Tr::allocate(_M_impl, __n) : pointer();
+         .                 }
+-- line 347 ----------------------------------------
+-- line 349 ----------------------------------------
+         .                 void
+         2 ( 0.00%)        _M_deallocate(pointer __p, size_t __n)
+         .                 {
+-- line 351 ----------------------------------------
+-- line 352 ----------------------------------------
+         .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+     1,567 ( 0.00%)  	if (__p)
+         .           	  _Tr::deallocate(_M_impl, __p, __n);
+-- line 354 ----------------------------------------
+-- line 360 ----------------------------------------
+         .                 {
+        90 ( 0.00%)  	this->_M_impl._M_start = this->_M_allocate(__n);
+        90 ( 0.00%)  	this->_M_impl._M_finish = this->_M_impl._M_start;
+       194 ( 0.00%)  	this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+         .                 }
+-- line 364 ----------------------------------------
+-- line 552 ----------------------------------------
+         .                  */
+        10 ( 0.00%)        vector(const vector& __x)
+         .                 : _Base(__x.size(),
+-- line 554 ----------------------------------------
+-- line 556 ----------------------------------------
+         .                 {
+        88 ( 0.00%)  	this->_M_impl._M_finish =
+         .           	  std::__uninitialized_copy_a(__x.begin(), __x.end(),
+-- line 558 ----------------------------------------
+-- line 560 ----------------------------------------
+         .           				      _M_get_Tp_allocator());
+         8 ( 0.00%)        }
+         .           
+-- line 562 ----------------------------------------
+-- line 624 ----------------------------------------
+         .                  */
+        24 ( 0.00%)        vector(initializer_list<value_type> __l,
+         .           	     const allocator_type& __a = allocator_type())
+-- line 626 ----------------------------------------
+-- line 630 ----------------------------------------
+         .           			    random_access_iterator_tag());
+        22 ( 0.00%)        }
+         .           #endif
+-- line 632 ----------------------------------------
+-- line 677 ----------------------------------------
+         .                  */
+        10 ( 0.00%)        ~vector() _GLIBCXX_NOEXCEPT
+         .                 {
+       479 ( 0.00%)  	std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
+         .           		      _M_get_Tp_allocator());
+-- line 681 ----------------------------------------
+-- line 682 ----------------------------------------
+         .           	_GLIBCXX_ASAN_ANNOTATE_BEFORE_DEALLOC;
+        12 ( 0.00%)        }
+    12,281 ( 0.00%)  => ???:0x000000000010dde0 (1x)
+         5 ( 0.00%)  => /usr/include/c++/11/bits/stl_vector.h:std::_Vector_base<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*, std::allocator<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*> >::~_Vector_base() (1x)
+         .           
+-- line 684 ----------------------------------------
+-- line 749 ----------------------------------------
+         .                 assign(size_type __n, const value_type& __val)
+        66 ( 0.00%)        { _M_fill_assign(__n, __val); }
+   562,855 ( 0.01%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<int, std::allocator<int> >::_M_fill_assign(unsigned long, int const&) (1x)
+   140,972 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<unsigned char, std::allocator<unsigned char> >::_M_fill_assign(unsigned long, unsigned char const&) (1x)
+         .           
+-- line 751 ----------------------------------------
+-- line 917 ----------------------------------------
+         .                 size_type
+       121 ( 0.00%)        size() const _GLIBCXX_NOEXCEPT
+43,754,071 ( 0.78%)        { return size_type(this->_M_impl._M_finish - this->_M_impl._M_start); }
+         .           
+-- line 920 ----------------------------------------
+-- line 938 ----------------------------------------
+         .                 {
+        46 ( 0.00%)  	if (__new_size > size())
+        79 ( 0.00%)  	  _M_default_append(__new_size - size());
+ 6,004,316 ( 0.11%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<int, std::allocator<int> >::_M_default_append(unsigned long) (12x)
+         .           	else if (__new_size < size())
+-- line 941 ----------------------------------------
+-- line 999 ----------------------------------------
+         .                 { return size_type(this->_M_impl._M_end_of_storage
+       921 ( 0.00%)  			 - this->_M_impl._M_start); }
+         .           
+-- line 1001 ----------------------------------------
+-- line 1045 ----------------------------------------
+         .           	__glibcxx_requires_subscript(__n);
+51,720,870 ( 0.92%)  	return *(this->_M_impl._M_start + __n);
+         .                 }
+-- line 1047 ----------------------------------------
+-- line 1063 ----------------------------------------
+         .           	__glibcxx_requires_subscript(__n);
+26,485,080 ( 0.47%)  	return *(this->_M_impl._M_start + __n);
+         .                 }
+-- line 1065 ----------------------------------------
+-- line 1188 ----------------------------------------
+         .                 {
+   750,676 ( 0.01%)  	if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
+         .           	  {
+-- line 1190 ----------------------------------------
+-- line 1193 ----------------------------------------
+         .           				     __x);
+   500,410 ( 0.01%)  	    ++this->_M_impl._M_finish;
+         .           	    _GLIBCXX_ASAN_ANNOTATE_GREW(1);
+-- line 1195 ----------------------------------------
+-- line 1197 ----------------------------------------
+         .           	else
+       771 ( 0.00%)  	  _M_realloc_insert(end(), __x);
+ 2,084,305 ( 0.04%)  => /usr/include/c++/11/bits/vector.tcc:void std::vector<unsigned long, std::allocator<unsigned long> >::_M_realloc_insert<unsigned long const&>(__gnu_cxx::__normal_iterator<unsigned long*, std::vector<unsigned long, std::allocator<unsigned long> > >, unsigned long const&) (36x)
+         .                 }
+-- line 1199 ----------------------------------------
+-- line 1203 ----------------------------------------
+         .                 push_back(value_type&& __x)
+        55 ( 0.00%)        { emplace_back(std::move(__x)); }
+     2,832 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:volcano::MemoryModel::Block& std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> >::emplace_back<volcano::MemoryModel::Block>(volcano::MemoryModel::Block&&) [clone .isra.0] (20x)
+         .           
+-- line 1205 ----------------------------------------
+-- line 1227 ----------------------------------------
+         .           	__glibcxx_requires_nonempty();
+     1,622 ( 0.00%)  	--this->_M_impl._M_finish;
+         .           	_Alloc_traits::destroy(this->_M_impl, this->_M_impl._M_finish);
+-- line 1229 ----------------------------------------
+-- line 1430 ----------------------------------------
+         .                 erase(const_iterator __position)
+        20 ( 0.00%)        { return _M_erase(begin() + (__position - cbegin())); }
+       592 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> >::_M_erase(__gnu_cxx::__normal_iterator<volcano::MemoryModel::Block*, std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> > >) (13x)
+         .           #else
+-- line 1432 ----------------------------------------
+-- line 1498 ----------------------------------------
+         .                 clear() _GLIBCXX_NOEXCEPT
+       335 ( 0.00%)        { _M_erase_at_end(this->_M_impl._M_start); }
+         .           
+-- line 1500 ----------------------------------------
+-- line 1581 ----------------------------------------
+         .           	  this->_M_impl._M_start
+        20 ( 0.00%)  	    = this->_M_allocate(_S_check_init_len(__n, _M_get_Tp_allocator()));
+        40 ( 0.00%)  	  this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+        20 ( 0.00%)  	  this->_M_impl._M_finish =
+         .           	    std::__uninitialized_copy_a(__first, __last,
+-- line 1585 ----------------------------------------
+-- line 1757 ----------------------------------------
+         .                 {
+     4,197 ( 0.00%)  	if (max_size() - size() < __n)
+         .           	  __throw_length_error(__N(__s));
+-- line 1759 ----------------------------------------
+-- line 1760 ----------------------------------------
+         .           
+       258 ( 0.00%)  	const size_type __len = size() + (std::max)(size(), __n);
+     1,039 ( 0.00%)  	return (__len < size() || __len > max_size()) ? max_size() : __len;
+         .                 }
+-- line 1763 ----------------------------------------
+-- line 1768 ----------------------------------------
+         .                 {
+        82 ( 0.00%)  	if (__n > _S_max_size(_Tp_alloc_type(__a)))
+         .           	  __throw_length_error(
+-- line 1770 ----------------------------------------
+-- line 1793 ----------------------------------------
+         .                 {
+       613 ( 0.00%)  	if (size_type __n = this->_M_impl._M_finish - __pos)
+         .           	  {
+-- line 1795 ----------------------------------------
+-- line 1797 ----------------------------------------
+         .           			  _M_get_Tp_allocator());
+       410 ( 0.00%)  	    this->_M_impl._M_finish = __pos;
+         .           	    _GLIBCXX_ASAN_ANNOTATE_SHRINK(__n);
+-- line 1799 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/mc/PottsMC.cpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 12 ----------------------------------------
+         .           
+        11 ( 0.00%)  PottsMC::PottsMC(const Dims& dims, const McParams& params, const Neighborhood& nb, const Boundary& bc)
+         6 ( 0.00%)      : dims_(dims),
+         4 ( 0.00%)        p_(params),
+         .                 nb_(nb),
+        17 ( 0.00%)        periodic_{bc.periodicX() && dims.nx > 1, bc.periodicY() && dims.ny > 1, bc.periodicZ() && dims.nz > 1},
+         2 ( 0.00%)        sx_(static_cast<std::size_t>(dims.nx) + 2),
+        11 ( 0.00%)        sy_(static_cast<std::size_t>(dims.ny) + 2) {
+         2 ( 0.00%)      if (p_.Q < 2) {
+         .                   throw std::invalid_argument("MC wymaga co najmniej 2 orientacji (Q >= 2)");
+-- line 21 ----------------------------------------
+-- line 22 ----------------------------------------
+         .               }
+         4 ( 0.00%)      const std::size_t n = sx_ * sy_ * (static_cast<std::size_t>(dims.nz) + 2);
+         1 ( 0.00%)      spin_.assign(n, 0);
+         1 ( 0.00%)      mask_.assign(n, 0);
+         .               // Przesunięcia liniowe: sąsiad (x+dx, y+dy, z+dz) ma indeks i + dx + sx·(dy + sy·dz).
+         1 ( 0.00%)      const std::ptrdiff_t sx = static_cast<std::ptrdiff_t>(sx_);
+         1 ( 0.00%)      const std::ptrdiff_t sy = static_cast<std::ptrdiff_t>(sy_);
+         7 ( 0.00%)      for (int v = 0; v < nb_.variantCount(); ++v) {
+         .                   std::vector<std::ptrdiff_t> lin;
+        83 ( 0.00%)          for (const Offset& o : nb_.variant(v)) {
+       208 ( 0.00%)              lin.push_back(o.dx + sx * (o.dy + sy * o.dz));
+         .                   }
+-- line 33 ----------------------------------------
+-- line 35 ----------------------------------------
+         .               }
+        11 ( 0.00%)  }
+         .           
+         2 ( 0.00%)  void PottsMC::setDomainAll() {
+       205 ( 0.00%)      for (int z = 0; z < dims_.nz; ++z) {
+    10,250 ( 0.00%)          for (int y = 0; y < dims_.ny; ++y) {
+   260,000 ( 0.00%)              for (int x = 0; x < dims_.nx; ++x) {
+   500,000 ( 0.01%)                  mask_[frameIndex(x, y, z)] = kInDomain;
+         .                       }
+-- line 43 ----------------------------------------
+-- line 45 ----------------------------------------
+         .               }
+         1 ( 0.00%)  }
+         .           
+-- line 47 ----------------------------------------
+-- line 80 ----------------------------------------
+         .           
+        12 ( 0.00%)  void PottsMC::initialize() {
+         2 ( 0.00%)      const std::uint64_t q = static_cast<std::uint64_t>(p_.Q);
+         2 ( 0.00%)      domainFrame_.clear();
+         2 ( 0.00%)      domainGlobal_.clear();
+         1 ( 0.00%)      std::uint64_t g = 0;  // globalIndex — pętle w kolejności pamięci
+       155 ( 0.00%)      for (int z = 0; z < dims_.nz; ++z) {
+     7,800 ( 0.00%)          for (int y = 0; y < dims_.ny; ++y) {
+   520,072 ( 0.01%)              for (int x = 0; x < dims_.nx; ++x, ++g) {
+   125,000 ( 0.00%)                  const std::size_t i = frameIndex(x, y, z);
+   375,000 ( 0.01%)                  if ((mask_[i] & kInDomain) == 0) {
+         .                               spin_[i] = 0;
+-- line 91 ----------------------------------------
+-- line 93 ----------------------------------------
+         .                           }
+   505,000 ( 0.01%)                  spin_[i] = 1 + static_cast<std::int32_t>(hashRand(p_.seed, 0, g, kSaltMcInit) % q);
+   980,000 ( 0.02%)                  const bool edge = (periodic_[0] && (x == 0 || x == dims_.nx - 1)) ||
+ 1,310,800 ( 0.02%)                                    (periodic_[1] && (y == 0 || y == dims_.ny - 1)) ||
+   571,392 ( 0.01%)                                    (periodic_[2] && (z == 0 || z == dims_.nz - 1));
+   600,792 ( 0.01%)                  mask_[i] = static_cast<std::uint8_t>(kInDomain | (edge ? kPeriodicEdge : 0));
+         .                           domainFrame_.push_back(i);
+-- line 99 ----------------------------------------
+-- line 103 ----------------------------------------
+         .               }
+         2 ( 0.00%)      fillFrame();
+   277,509 ( 0.00%)  => engine/src/mc/PottsMC.cpp:volcano::PottsMC::fillFrame() (1x)
+         1 ( 0.00%)      sweeps_ = 0;
+         1 ( 0.00%)      attempts_ = 0;
+         1 ( 0.00%)      accepted_ = 0;
+         1 ( 0.00%)      uphill_ = 0;
+        11 ( 0.00%)  }
+         .           
+         8 ( 0.00%)  void PottsMC::fillFrame() {
+         1 ( 0.00%)      const int nx = dims_.nx;
+         1 ( 0.00%)      const int ny = dims_.ny;
+         1 ( 0.00%)      const int nz = dims_.nz;
+         .               // Kopia komórki src do ramki (tylko bit domeny — bit „przy ścianie” dotyczy wnętrza).
+-- line 115 ----------------------------------------
+-- line 116 ----------------------------------------
+         .               auto copy = [this](std::size_t dst, std::size_t src) {
+    31,216 ( 0.00%)          spin_[dst] = spin_[src];
+    46,824 ( 0.00%)          mask_[dst] = static_cast<std::uint8_t>(mask_[src] & kInDomain);
+         .               };
+-- line 119 ----------------------------------------
+-- line 125 ----------------------------------------
+         .               // ramki są wtedy poprawnie zawinięte) — jak Boundary::apply.
+       158 ( 0.00%)      for (int z = 0; z < nz; ++z) {
+     7,650 ( 0.00%)          for (int y = 0; y < ny; ++y) {
+     5,000 ( 0.00%)              if (periodic_[0]) {
+         .                           copy(frameIndex(-1, y, z), frameIndex(nx - 1, y, z));
+-- line 129 ----------------------------------------
+-- line 136 ----------------------------------------
+         .               }
+       150 ( 0.00%)      for (int z = 0; z < nz; ++z) {
+     7,950 ( 0.00%)          for (int x = -1; x <= nx; ++x) {
+     5,200 ( 0.00%)              if (periodic_[1]) {
+         .                           copy(frameIndex(x, -1, z), frameIndex(x, ny - 1, z));
+-- line 140 ----------------------------------------
+-- line 147 ----------------------------------------
+         .               }
+       162 ( 0.00%)      for (int y = -1; y <= ny; ++y) {
+     8,268 ( 0.00%)          for (int x = -1; x <= nx; ++x) {
+     5,408 ( 0.00%)              if (periodic_[2]) {
+         .                           copy(frameIndex(x, y, -1), frameIndex(x, y, nz - 1));
+-- line 151 ----------------------------------------
+-- line 158 ----------------------------------------
+         .               }
+         7 ( 0.00%)  }
+         .           
+   959,560 ( 0.02%)  void PottsMC::syncFrame(std::size_t i) {
+         .               // Współrzędne komórki z indeksu z ramką (rzadka operacja — tylko zmiany przy ścianie).
+   342,700 ( 0.01%)      const std::size_t rest = i / sx_;
+   479,780 ( 0.01%)      const int c[3] = {static_cast<int>(i % sx_) - 1, static_cast<int>(rest % sy_) - 1,
+   137,080 ( 0.00%)                        static_cast<int>(rest / sy_) - 1};
+   411,240 ( 0.01%)      const int n[3] = {dims_.nx, dims_.ny, dims_.nz};
+         .               // Położenia kopii w każdej osi: sama komórka, a przy ścianie periodycznej także ramka
+-- line 167 ----------------------------------------
+-- line 170 ----------------------------------------
+         .               int count[3];
+ 1,028,100 ( 0.02%)      for (int a = 0; a < 3; ++a) {
+   685,400 ( 0.01%)          alt[a][0] = c[a];
+   205,620 ( 0.00%)          count[a] = 1;
+   411,240 ( 0.01%)          if (periodic_[a]) {
+   411,240 ( 0.01%)              if (c[a] == 0) {
+   276,256 ( 0.00%)                  alt[a][count[a]++] = n[a];
+         .                       }
+   616,860 ( 0.01%)              if (c[a] == n[a] - 1) {
+   252,504 ( 0.00%)                  alt[a][count[a]++] = -1;
+         .                       }
+-- line 180 ----------------------------------------
+-- line 182 ----------------------------------------
+         .               }
+   713,468 ( 0.01%)      for (int iz = 0; iz < count[2]; ++iz) {
+   698,903 ( 0.01%)          for (int iy = 0; iy < count[1]; ++iy) {
+ 1,084,271 ( 0.02%)              for (int ix = 0; ix < count[0]; ++ix) {
+   428,586 ( 0.01%)                  if (ix != 0 || iy != 0 || iz != 0) {
+   148,644 ( 0.00%)                      spin_[frameIndex(alt[0][ix], alt[1][iy], alt[2][iz])] = spin_[i];
+         .                           }
+-- line 188 ----------------------------------------
+-- line 191 ----------------------------------------
+         .               }
+   753,940 ( 0.01%)  }
+         .           
+       450 ( 0.00%)  std::uint64_t PottsMC::sweep() {
+        50 ( 0.00%)      const std::uint64_t t = static_cast<std::uint64_t>(sweeps_);
+         .               const std::uint64_t n = domainFrame_.size();
+       200 ( 0.00%)      const std::uint64_t otherStates = static_cast<std::uint64_t>(p_.Q - 1);
+         .               const bool useMobility = !mobility_.empty();
+        50 ( 0.00%)      std::uint64_t acceptedNow = 0;
+         .           
+-- line 200 ----------------------------------------
+-- line 201 ----------------------------------------
+         .               // 1 MCS = tyle prób, ile komórek w domenie.
+18,750,150 ( 0.33%)      for (std::uint64_t a = 0; a < n; ++a) {
+         .                   // Krok 1: losowa selekcja elementu — losowanie ZE ZWRACANIEM z listy komórek domeny.
+-- line 203 ----------------------------------------
+-- line 204 ----------------------------------------
+         .                   // OPTYMALIZACJA: losowanie bez powtórzeń (permutacja listy) i próby tylko dla komórek na granicy ziaren.
+12,500,000 ( 0.22%)          const std::size_t k = static_cast<std::size_t>(hashRand(p_.seed, t, a, kSaltMcPick) % n);
+12,500,000 ( 0.22%)          const std::size_t i = domainFrame_[k];
+         .           
+-- line 207 ----------------------------------------
+-- line 209 ----------------------------------------
+         .                   // szybko zastygła lawa prawie nie przebudowuje kryształów.
+25,000,000 ( 0.44%)          if (useMobility && hashUniform(p_.seed, t, a, kSaltMcMobility) >= static_cast<double>(mobility_[i])) {
+         .                       continue;
+-- line 211 ----------------------------------------
+-- line 212 ----------------------------------------
+         .                   }
+ 6,250,000 ( 0.11%)          ++attempts_;
+12,500,000 ( 0.22%)          const std::vector<std::ptrdiff_t>& offsets = offsetsFor(t, domainGlobal_[k]);
+ 6,250,000 ( 0.11%)          const std::int32_t current = spin_[i];
+         .           
+-- line 216 ----------------------------------------
+-- line 218 ----------------------------------------
+         .                   // OPTYMALIZACJA: E_przed i E_po w jednym przejściu po sąsiadach.
+31,250,000 ( 0.55%)          const double energyBefore = p_.J * unlikeNeighbors(i, current, offsets);
+         .           
+-- line 220 ----------------------------------------
+-- line 224 ----------------------------------------
+         .                   std::int32_t proposed =
+18,750,000 ( 0.33%)              1 + static_cast<std::int32_t>(hashRand(p_.seed, t, a, kSaltMcOrient) % otherStates);
+         .                   if (proposed >= current) {
+18,750,000 ( 0.33%)              ++proposed;
+         .                   }
+-- line 228 ----------------------------------------
+-- line 230 ----------------------------------------
+         .                   // Krok 4: energia po zmianie i zmiana energii ΔE.
+18,750,000 ( 0.33%)          const double energyAfter = p_.J * unlikeNeighbors(i, proposed, offsets);
+ 6,250,000 ( 0.11%)          const double deltaE = energyAfter - energyBefore;
+         .           
+-- line 233 ----------------------------------------
+-- line 237 ----------------------------------------
+         .                   bool accept = deltaE <= 0.0;
+35,116,672 ( 0.62%)          if (!accept && p_.kT > 0.0) {
+         .                       accept = hashUniform(p_.seed, t, a, kSaltMcAccept) < std::exp(-deltaE / p_.kT);
+-- line 239 ----------------------------------------
+-- line 242 ----------------------------------------
+         .                   if (accept) {
+   595,832 ( 0.01%)              spin_[i] = proposed;
+   595,832 ( 0.01%)              ++acceptedNow;
+ 1,787,496 ( 0.03%)              if ((mask_[i] & kPeriodicEdge) != 0) {
+   274,160 ( 0.00%)                  syncFrame(i);  // kopie komórki w ramce periodycznej muszą zobaczyć zmianę
+11,154,440 ( 0.20%)  => engine/src/mc/PottsMC.cpp:volcano::PottsMC::syncFrame(unsigned long) (68,540x)
+         .                       }
+-- line 247 ----------------------------------------
+-- line 249 ----------------------------------------
+         .               }
+       100 ( 0.00%)      accepted_ += acceptedNow;
+       150 ( 0.00%)      ++sweeps_;
+         .               return acceptedNow;
+       450 ( 0.00%)  }
+         .           
+       165 ( 0.00%)  McStats PottsMC::measure(GrainLabels* labels, McMeasureTimes* times) const {
+        44 ( 0.00%)      McStats s;
+        22 ( 0.00%)      s.mcs = sweeps_;
+         .               LapTimer phase(times != nullptr);
+        33 ( 0.00%)      McMeasureTimes unused;
+        11 ( 0.00%)      McMeasureTimes& acc = (times != nullptr) ? *times : unused;
+        44 ( 0.00%)      const CrystalMap map = crystals();
+14,226,731 ( 0.25%)  => engine/src/mc/PottsMC.cpp:volcano::PottsMC::crystals() const (11x)
+         .               phase.lap(acc.crystals);
+        44 ( 0.00%)      GrainLabels g = Grains::label(map, mooreConnectivity(), periodic_);
+916,093,899 (16.26%)  => <repo>/engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*) (11x)
+         .               phase.lap(acc.grains);
+        22 ( 0.00%)      s.grains = g.grains;
+       154 ( 0.00%)      s.meanGrainSize = g.grains > 0 ? double(g.cells) / double(g.grains) : 0.0;
+        33 ( 0.00%)      s.energy = totalEnergy();
+418,000,847 ( 7.42%)  => engine/src/mc/PottsMC.cpp:volcano::PottsMC::totalEnergy() const (11x)
+         .               phase.lap(acc.energy);
+        22 ( 0.00%)      if (labels != nullptr) {
+         .                   *labels = std::move(g);
+-- line 270 ----------------------------------------
+-- line 272 ----------------------------------------
+         .               return s;
+       132 ( 0.00%)  }
+         .           
+         2 ( 0.00%)  std::size_t PottsMC::bytes() const {
+         2 ( 0.00%)      std::size_t b = spin_.size() * sizeof(std::int32_t) + mask_.size() * sizeof(std::uint8_t) +
+         4 ( 0.00%)                      mobility_.size() * sizeof(float) + domainFrame_.capacity() * sizeof(std::size_t) +
+         2 ( 0.00%)                      domainGlobal_.capacity() * sizeof(std::uint64_t);
+        12 ( 0.00%)      for (const std::vector<std::ptrdiff_t>& l : linear_) {
+         2 ( 0.00%)          b += l.size() * sizeof(std::ptrdiff_t);
+         .               }
+-- line 281 ----------------------------------------
+-- line 282 ----------------------------------------
+         .               return b;
+         4 ( 0.00%)  }
+         .           
+-- line 284 ----------------------------------------
+-- line 308 ----------------------------------------
+         .           
+        88 ( 0.00%)  double PottsMC::totalEnergy() const {
+        11 ( 0.00%)      const std::uint64_t t = static_cast<std::uint64_t>(sweeps_);
+        11 ( 0.00%)      std::uint64_t unlike = 0;
+ 4,125,044 ( 0.07%)      for (std::size_t k = 0; k < domainFrame_.size(); ++k) {
+ 2,750,000 ( 0.05%)          const std::size_t i = domainFrame_[k];
+ 4,125,000 ( 0.07%)          unlike += static_cast<std::uint64_t>(unlikeNeighbors(i, spin_[i], offsetsFor(t, domainGlobal_[k])));
+         .               }
+        77 ( 0.00%)      return 0.5 * p_.J * static_cast<double>(unlike);
+        77 ( 0.00%)  }
+         .           
+        72 ( 0.00%)  CrystalMap PottsMC::crystals() const {
+         .               CrystalMap m;
+        48 ( 0.00%)      m.dims = dims_;
+        12 ( 0.00%)      m.crystal.resize(dims_.cells());
+         .               std::size_t g = 0;
+     2,472 ( 0.00%)      for (int z = 0; z < dims_.nz; ++z) {
+   123,000 ( 0.00%)          for (int y = 0; y < dims_.ny; ++y) {
+ 4,650,000 ( 0.08%)              for (int x = 0; x < dims_.nx; ++x, ++g) {
+ 3,000,000 ( 0.05%)                  m.crystal[g] = spin_[frameIndex(x, y, z)];  // poza domeną 0
+         .                       }
+-- line 328 ----------------------------------------
+-- line 331 ----------------------------------------
+         .               return m;
+        60 ( 0.00%)  }
+         .           
+-- line 333 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/mc/PottsMC.hpp
+--------------------------------------------------------------------------------
+Ir                     
+
+-- line 77 ----------------------------------------
+            .               int sweepsDone() const { return sweeps_; }
+           11 ( 0.00%)      std::uint64_t attempts() const { return attempts_; }        // próby niepominięte przez mobilność
+           21 ( 0.00%)      std::uint64_t accepted() const { return accepted_; }        // zaakceptowane zmiany orientacji
+            1 ( 0.00%)      std::uint64_t acceptedUphill() const { return uphill_; }    // w tym z ΔE > 0 (możliwe tylko przy kT > 0)
+            .               bool mobilityEnabled() const { return !mobility_.empty(); }
+-- line 81 ----------------------------------------
+-- line 82 ----------------------------------------
+            .               // Spójność ziaren: Moore, gdy sąsiedztwo MC nie jest von Neumannem (McRules.hpp).
+           44 ( 0.00%)      bool mooreConnectivity() const { return nb_.kind() != NeighborhoodKind::VonNeumann; }
+            .               // Periodyczność osi x, y, z w MC (po uwzględnieniu osi o rozmiarze 1).
+-- line 84 ----------------------------------------
+-- line 109 ----------------------------------------
+            .               std::size_t frameIndex(int x, int y, int z) const {
+    1,722,970 ( 0.03%)          return static_cast<std::size_t>(x + 1) +
+    2,121,775 ( 0.04%)                 sx_ * (static_cast<std::size_t>(y + 1) + sy_ * static_cast<std::size_t>(z + 1));
+            .               }
+-- line 112 ----------------------------------------
+-- line 122 ----------------------------------------
+            .                                                    const std::vector<std::ptrdiff_t>& offsets) const {
+   27,750,000 ( 0.49%)          int n = 0;
+1,110,000,000 (19.70%)          for (const std::ptrdiff_t o : offsets) {
+  721,500,000 (12.80%)              const std::size_t j = static_cast<std::size_t>(static_cast<std::ptrdiff_t>(i) + o);
+2,164,500,000 (38.41%)              n += ((mask_[j] & kInDomain) != 0 && spin_[j] != s) ? 1 : 0;
+            .                   }
+-- line 127 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Rng.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 35 ----------------------------------------
+         .           inline std::uint64_t splitmix64(std::uint64_t x) {
+19,250,184 ( 0.34%)      x += 0x9E3779B97F4A7C15ULL;
+89,500,649 ( 1.59%)      x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+89,513,049 ( 1.59%)      x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+57,625,427 ( 1.02%)      return x ^ (x >> 31);
+         .           }
+-- line 40 ----------------------------------------
+-- line 47 ----------------------------------------
+         .                                                          std::uint64_t salt) {
+   250,122 ( 0.00%)      std::uint64_t h = splitmix64(seed ^ 0xA0761D6478BD642FULL);
+       122 ( 0.00%)      h = splitmix64(h ^ step);
+12,750,000 ( 0.23%)      h = splitmix64(h ^ globalIndex);
+25,250,000 ( 0.45%)      return splitmix64(h ^ salt);
+         .           }
+-- line 52 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Types.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 37 ----------------------------------------
+         .           // Wymiary przestrzeni. Oś z jest pionowa (grawitacja w dół, z = 0 to spód).
+        44 ( 0.00%)  struct Dims {
+         .               int nx = 1;
+-- line 39 ----------------------------------------
+-- line 44 ----------------------------------------
+         .               std::size_t cells() const {
+        81 ( 0.00%)          return static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) *
+        88 ( 0.00%)                 static_cast<std::size_t>(nz);
+         .               }
+-- line 47 ----------------------------------------
+-- line 49 ----------------------------------------
+         .               // Liczba wymiarów o rozmiarze > 1 (2 = przestrzeń 2D, 3 = 3D).
+       167 ( 0.00%)      int activeAxes() const { return (nx > 1 ? 1 : 0) + (ny > 1 ? 1 : 0) + (nz > 1 ? 1 : 0); }
+         .           
+-- line 51 ----------------------------------------
+-- line 81 ----------------------------------------
+         .           inline std::uint64_t globalIndex(const Dims& d, int x, int y, int z) {
+17,875,000 ( 0.32%)      return static_cast<std::uint64_t>(x) +
+53,625,000 ( 0.95%)             static_cast<std::uint64_t>(d.nx) *
+35,750,000 ( 0.63%)                 (static_cast<std::uint64_t>(y) +
+71,500,000 ( 1.27%)                  static_cast<std::uint64_t>(d.ny) * static_cast<std::uint64_t>(z));
+         .           }
+-- line 86 ----------------------------------------
+-- line 123 ----------------------------------------
+         .           // każdej komórki, 0 poza domeną MC. Indeks globalIndex(x,y,z), bez ramki.
+         8 ( 0.00%)  struct CrystalMap {
+         .               Dims dims;
+-- line 125 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/mc/Grains.cpp
+--------------------------------------------------------------------------------
+Ir                   
+
+-- line 12 ----------------------------------------
+          .           std::uint32_t findRoot(std::vector<std::uint32_t>& parent, std::uint32_t i) {
+ 59,908,894 ( 1.06%)      while (parent[i] != i) {
+ 21,865,152 ( 0.39%)          parent[i] = parent[parent[i]];
+          .                   i = parent[i];
+-- line 15 ----------------------------------------
+-- line 23 ----------------------------------------
+          .               b = findRoot(parent, b);
+  7,622,356 ( 0.14%)      if (a < b) {
+  1,090,489 ( 0.02%)          parent[b] = a;
+  2,720,689 ( 0.05%)      } else if (b < a) {
+     58,267 ( 0.00%)          parent[a] = b;
+          .               }
+-- line 28 ----------------------------------------
+-- line 32 ----------------------------------------
+          .           int wrapOrOut(int v, int n, bool periodic) {
+321,365,000 ( 5.70%)      if (v >= 0 && v < n) {
+          .                   return v;
+-- line 34 ----------------------------------------
+-- line 35 ----------------------------------------
+          .               }
+  1,485,000 ( 0.03%)      if (!periodic) {
+          .                   return -1;
+-- line 37 ----------------------------------------
+-- line 38 ----------------------------------------
+          .               }
+  4,455,000 ( 0.08%)      return v < 0 ? v + n : v - n;
+          .           }
+-- line 40 ----------------------------------------
+-- line 43 ----------------------------------------
+          .           
+        176 ( 0.00%)  GrainLabels Grains::label(const CrystalMap& m, bool moore, const bool periodic[3]) {
+          .               const Dims& d = m.dims;
+-- line 45 ----------------------------------------
+-- line 46 ----------------------------------------
+          .               const std::size_t n = d.cells();
+         33 ( 0.00%)      if (n >= GrainLabels::kNone) {
+          .                   throw std::invalid_argument("za dużo komórek do etykietowania ziaren (limit 2^32 - 1)");
+-- line 48 ----------------------------------------
+-- line 53 ----------------------------------------
+          .               std::vector<Offset> forward;
+         44 ( 0.00%)      const Neighborhood conn(moore ? NeighborhoodKind::Moore : NeighborhoodKind::VonNeumann, d);
+     29,568 ( 0.00%)  => <repo>/engine/src/core/Neighborhood.cpp:volcano::Neighborhood::Neighborhood(volcano::NeighborhoodKind, volcano::Dims const&) (11x)
+        891 ( 0.00%)      for (const Offset& o : conn.variant(0)) {
+      1,430 ( 0.00%)          if (o.dz > 0 || (o.dz == 0 && (o.dy > 0 || (o.dy == 0 && o.dx > 0)))) {
+          .                       forward.push_back(o);
+-- line 57 ----------------------------------------
+-- line 62 ----------------------------------------
+          .               g.root.resize(n);
+  4,125,011 ( 0.07%)      for (std::size_t i = 0; i < n; ++i) {
+  1,375,000 ( 0.02%)          g.root[i] = static_cast<std::uint32_t>(i);
+          .               }
+-- line 65 ----------------------------------------
+-- line 66 ----------------------------------------
+          .           
+         66 ( 0.00%)      std::size_t i = 0;
+  7,624,072 ( 0.14%)      for (int z = 0; z < d.nz; ++z) {
+  3,898,628 ( 0.07%)          for (int y = 0; y < d.ny; ++y) {
+ 13,204,856 ( 0.23%)              for (int x = 0; x < d.nx; ++x, ++i) {
+  4,125,000 ( 0.07%)                  const std::int32_t s = m.crystal[i];
+  2,750,000 ( 0.05%)                  if (s <= 0) {
+          .                               continue;
+-- line 73 ----------------------------------------
+-- line 74 ----------------------------------------
+          .                           }
+ 57,750,000 ( 1.02%)                  for (const Offset& o : forward) {
+  4,125,000 ( 0.07%)                      const int qx = wrapOrOut(x + o.dx, d.nx, periodic[0]);
+  2,750,000 ( 0.05%)                      const int qy = wrapOrOut(y + o.dy, d.ny, periodic[1]);
+ 38,500,000 ( 0.68%)                      const int qz = wrapOrOut(z + o.dz, d.nz, periodic[2]);
+ 71,500,000 ( 1.27%)                      if (qx < 0 || qy < 0 || qz < 0) {
+          .                                   continue;
+-- line 80 ----------------------------------------
+-- line 82 ----------------------------------------
+          .                               const std::size_t j = static_cast<std::size_t>(globalIndex(d, qx, qy, qz));
+ 35,750,000 ( 0.63%)                      if (m.crystal[j] == s) {
+  7,622,356 ( 0.14%)                          unite(g.root, static_cast<std::uint32_t>(i), static_cast<std::uint32_t>(j));
+          .                               }
+-- line 85 ----------------------------------------
+-- line 91 ----------------------------------------
+          .               // Ostateczne etykiety i rozmiary ziaren.
+         33 ( 0.00%)      g.size.assign(n, 0);
+  4,125,044 ( 0.07%)      for (std::size_t k = 0; k < n; ++k) {
+  5,500,000 ( 0.10%)          if (m.crystal[k] <= 0) {
+          .                       g.root[k] = GrainLabels::kNone;
+-- line 95 ----------------------------------------
+-- line 98 ----------------------------------------
+          .                   const std::uint32_t r = findRoot(g.root, static_cast<std::uint32_t>(k));
+  1,375,000 ( 0.02%)          g.root[k] = r;
+  1,375,000 ( 0.02%)          ++g.size[r];
+  1,375,000 ( 0.02%)          ++g.cells;
+  4,821,268 ( 0.09%)          g.grains += (r == k) ? 1 : 0;
+          .               }
+-- line 103 ----------------------------------------
+-- line 104 ----------------------------------------
+          .               return g;
+        132 ( 0.00%)  }
+          .           
+-- line 106 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_iterator.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 183 ----------------------------------------
+         .                 explicit _GLIBCXX17_CONSTEXPR
+         1 ( 0.00%)        reverse_iterator(iterator_type __x) : current(__x) { }
+         .           
+-- line 185 ----------------------------------------
+-- line 1023 ----------------------------------------
+         .                 _GLIBCXX_CONSTEXPR __normal_iterator() _GLIBCXX_NOEXCEPT
+        40 ( 0.00%)        : _M_current(_Iterator()) { }
+         .           
+-- line 1025 ----------------------------------------
+-- line 1026 ----------------------------------------
+         .                 explicit _GLIBCXX20_CONSTEXPR
+       137 ( 0.00%)        __normal_iterator(const _Iterator& __i) _GLIBCXX_NOEXCEPT
+15,252,462 ( 0.27%)        : _M_current(__i) { }
+         .           
+-- line 1029 ----------------------------------------
+-- line 1053 ----------------------------------------
+         .                 {
+       185 ( 0.00%)  	++_M_current;
+         .           	return *this;
+-- line 1055 ----------------------------------------
+-- line 1067 ----------------------------------------
+         .                 {
+         2 ( 0.00%)  	--_M_current;
+         .           	return *this;
+-- line 1069 ----------------------------------------
+-- line 1090 ----------------------------------------
+         .                 operator+(difference_type __n) const _GLIBCXX_NOEXCEPT
+        14 ( 0.00%)        { return __normal_iterator(_M_current + __n); }
+         .           
+-- line 1092 ----------------------------------------
+-- line 1100 ----------------------------------------
+         .                 operator-(difference_type __n) const _GLIBCXX_NOEXCEPT
+       243 ( 0.00%)        { return __normal_iterator(_M_current - __n); }
+         .           
+-- line 1102 ----------------------------------------
+-- line 1165 ----------------------------------------
+         .               _GLIBCXX_NOEXCEPT
+        27 ( 0.00%)      { return __lhs.base() == __rhs.base(); }
+         .           
+-- line 1167 ----------------------------------------
+-- line 1181 ----------------------------------------
+         .               _GLIBCXX_NOEXCEPT
+         2 ( 0.00%)      { return __lhs.base() != __rhs.base(); }
+         .           
+-- line 1183 ----------------------------------------
+-- line 1270 ----------------------------------------
+         .               _GLIBCXX_NOEXCEPT
+     1,173 ( 0.00%)      { return __lhs.base() - __rhs.base(); }
+         .           
+-- line 1272 ----------------------------------------
+
+--------------------------------------------------------------------------------
+The following files chosen for auto-annotation could not be found:
+--------------------------------------------------------------------------------
+  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+5,610,416,014 (99.57%)  events annotated
+

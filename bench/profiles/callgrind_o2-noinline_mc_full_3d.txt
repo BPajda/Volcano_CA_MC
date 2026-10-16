@@ -1,0 +1,109 @@
+# callgrind, build gcc-o2-noinline, wariant mc_full_3d (--config configs/mc_full_3d.json --set output.format=none)
+# valgrind-3.18.1, koszt = Ir (wykonane instrukcje), --dump-instr=no
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2-noinline/mc_full_3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 1041608617
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2-noinline/bin/engine --config configs/mc_full_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2-noinline/mc_full_3d/out (PID 688, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+6,730,694,555 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+4,440,000,000 (65.97%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::unlikeNeighbors(unsigned long, int, std::vector<long, std::allocator<long> > const&) const [<repo>/build-gcc-o2-noinline/bin/engine]
+  770,125,000 (11.44%)  engine/src/core/Rng.hpp:volcano::hashRand(unsigned long, unsigned long, unsigned long, unsigned long) [<repo>/build-gcc-o2-noinline/bin/engine]
+  694,244,887 (10.31%)  engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*) [<repo>/build-gcc-o2-noinline/bin/engine]
+  405,861,539 ( 6.03%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::sweep() [<repo>/build-gcc-o2-noinline/bin/engine]
+  178,750,077 ( 2.66%)  engine/src/core/Types.hpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+   81,250,200 ( 1.21%)  /usr/include/c++/11/bits/stl_vector.h:volcano::PottsMC::sweep()
+   32,043,513 ( 0.48%)  /usr/include/c++/11/bits/stl_vector.h:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+   27,750,000 ( 0.41%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::PottsMC::unlikeNeighbors(unsigned long, int, std::vector<long, std::allocator<long> > const&) const
+   15,125,330 ( 0.22%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::totalEnergy() const [<repo>/build-gcc-o2-noinline/bin/engine]
+   13,875,000 ( 0.21%)  /usr/include/c++/11/bits/stl_vector.h:volcano::PottsMC::unlikeNeighbors(unsigned long, int, std::vector<long, std::allocator<long> > const&) const
+   12,500,000 ( 0.19%)  engine/src/core/Neighborhood.hpp:volcano::PottsMC::sweep()
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Types.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 30 ----------------------------------------
+         .           // Domena krystalizacji Monte Carlo: komórki bazaltu z wyniku CA albo cała przestrzeń
+         .           // (klasyczny naiwny rozrost ziaren MC, bez terenu i bez CA).
+         .           enum class McDomain { Basalt, Full };
+         .           
+         .           // Reprezentacja siatki: płaski std::vector albo macierz 3D (vector<vector<vector>>).
+         .           enum class GridKind { Vector, Matrix };
+         .           
+         .           // Wymiary przestrzeni. Oś z jest pionowa (grawitacja w dół, z = 0 to spód).
+        44 ( 0.00%)  struct Dims {
+         .               int nx = 1;
+         .               int ny = 1;
+         .               int nz = 1;
+         .           
+         .               // Liczba komórek wnętrza (bez ramki).
+         .               std::size_t cells() const {
+        81 ( 0.00%)          return static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) *
+        88 ( 0.00%)                 static_cast<std::size_t>(nz);
+
+# --- koszt włączny (funkcja + wywoływane) ---
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2-noinline/mc_full_3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 1041608617
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2-noinline/bin/engine --config configs/mc_full_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2-noinline/mc_full_3d/out (PID 688, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+6,730,694,555 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+6,730,694,555 (100.0%)  ???:0x0000000000020290 [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+6,728,388,242 (99.97%)  ???:(below main) [<repo>/build-gcc-o2-noinline/bin/engine]
+6,728,388,230 (99.97%)  ./csu/../csu/libc-start.c:__libc_start_main@@GLIBC_2.34 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+6,728,262,521 (99.96%)  ./csu/../sysdeps/nptl/libc_start_call_main.h:(below main) [/usr/lib/x86_64-linux-gnu/libc.so.6]
+6,728,249,179 (99.96%)  <repo>/engine/src/main.cpp:main
+6,728,248,252 (99.96%)  engine/src/main.cpp:main [<repo>/build-gcc-o2-noinline/bin/engine]
+6,728,242,686 (99.96%)  <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)
+6,728,204,915 (99.96%)  engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&) [<repo>/build-gcc-o2-noinline/bin/engine]
+6,727,383,453 (99.95%)  engine/src/app/Simulation.cpp:volcano::Simulation::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) [<repo>/build-gcc-o2-noinline/bin/engine]
+6,727,181,675 (99.95%)  <repo>/engine/src/app/McStage.cpp:volcano::McStage::run(volcano::Config const&, volcano::Microstructure const*, volcano::CoolingData, volcano::TimingReport&)
+6,727,164,037 (99.95%)  engine/src/app/McStage.cpp:volcano::McStage::run(volcano::Config const&, volcano::Microstructure const*, volcano::CoolingData, volcano::TimingReport&) [<repo>/build-gcc-o2-noinline/bin/engine]
+5,310,766,379 (78.90%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::sweep()
+5,217,015,979 (77.51%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::sweep() [<repo>/build-gcc-o2-noinline/bin/engine]
+4,481,625,000 (66.58%)  <repo>/engine/src/mc/PottsMC.hpp:volcano::PottsMC::unlikeNeighbors(unsigned long, int, std::vector<long, std::allocator<long> > const&) const
+4,440,000,000 (65.97%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::unlikeNeighbors(unsigned long, int, std::vector<long, std::allocator<long> > const&) const [<repo>/build-gcc-o2-noinline/bin/engine]
+1,393,702,672 (20.71%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::measure(volcano::GrainLabels*, volcano::McMeasureTimes*) const
+1,393,696,906 (20.71%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::measure(volcano::GrainLabels*, volcano::McMeasureTimes*) const [<repo>/build-gcc-o2-noinline/bin/engine]
+  916,093,899 (13.61%)  <repo>/engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+  770,125,000 (11.44%)  <repo>/engine/src/core/Rng.hpp:volcano::hashRand(unsigned long, unsigned long, unsigned long, unsigned long)
+  770,125,000 (11.44%)  engine/src/core/Rng.hpp:volcano::hashRand(unsigned long, unsigned long, unsigned long, unsigned long) [<repo>/build-gcc-o2-noinline/bin/engine]

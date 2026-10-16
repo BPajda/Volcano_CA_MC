@@ -1,0 +1,29 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile, wariant ca_lava_etna3d
+# argumenty: --config configs/etna_3d.json --set output.format=none
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    91.59    16491861  engine.exe!volcano::LavaCA<volcano::VectorStorage>::updateLava
+     3.23      580811  engine.exe!volcano::LavaCA<volcano::VectorStorage>::computeDescent
+     1.97      353836  engine.exe!volcano::Neighborhood::offsetsFor
+     1.15      206185  engine.exe!volcano::Boundary::apply<volcano::VectorStorage>
+     0.99      179147  ntoskrnl.exe!"Unknown"
+     0.79      141906  nvlddmkm.sys!"Unknown"
+     0.06        9963  vcruntime140.dll!"Unknown"
+     0.03        5000  engine.exe!volcano::toMicrostructure<volcano::VectorStorage>
+     0.03        4834  "Unknown"!"Unknown"
+     0.02        4202  dxgmms2.sys!"Unknown"
+     0.02        2995  engine.exe!volcano::LavaCA<volcano::VectorStorage>::dropDepth
+     0.01        2534  intelppm.sys!"Unknown"
+     0.01        2324  iocbios2.sys!"Unknown"
+     0.01        2292  engine.exe!volcano::Simulation::buildStats
+     0.01        1764  ntdll.dll!"Unknown"
+     0.01        1751  SteelSeries-Sonar-VAD.sys!"Unknown"
+     0.01        1281  dxgkrnl.sys!"Unknown"
+     0.01        1247  engine.exe!volcano::`anonymous namespace'::latticeValue
+     0.01        1019  FLTMGR.SYS!"Unknown"
+     0.01         999  engine.exe!volcano::LavaCA<volcano::VectorStorage>::placeSeeds
+     0.01         992  engine.exe!std::_Pop_heap_hole_by_index<std::pair<int,unsigned __int64> *,std::pair<int,unsigned __int64>,std::greater<std::pair<int,unsigned __int64> > >
+     0.01         986  engine.exe!volcano::TerrainGenerator::fillDepressions
+     0.01         977  ucrtbase.dll!"Unknown"
+     0.01         976  Ntfs.sys!"Unknown"
+     0.00         756  Wdf01000.sys!"Unknown"

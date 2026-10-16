@@ -1,0 +1,109 @@
+# callgrind, build gcc-o2, wariant ca_lava_test3d (--config configs/test_3d.json --set output.format=none)
+# valgrind-3.18.1, koszt = Ir (wykonane instrukcje), --dump-instr=no
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/ca_lava_test3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 4611562177
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/test_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/ca_lava_test3d/out (PID 632, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                      
+--------------------------------------------------------------------------------
+33,975,633,084 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                       file:function
+--------------------------------------------------------------------------------
+18,447,183,790 (54.30%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const [<repo>/build-gcc-o2/bin/engine]
+ 9,310,007,901 (27.40%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+ 1,798,009,214 ( 5.29%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava()
+ 1,118,769,234 ( 3.29%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+ 1,077,476,265 ( 3.17%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava() [<repo>/build-gcc-o2/bin/engine]
+   705,861,939 ( 2.08%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent() [<repo>/build-gcc-o2/bin/engine]
+   622,566,244 ( 1.83%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent()
+   268,664,540 ( 0.79%)  engine/src/terrain/TerrainGenerator.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+   134,332,270 ( 0.40%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+   112,462,250 ( 0.33%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::updateLava()
+    89,432,796 ( 0.26%)  engine/src/core/Neighborhood.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/ca/LavaCA.hpp
+--------------------------------------------------------------------------------
+Ir                     
+
+-- line 21 ----------------------------------------
+            .           #include "core/Timer.hpp"
+            .           #include "core/Types.hpp"
+            .           #include "terrain/TerrainGenerator.hpp"
+            .           #include "terrain/VentPlacer.hpp"
+            .           
+            .           namespace volcano {
+            .           
+            .           // Czasy faz kroku [ms], sumowane po krokach — tylko przy --timing-detail (etap 3).
+            4 ( 0.00%)  struct CaPhaseTimes {
+            .               double frame = 0.0;    // wypełnienie ramki (warunki brzegowe)
+            .               double descent = 0.0;  // przebieg D(n) — największy spadek (tylko tryb lava)
+            .               double rules = 0.0;    // główna pętla: reguły, głosowanie, zapis next, zliczanie zmian
+            .               double finish = 0.0;   // zamiana buforów, historia, warunek końca
+            .           };
+            .           
+            .           template <class Storage>
+            8 ( 0.00%)  class LavaCA {
+
+# --- koszt włączny (funkcja + wywoływane) ---
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/ca_lava_test3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 4611562177
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/test_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/ca_lava_test3d/out (PID 632, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                      
+--------------------------------------------------------------------------------
+33,975,633,084 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                       file:function
+--------------------------------------------------------------------------------
+33,975,633,084 (100.0%)  ???:0x0000000000020290 [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+33,973,326,774 (99.99%)  ???:(below main) [<repo>/build-gcc-o2/bin/engine]
+33,973,326,762 (99.99%)  ./csu/../csu/libc-start.c:__libc_start_main@@GLIBC_2.34 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+33,973,201,053 (99.99%)  ./csu/../sysdeps/nptl/libc_start_call_main.h:(below main) [/usr/lib/x86_64-linux-gnu/libc.so.6]
+33,973,187,711 (99.99%)  <repo>/engine/src/main.cpp:main
+33,973,186,784 (99.99%)  engine/src/main.cpp:main [<repo>/build-gcc-o2/bin/engine]
+33,973,181,222 (99.99%)  <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)
+33,973,035,705 (99.99%)  engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&) [<repo>/build-gcc-o2/bin/engine]
+33,969,913,256 (99.98%)  engine/src/app/Simulation.cpp:volcano::Simulation::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) [<repo>/build-gcc-o2/bin/engine]
+33,967,238,101 (99.98%)  engine/src/app/Simulation.cpp:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) [<repo>/build-gcc-o2/bin/engine]
+33,952,565,967 (99.93%)  engine/src/ca/LavaCA.hpp:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&)
+32,409,823,107 (95.39%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava() [<repo>/build-gcc-o2/bin/engine]
+29,421,322,557 (86.60%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const [<repo>/build-gcc-o2/bin/engine]
+ 9,310,007,901 (27.40%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+ 1,798,009,214 ( 5.29%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava()
+ 1,386,947,895 ( 4.08%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent() [<repo>/build-gcc-o2/bin/engine]
+ 1,118,769,234 ( 3.29%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+   622,566,244 ( 1.83%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent()
+   268,664,540 ( 0.79%)  engine/src/terrain/TerrainGenerator.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, volcano::CandidateVote&) const
+

@@ -1,0 +1,17 @@
+{
+  "_opis": "Erupcja 3D (80x80x50) z krateru szczytowego + krystalizacja bazaltu Monte Carlo z mobilnością ze stygnięcia.",
+  "_uwaga": "Szeroki krater (promień 10, głębokość 6) wypełnia się jeziorem lawy, które długo pozostaje płynne (duże kryształy); lawa przelewa się przez najniższy punkt krawędzi i rozlewa po zboczu cienką warstwą, która zastyga szybko (drobne kryształy).",
+  "space":        { "nx": 80, "ny": 80, "nz": 50 },
+  "grid":         "vector",
+  "boundary":     "absorbing",
+  "neighborhood": "moore",
+  "rngSeed":      42,
+  "terrain": { "type": "cone", "peakHeight": 40, "baseRadius": 38,
+               "craterRadius": 10, "craterDepth": 6, "noise": 0.08, "file": null },
+  "vents":   { "count": 1, "placement": "crater", "eruptionSteps": 200, "eruptTemp": 1200 },
+  "ca":      { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 3.0,
+               "coolingLateral": 12.0, "coolingFall": 8.0, "solidusTemp": 800, "ponding": true },
+  "mc":      { "enabled": true, "domain": "basalt", "Q": 50, "mcs": 200, "J": 1.0, "kT": 0.0,
+               "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10 },
+  "output":  { "format": "both", "snapshotsEvery": 0 }
+}

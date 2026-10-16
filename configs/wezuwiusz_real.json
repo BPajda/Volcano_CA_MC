@@ -1,0 +1,17 @@
+{
+  "_opis": "Wezuwiusz z Monte Somma — prawdziwy teren (AWS Terrain Tiles, 140×140 komórek po ~79 m, przewyższenie ×2,7): erupcja z krateru szczytowego.",
+  "_uwaga": "Krater szczytowy ~40,821 N, 14,426 E = kolumna [71, 71] — dno zagłębienia krateru na mapie (tools/latlon_to_grid.py wezuwiusz 40.821 14.426). Lawa najpierw wypełnia krater (wypełnianie zagłębień), potem przelewa się przez najniższy punkt krawędzi. Koszty stygnięcia na komórkę ~1/3 wartości z etna_real.json (komórka 79 m zamiast 234 m). Model nie jest skalibrowany fizycznie — to symulacja na prawdziwym terenie, nie prognoza.",
+  "space": { "nx": 140, "ny": 140, "nz": 50 },
+  "grid": "vector",
+  "boundary": "absorbing",
+  "neighborhood": "moore",
+  "rngSeed": 1944,
+  "terrain": { "type": "file", "file": "configs/heightmaps/wezuwiusz.csv", "peakHeight": 70, "baseRadius": 90,
+               "craterRadius": 6, "craterDepth": 4, "noise": 0.05 },
+  "vents": { "count": 1, "placement": "positions", "positions": [[71, 71]],
+             "eruptionSteps": 150, "eruptTemp": 1200 },
+  "ca": { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 3.0, "coolingLateral": 27.0, "coolingFall": 1.3,
+          "solidusTemp": 800, "ponding": true },
+  "mc": { "enabled": false },
+  "output": { "format": "bin", "snapshotsEvery": 0 }
+}

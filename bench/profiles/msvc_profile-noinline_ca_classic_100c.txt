@@ -1,0 +1,22 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile-noinline, wariant ca_classic_100c
+# argumenty: --config configs/classic_ref.json --set output.format=none
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    86.58      478464  engine.exe!volcano::LavaCA<volcano::VectorStorage>::updateClassic
+     5.99       33124  engine.exe!volcano::Boundary::apply<volcano::VectorStorage>
+     2.10       11598  ntoskrnl.exe!"Unknown"
+     1.25        6901  engine.exe!volcano::Simulation::buildStats
+     1.06        5850  vcruntime140.dll!"Unknown"
+     0.59        3259  engine.exe!volcano::CandidateVote::add
+     0.54        2974  engine.exe!volcano::toMicrostructure<volcano::VectorStorage>
+     0.54        2960  ucrtbase.dll!"Unknown"
+     0.51        2822  ntdll.dll!"Unknown"
+     0.36        1998  engine.exe!volcano::CandidateVote::winner
+     0.14         751  Ntfs.sys!"Unknown"
+     0.08         459  engine.exe!volcano::LavaCA<volcano::VectorStorage>::placeSeeds
+     0.05         257  FLTMGR.SYS!"Unknown"
+     0.05         256  vgk.sys!"Unknown"
+     0.05         250  peauth.sys!"Unknown"
+     0.05         250  KernelBase.dll!"Unknown"
+     0.05         249  Wdf01000.sys!"Unknown"
+     0.04         234  nvlddmkm.sys!"Unknown"

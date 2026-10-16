@@ -1,0 +1,110 @@
+PottsMC.cpp
+
+--- Analiza funkcji: char * __ptr64 __cdecl std::_UIntegral_to_buff<char,unsigned int>(char * __ptr64,unsigned int)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\string(468) : info C5002: p©tla niewektoryzowana z powodu "502"
+
+--- Analiza funkcji: void __cdecl volcano::PottsMC::setDomainAll(void) __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(41) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(40) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(39) : info C5002: p©tla niewektoryzowana z powodu "501"
+
+--- Analiza funkcji: int __cdecl volcano::PottsMC::unlikeNeighbors(unsigned __int64,int,class std::vector<__int64,class std::allocator<__int64> > const & __ptr64)const __ptr64
+<repo>\engine\src\mc\PottsMC.hpp(124) : info C5002: p©tla niewektoryzowana z powodu "1200"
+
+--- Analiza funkcji: unsigned __int64 __cdecl volcano::PottsMC::bytes(void)const __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(279) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: void __cdecl volcano::PottsMC::syncFrame(unsigned __int64) __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(187) : info C5002: p©tla niewektoryzowana z powodu "500"
+<repo>\engine\src\mc\PottsMC.cpp(187) : info C5002: p©tla niewektoryzowana z powodu "500"
+<repo>\engine\src\mc\PottsMC.cpp(187) : info C5002: p©tla niewektoryzowana z powodu "500"
+<repo>\engine\src\mc\PottsMC.cpp(171) : info C5002: p©tla niewektoryzowana z powodu "1303"
+
+--- Analiza funkcji: void __cdecl volcano::PottsMC::fillFrame(void) __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(127) : info C5002: p©tla niewektoryzowana z powodu "1200"
+<repo>\engine\src\mc\PottsMC.cpp(126) : info C5002: p©tla niewektoryzowana z powodu "1106"
+<repo>\engine\src\mc\PottsMC.cpp(138) : info C5002: p©tla niewektoryzowana z powodu "1200"
+<repo>\engine\src\mc\PottsMC.cpp(137) : info C5002: p©tla niewektoryzowana z powodu "1106"
+<repo>\engine\src\mc\PottsMC.cpp(149) : info C5002: p©tla niewektoryzowana z powodu "1200"
+<repo>\engine\src\mc\PottsMC.cpp(148) : info C5002: p©tla niewektoryzowana z powodu "1106"
+
+--- Analiza funkcji: void __cdecl volcano::PottsMC::setDomain(class std::vector<unsigned char,class std::allocator<unsigned char> > const & __ptr64) __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(55) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(54) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(53) : info C5002: p©tla niewektoryzowana z powodu "501"
+
+--- Analiza funkcji: int * __ptr64 __cdecl std::_Uninitialized_fill_n<class std::allocator<int> >(int * __ptr64,unsigned __int64,int const & __ptr64,class std::allocator<int> & __ptr64)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1977) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: float * __ptr64 __cdecl std::_Uninitialized_fill_n<class std::allocator<float> >(float * __ptr64,unsigned __int64,float const & __ptr64,class std::allocator<float> & __ptr64)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1977) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: double __cdecl volcano::PottsMC::energyIf(int,int,int,int)const __ptr64
+<repo>\engine\src\mc\PottsMC.hpp(124) : info C5002: p©tla niewektoryzowana z powodu "1200"
+
+--- Analiza funkcji: double __cdecl volcano::PottsMC::totalEnergy(void)const __ptr64
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\vector(1907) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.hpp(124) : info C5002: p©tla niewektoryzowana z powodu "1200"
+
+--- Analiza funkcji: unsigned __int64 __cdecl volcano::PottsMC::sweep(void) __ptr64
+<repo>\engine\src\mc\PottsMC.hpp(124) : info C5002: p©tla niewektoryzowana z powodu "1200"
+<repo>\engine\src\mc\PottsMC.hpp(124) : info C5002: p©tla niewektoryzowana z powodu "1200"
+<repo>\engine\src\mc\PottsMC.cpp(202) : info C5002: p©tla niewektoryzowana z powodu "1106"
+
+--- Analiza funkcji: void __cdecl std::_Destroy_range<class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > >(class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64 const,class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > & __ptr64)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1090) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: __cdecl std::_Uninitialized_backout_al<class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > >::~_Uninitialized_backout_al<class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > >(void) __ptr64
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1090) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: void __cdecl std::vector<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> >,class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > >::_Tidy(void) __ptr64
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1090) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: void __cdecl std::_Destroy_range<class std::allocator<class std::vector<__int64,class std::allocator<__int64> > > >(class std::vector<__int64,class std::allocator<__int64> > * __ptr64,class std::vector<__int64,class std::allocator<__int64> > * __ptr64 const,class std::allocator<class std::vector<__int64,class std::allocator<__int64> > > & __ptr64)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1090) : info C5002: p©tla niewektoryzowana z powodu "500"
+
+--- Analiza funkcji: class std::vector<__int64,class std::allocator<__int64> > * __ptr64 __cdecl std::_Uninitialized_move<class std::vector<__int64,class std::allocator<__int64> > * __ptr64,class std::allocator<class std::vector<__int64,class std::allocator<__int64> > > >(class std::vector<__int64,class std::allocator<__int64> > * __ptr64 const,class std::vector<__int64,class std::allocator<__int64> > * __ptr64 const,class std::vector<__int64,class std::allocator<__int64> > * __ptr64,class std::allocator<class std::vector<__int64,class std::allocator<__int64> > > & __ptr64)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1944) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: void __cdecl std::vector<int,class std::allocator<int> >::assign(unsigned __int64,int const & __ptr64) __ptr64
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1977) : info C5002: p©tla niewektoryzowana z powodu "1301"
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1977) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: void __cdecl volcano::PottsMC::initialize(void) __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(88) : info C5002: p©tla niewektoryzowana z powodu "500"
+<repo>\engine\src\mc\PottsMC.cpp(87) : info C5002: p©tla niewektoryzowana z powodu "500"
+<repo>\engine\src\mc\PottsMC.cpp(86) : info C5002: p©tla niewektoryzowana z powodu "500"
+
+--- Analiza funkcji: class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl std::_Integral_to_string<char,int>(int)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\string(446) : info C5002: p©tla niewektoryzowana z powodu "500"
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\string(468) : info C5002: p©tla niewektoryzowana z powodu "502"
+
+--- Analiza funkcji: struct volcano::CrystalMap __cdecl volcano::PottsMC::crystals(void)const __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(326) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(325) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(324) : info C5002: p©tla niewektoryzowana z powodu "501"
+
+--- Analiza funkcji: void __cdecl volcano::PottsMC::setMobility(class std::vector<float,class std::allocator<float> > const & __ptr64) __ptr64
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\vector(1897) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.cpp(73) : info C5002: p©tla niewektoryzowana z powodu "501"
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\vector(1897) : info C5002: p©tla niewektoryzowana z powodu "501"
+
+--- Analiza funkcji: class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl std::to_string(int)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\string(446) : info C5002: p©tla niewektoryzowana z powodu "500"
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\string(468) : info C5002: p©tla niewektoryzowana z powodu "502"
+
+--- Analiza funkcji: struct volcano::McStats __cdecl volcano::PottsMC::measure(struct volcano::GrainLabels * __ptr64,struct volcano::McMeasureTimes * __ptr64)const __ptr64
+<repo>\engine\src\mc\PottsMC.hpp(116) : info C5002: p©tla niewektoryzowana z powodu "501"
+<repo>\engine\src\mc\PottsMC.hpp(124) : info C5002: p©tla niewektoryzowana z powodu "1200"
+
+--- Analiza funkcji: class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64 __cdecl std::_Uninitialized_copy<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64,class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > >(class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64,class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > & __ptr64)
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1854) : info C5002: p©tla niewektoryzowana z powodu "500"
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1090) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: void __cdecl std::vector<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> >,class std::allocator<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > > >::_Construct_n<class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64 const & __ptr64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64 const & __ptr64>(unsigned __int64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64 const & __ptr64,class std::vector<struct volcano::Offset,class std::allocator<struct volcano::Offset> > * __ptr64 const & __ptr64) __ptr64
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1854) : info C5002: p©tla niewektoryzowana z powodu "500"
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(1090) : info C5002: p©tla niewektoryzowana z powodu "1301"
+
+--- Analiza funkcji: __cdecl volcano::PottsMC::PottsMC(struct volcano::Dims const & __ptr64,struct volcano::McParams const & __ptr64,class volcano::Neighborhood const & __ptr64,class volcano::Boundary const & __ptr64) __ptr64
+<repo>\engine\src\mc\PottsMC.cpp(29) : info C5002: p©tla niewektoryzowana z powodu "500"
+<repo>\engine\src\mc\PottsMC.cpp(31) : info C5002: p©tla niewektoryzowana z powodu "1301"

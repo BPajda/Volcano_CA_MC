@@ -1,0 +1,1352 @@
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/ca_classic_100c/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 837288193
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/classic_ref.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/ca_classic_100c/out (PID 644, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+9,246,293,945 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+4,414,457,612 (47.74%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+3,854,408,820 (41.69%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic() [<repo>/build-gcc-o2/bin/engine]
+  328,906,110 ( 3.56%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+  105,426,746 ( 1.14%)  ./math/../sysdeps/ieee754/dbl-64/e_hypot.c:hypot@@GLIBC_2.35 [/usr/lib/x86_64-linux-gnu/libm.so.6]
+   89,879,042 ( 0.97%)  engine/src/core/Storage.hpp:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const
+   73,687,460 ( 0.80%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+   73,687,460 ( 0.80%)  engine/src/core/Neighborhood.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+   66,631,852 ( 0.72%)  engine/src/ca/CaRules.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+   54,244,354 ( 0.59%)  engine/src/app/Simulation.cpp:volcano::Simulation::buildStats[abi:cxx11](volcano::Config const&, volcano::RunSummary const&) [<repo>/build-gcc-o2/bin/engine]
+   40,517,428 ( 0.44%)  /usr/include/c++/11/bits/stl_vector.h:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const
+   28,895,468 ( 0.31%)  engine/src/ca/CaRules.hpp:volcano::CandidateVote::winner(unsigned long, unsigned long, unsigned long) const [<repo>/build-gcc-o2/bin/engine]
+   24,979,352 ( 0.27%)  /usr/include/c++/11/bits/stl_algobase.h:std::vector<unsigned short, std::allocator<unsigned short> >::_M_fill_assign(unsigned long, unsigned short const&)
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Storage.hpp
+--------------------------------------------------------------------------------
+Ir                     
+
+-- line 39 ----------------------------------------
+            .               explicit VectorStorage(const Dims& d)
+            8 ( 0.00%)          : dims_(d),
+            6 ( 0.00%)            sx_(static_cast<std::size_t>(d.nx) + 2),
+           24 ( 0.00%)            sy_(static_cast<std::size_t>(d.ny) + 2) {
+            8 ( 0.00%)          const std::size_t n = sx_ * sy_ * (static_cast<std::size_t>(d.nz) + 2);
+            2 ( 0.00%)          type_.assign(n, CellType::Air);
+            2 ( 0.00%)          flowId_.assign(n, 0);
+            2 ( 0.00%)          temp_.assign(n, 0.0f);
+            4 ( 0.00%)          solidStep_.assign(n, 0);
+            4 ( 0.00%)          arrivalStep_.assign(n, 0);
+            .               }
+-- line 49 ----------------------------------------
+-- line 51 ----------------------------------------
+            .               const Dims& dims() const { return dims_; }
+          142 ( 0.00%)      int nx() const { return dims_.nx; }
+          213 ( 0.00%)      int ny() const { return dims_.ny; }
+          142 ( 0.00%)      int nz() const { return dims_.nz; }
+            .           
+-- line 55 ----------------------------------------
+-- line 56 ----------------------------------------
+            .               // --- dostęp do pól (współrzędne od -1 do n włącznie) ---
+   72,080,000 ( 0.78%)      CellType type(int x, int y, int z) const { return type_[index(x, y, z)]; }
+    8,833,752 ( 0.10%)      std::int32_t flowId(int x, int y, int z) const { return flowId_[index(x, y, z)]; }
+    1,000,000 ( 0.01%)      float temp(int x, int y, int z) const { return temp_[index(x, y, z)]; }
+            .               std::uint16_t solidStep(int x, int y, int z) const { return solidStep_[index(x, y, z)]; }
+-- line 60 ----------------------------------------
+-- line 71 ----------------------------------------
+            .                   const std::size_t i = index(x, y, z);
+  588,247,572 ( 6.36%)          return CellState{type_[i], flowId_[i], temp_[i], solidStep_[i], arrivalStep_[i]};
+            .               }
+-- line 73 ----------------------------------------
+-- line 75 ----------------------------------------
+            .                   const std::size_t i = index(x, y, z);
+  149,952,872 ( 1.62%)          type_[i] = c.type;
+  150,677,072 ( 1.63%)          flowId_[i] = c.flowId;
+  149,257,356 ( 1.61%)          temp_[i] = c.temp;
+  150,228,672 ( 1.62%)          solidStep_[i] = c.solidStep;
+  150,228,672 ( 1.62%)          arrivalStep_[i] = c.arrivalStep;
+            .               }
+-- line 81 ----------------------------------------
+-- line 104 ----------------------------------------
+            .                   assert(x >= -1 && x <= dims_.nx && y >= -1 && y <= dims_.ny && z >= -1 && z <= dims_.nz);
+  442,125,145 ( 4.78%)          return static_cast<std::size_t>(x + 1) +
+2,643,905,294 (28.59%)                 sx_ * (static_cast<std::size_t>(y + 1) + sy_ * static_cast<std::size_t>(z + 1));
+            .               }
+-- line 107 ----------------------------------------
+-- line 212 ----------------------------------------
+            .           template <class Storage>
+           10 ( 0.00%)  VOLCANO_NOINLINE Microstructure toMicrostructure(const Storage& s) {
+            .               Microstructure m;
+-- line 214 ----------------------------------------
+-- line 215 ----------------------------------------
+            .               m.resize(s.dims());
+            1 ( 0.00%)      std::size_t i = 0;
+          505 ( 0.00%)      for (int z = 0; z < s.nz(); ++z) {
+       40,500 ( 0.00%)          for (int y = 0; y < s.ny(); ++y) {
+    4,040,000 ( 0.04%)              for (int x = 0; x < s.nx(); ++x, ++i) {
+    2,000,000 ( 0.02%)                  m.type[i] = s.type(x, y, z);
+    2,000,000 ( 0.02%)                  m.flowId[i] = s.flowId(x, y, z);
+    1,000,000 ( 0.01%)                  m.temp[i] = s.temp(x, y, z);
+    2,000,000 ( 0.02%)                  m.solidStep[i] = s.solidStep(x, y, z);
+    2,000,000 ( 0.02%)                  m.arrivalStep[i] = s.arrivalStep(x, y, z);
+            .                       }
+-- line 225 ----------------------------------------
+-- line 228 ----------------------------------------
+            .               return m;
+           12 ( 0.00%)  }
+            .           
+-- line 230 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_iterator.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 183 ----------------------------------------
+         .                 explicit _GLIBCXX17_CONSTEXPR
+         1 ( 0.00%)        reverse_iterator(iterator_type __x) : current(__x) { }
+         .           
+-- line 185 ----------------------------------------
+-- line 1023 ----------------------------------------
+         .                 _GLIBCXX_CONSTEXPR __normal_iterator() _GLIBCXX_NOEXCEPT
+        46 ( 0.00%)        : _M_current(_Iterator()) { }
+         .           
+-- line 1025 ----------------------------------------
+-- line 1026 ----------------------------------------
+         .                 explicit _GLIBCXX20_CONSTEXPR
+       302 ( 0.00%)        __normal_iterator(const _Iterator& __i) _GLIBCXX_NOEXCEPT
+73,691,363 ( 0.80%)        : _M_current(__i) { }
+         .           
+-- line 1029 ----------------------------------------
+-- line 1053 ----------------------------------------
+         .                 {
+       146 ( 0.00%)  	++_M_current;
+         .           	return *this;
+-- line 1055 ----------------------------------------
+-- line 1067 ----------------------------------------
+         .                 {
+         2 ( 0.00%)  	--_M_current;
+         .           	return *this;
+-- line 1069 ----------------------------------------
+-- line 1090 ----------------------------------------
+         .                 operator+(difference_type __n) const _GLIBCXX_NOEXCEPT
+         2 ( 0.00%)        { return __normal_iterator(_M_current + __n); }
+         .           
+-- line 1092 ----------------------------------------
+-- line 1100 ----------------------------------------
+         .                 operator-(difference_type __n) const _GLIBCXX_NOEXCEPT
+       820 ( 0.00%)        { return __normal_iterator(_M_current - __n); }
+         .           
+-- line 1102 ----------------------------------------
+-- line 1165 ----------------------------------------
+         .               _GLIBCXX_NOEXCEPT
+        29 ( 0.00%)      { return __lhs.base() == __rhs.base(); }
+         .           
+-- line 1167 ----------------------------------------
+-- line 1178 ----------------------------------------
+         .               inline bool
+         1 ( 0.00%)      operator!=(const __normal_iterator<_Iterator, _Container>& __lhs,
+         .           	       const __normal_iterator<_Iterator, _Container>& __rhs)
+-- line 1180 ----------------------------------------
+-- line 1181 ----------------------------------------
+         .               _GLIBCXX_NOEXCEPT
+         2 ( 0.00%)      { return __lhs.base() != __rhs.base(); }
+         .           
+-- line 1183 ----------------------------------------
+-- line 1270 ----------------------------------------
+         .               _GLIBCXX_NOEXCEPT
+     1,024 ( 0.00%)      { return __lhs.base() - __rhs.base(); }
+         .           
+-- line 1272 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_vector.h
+--------------------------------------------------------------------------------
+Ir                   
+
+-- line 96 ----------------------------------------
+          .           
+          1 ( 0.00%)  	_Vector_impl_data() _GLIBCXX_NOEXCEPT
+      2,045 ( 0.00%)  	: _M_start(), _M_finish(), _M_end_of_storage()
+          .           	{ }
+-- line 99 ----------------------------------------
+-- line 102 ----------------------------------------
+          .           	_Vector_impl_data(_Vector_impl_data&& __x) noexcept
+          8 ( 0.00%)  	: _M_start(__x._M_start), _M_finish(__x._M_finish),
+          7 ( 0.00%)  	  _M_end_of_storage(__x._M_end_of_storage)
+          9 ( 0.00%)  	{ __x._M_start = __x._M_finish = __x._M_end_of_storage = pointer(); }
+          .           #endif
+-- line 106 ----------------------------------------
+-- line 110 ----------------------------------------
+          .           	{
+      1,518 ( 0.00%)  	  _M_start = __x._M_start;
+      1,487 ( 0.00%)  	  _M_finish = __x._M_finish;
+      1,503 ( 0.00%)  	  _M_end_of_storage = __x._M_end_of_storage;
+          .           	}
+-- line 114 ----------------------------------------
+-- line 332 ----------------------------------------
+          .           
+          1 ( 0.00%)        ~_Vector_base() _GLIBCXX_NOEXCEPT
+          .                 {
+-- line 334 ----------------------------------------
+-- line 335 ----------------------------------------
+          .           	_M_deallocate(_M_impl._M_start,
+      1,452 ( 0.00%)  		      _M_impl._M_end_of_storage - _M_impl._M_start);
+          1 ( 0.00%)        }
+          .           
+-- line 338 ----------------------------------------
+-- line 342 ----------------------------------------
+          .                 pointer
+         17 ( 0.00%)        _M_allocate(size_t __n)
+          .                 {
+-- line 344 ----------------------------------------
+-- line 345 ----------------------------------------
+          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+      1,489 ( 0.00%)  	return __n != 0 ? _Tr::allocate(_M_impl, __n) : pointer();
+          .                 }
+-- line 347 ----------------------------------------
+-- line 352 ----------------------------------------
+          .           	typedef __gnu_cxx::__alloc_traits<_Tp_alloc_type> _Tr;
+      2,198 ( 0.00%)  	if (__p)
+          .           	  _Tr::deallocate(_M_impl, __p, __n);
+-- line 354 ----------------------------------------
+-- line 360 ----------------------------------------
+          .                 {
+        211 ( 0.00%)  	this->_M_impl._M_start = this->_M_allocate(__n);
+        207 ( 0.00%)  	this->_M_impl._M_finish = this->_M_impl._M_start;
+        445 ( 0.00%)  	this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+          .                 }
+-- line 364 ----------------------------------------
+-- line 486 ----------------------------------------
+          .           #if __cplusplus >= 201103L
+          1 ( 0.00%)        vector() = default;
+          .           #else
+-- line 488 ----------------------------------------
+-- line 552 ----------------------------------------
+          .                  */
+         10 ( 0.00%)        vector(const vector& __x)
+          .                 : _Base(__x.size(),
+-- line 554 ----------------------------------------
+-- line 556 ----------------------------------------
+          .                 {
+        206 ( 0.00%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_copy_a(__x.begin(), __x.end(),
+-- line 558 ----------------------------------------
+-- line 560 ----------------------------------------
+          .           				      _M_get_Tp_allocator());
+          8 ( 0.00%)        }
+          .           
+-- line 562 ----------------------------------------
+-- line 624 ----------------------------------------
+          .                  */
+         24 ( 0.00%)        vector(initializer_list<value_type> __l,
+          .           	     const allocator_type& __a = allocator_type())
+-- line 626 ----------------------------------------
+-- line 630 ----------------------------------------
+          .           			    random_access_iterator_tag());
+         22 ( 0.00%)        }
+          .           #endif
+-- line 632 ----------------------------------------
+-- line 677 ----------------------------------------
+          .                  */
+         10 ( 0.00%)        ~vector() _GLIBCXX_NOEXCEPT
+          .                 {
+        937 ( 0.00%)  	std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
+          .           		      _M_get_Tp_allocator());
+-- line 681 ----------------------------------------
+-- line 682 ----------------------------------------
+          .           	_GLIBCXX_ASAN_ANNOTATE_BEFORE_DEALLOC;
+         12 ( 0.00%)        }
+     12,281 ( 0.00%)  => ???:0x000000000010dde0 (1x)
+          5 ( 0.00%)  => /usr/include/c++/11/bits/stl_vector.h:std::_Vector_base<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*, std::allocator<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>*> >::~_Vector_base() (1x)
+          .           
+-- line 684 ----------------------------------------
+-- line 749 ----------------------------------------
+          .                 assign(size_type __n, const value_type& __val)
+         55 ( 0.00%)        { _M_fill_assign(__n, __val); }
+ 16,980,712 ( 0.18%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<unsigned short, std::allocator<unsigned short> >::_M_fill_assign(unsigned long, unsigned short const&) (4x)
+  8,490,356 ( 0.09%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<int, std::allocator<int> >::_M_fill_assign(unsigned long, int const&) (2x)
+  8,490,354 ( 0.09%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<float, std::allocator<float> >::_M_fill_assign(unsigned long, float const&) (2x)
+  2,123,235 ( 0.02%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::CellType, std::allocator<volcano::CellType> >::_M_fill_assign(unsigned long, volcano::CellType const&) (2x)
+          .           
+-- line 751 ----------------------------------------
+-- line 917 ----------------------------------------
+          .                 size_type
+        134 ( 0.00%)        size() const _GLIBCXX_NOEXCEPT
+257,910,099 ( 2.79%)        { return size_type(this->_M_impl._M_finish - this->_M_impl._M_start); }
+          .           
+-- line 920 ----------------------------------------
+-- line 958 ----------------------------------------
+          .                 {
+         20 ( 0.00%)  	if (__new_size > size())
+         70 ( 0.00%)  	  _M_fill_insert(end(), __new_size - size(), __x);
+      1,859 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::LavaCA<volcano::VectorStorage>::Coord, std::allocator<volcano::LavaCA<volcano::VectorStorage>::Coord> >::_M_fill_insert(__gnu_cxx::__normal_iterator<volcano::LavaCA<volcano::VectorStorage>::Coord*, std::vector<volcano::LavaCA<volcano::VectorStorage>::Coord, std::allocator<volcano::LavaCA<volcano::VectorStorage>::Coord> > >, unsigned long, volcano::LavaCA<volcano::VectorStorage>::Coord const&) (10x)
+          .           	else if (__new_size < size())
+-- line 961 ----------------------------------------
+-- line 999 ----------------------------------------
+          .                 { return size_type(this->_M_impl._M_end_of_storage
+      1,814 ( 0.00%)  			 - this->_M_impl._M_start); }
+          .           
+-- line 1001 ----------------------------------------
+-- line 1045 ----------------------------------------
+          .           	__glibcxx_requires_subscript(__n);
+ 50,617,550 ( 0.55%)  	return *(this->_M_impl._M_start + __n);
+          .                 }
+-- line 1047 ----------------------------------------
+-- line 1063 ----------------------------------------
+          .           	__glibcxx_requires_subscript(__n);
+ 75,170,082 ( 0.81%)  	return *(this->_M_impl._M_start + __n);
+          .                 }
+-- line 1065 ----------------------------------------
+-- line 1188 ----------------------------------------
+          .                 {
+        727 ( 0.00%)  	if (this->_M_impl._M_finish != this->_M_impl._M_end_of_storage)
+          .           	  {
+-- line 1190 ----------------------------------------
+-- line 1193 ----------------------------------------
+          .           				     __x);
+        274 ( 0.00%)  	    ++this->_M_impl._M_finish;
+          .           	    _GLIBCXX_ASAN_ANNOTATE_GREW(1);
+-- line 1195 ----------------------------------------
+-- line 1197 ----------------------------------------
+          .           	else
+        437 ( 0.00%)  	  _M_realloc_insert(end(), __x);
+        642 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:void std::vector<volcano::Offset, std::allocator<volcano::Offset> >::_M_realloc_insert<volcano::Offset const&>(__gnu_cxx::__normal_iterator<volcano::Offset*, std::vector<volcano::Offset, std::allocator<volcano::Offset> > >, volcano::Offset const&) (3x)
+          .                 }
+-- line 1199 ----------------------------------------
+-- line 1203 ----------------------------------------
+          .                 push_back(value_type&& __x)
+         15 ( 0.00%)        { emplace_back(std::move(__x)); }
+      2,006 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:volcano::MemoryModel::Block& std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> >::emplace_back<volcano::MemoryModel::Block>(volcano::MemoryModel::Block&&) [clone .isra.0] (6x)
+          .           
+-- line 1205 ----------------------------------------
+-- line 1227 ----------------------------------------
+          .           	__glibcxx_requires_nonempty();
+      3,809 ( 0.00%)  	--this->_M_impl._M_finish;
+          .           	_Alloc_traits::destroy(this->_M_impl, this->_M_impl._M_finish);
+-- line 1229 ----------------------------------------
+-- line 1430 ----------------------------------------
+          .                 erase(const_iterator __position)
+          8 ( 0.00%)        { return _M_erase(begin() + (__position - cbegin())); }
+        191 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> >::_M_erase(__gnu_cxx::__normal_iterator<volcano::MemoryModel::Block*, std::vector<volcano::MemoryModel::Block, std::allocator<volcano::MemoryModel::Block> > >) (2x)
+          .           #else
+-- line 1432 ----------------------------------------
+-- line 1498 ----------------------------------------
+          .                 clear() _GLIBCXX_NOEXCEPT
+        628 ( 0.00%)        { _M_erase_at_end(this->_M_impl._M_start); }
+          .           
+-- line 1500 ----------------------------------------
+-- line 1581 ----------------------------------------
+          .           	  this->_M_impl._M_start
+         37 ( 0.00%)  	    = this->_M_allocate(_S_check_init_len(__n, _M_get_Tp_allocator()));
+         74 ( 0.00%)  	  this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+         37 ( 0.00%)  	  this->_M_impl._M_finish =
+          .           	    std::__uninitialized_copy_a(__first, __last,
+-- line 1585 ----------------------------------------
+-- line 1594 ----------------------------------------
+          .                 {
+          8 ( 0.00%)  	this->_M_impl._M_finish =
+          .           	  std::__uninitialized_fill_n_a(this->_M_impl._M_start, __n, __value,
+-- line 1596 ----------------------------------------
+-- line 1757 ----------------------------------------
+          .                 {
+      3,321 ( 0.00%)  	if (max_size() - size() < __n)
+          .           	  __throw_length_error(__N(__s));
+-- line 1759 ----------------------------------------
+-- line 1760 ----------------------------------------
+          .           
+        363 ( 0.00%)  	const size_type __len = size() + (std::max)(size(), __n);
+        948 ( 0.00%)  	return (__len < size() || __len > max_size()) ? max_size() : __len;
+          .                 }
+-- line 1763 ----------------------------------------
+-- line 1768 ----------------------------------------
+          .                 {
+        130 ( 0.00%)  	if (__n > _S_max_size(_Tp_alloc_type(__a)))
+          .           	  __throw_length_error(
+-- line 1770 ----------------------------------------
+-- line 1793 ----------------------------------------
+          .                 {
+      1,405 ( 0.00%)  	if (size_type __n = this->_M_impl._M_finish - __pos)
+          .           	  {
+-- line 1795 ----------------------------------------
+-- line 1797 ----------------------------------------
+          .           			  _M_get_Tp_allocator());
+        830 ( 0.00%)  	    this->_M_impl._M_finish = __pos;
+          .           	    _GLIBCXX_ASAN_ANNOTATE_SHRINK(__n);
+-- line 1799 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_algobase.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 253 ----------------------------------------
+         .               inline const _Tp&
+   149,640 ( 0.00%)      max(const _Tp& __a, const _Tp& __b)
+         .               {
+-- line 255 ----------------------------------------
+-- line 258 ----------------------------------------
+         .                 //return  __a < __b ? __b : __a;
+ 2,000,251 ( 0.02%)        if (__a < __b)
+ 3,838,882 ( 0.04%)  	return __b;
+         .                 return __a;
+-- line 261 ----------------------------------------
+-- line 382 ----------------------------------------
+         .           	  typedef typename iterator_traits<_II>::difference_type _Distance;
+        26 ( 0.00%)  	  for(_Distance __n = __last - __first; __n > 0; --__n)
+         .           	    {
+-- line 384 ----------------------------------------
+-- line 385 ----------------------------------------
+         .           	      *__result = *__first;
+         2 ( 0.00%)  	      ++__first;
+         6 ( 0.00%)  	      ++__result;
+         .           	    }
+-- line 388 ----------------------------------------
+-- line 402 ----------------------------------------
+         .           	  typedef typename iterator_traits<_II>::difference_type _Distance;
+     2,677 ( 0.00%)  	  for(_Distance __n = __last - __first; __n > 0; --__n)
+         .           	    {
+-- line 404 ----------------------------------------
+-- line 405 ----------------------------------------
+         .           	      *__result = std::move(*__first);
+       678 ( 0.00%)  	      ++__first;
+         .           	      ++__result;
+-- line 407 ----------------------------------------
+-- line 419 ----------------------------------------
+         .           	static _Tp*
+         1 ( 0.00%)  	__copy_m(const _Tp* __first, const _Tp* __last, _Tp* __result)
+         .           	{
+-- line 421 ----------------------------------------
+-- line 428 ----------------------------------------
+         .           #endif
+        30 ( 0.00%)  	  const ptrdiff_t _Num = __last - __first;
+        39 ( 0.00%)  	  if (_Num)
+        27 ( 0.00%)  	    __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
+        24 ( 0.00%)  => ???:0x000000000010dd60 (1x)
+         8 ( 0.00%)  	  return __result + _Num;
+         .           	}
+-- line 433 ----------------------------------------
+-- line 740 ----------------------------------------
+         .           	  const ptrdiff_t _Num = __last - __first;
+     5,974 ( 0.00%)  	  if (_Num)
+    24,311 ( 0.00%)  	    __builtin_memmove(__result - _Num, __first, sizeof(_Tp) * _Num);
+    50,771 ( 0.00%)  => ???:0x000000000010dd60 (2,987x)
+         .           	  return __result - _Num;
+-- line 743 ----------------------------------------
+-- line 910 ----------------------------------------
+         .               {
+        97 ( 0.00%)        for (; __first != __last; ++__first)
+        37 ( 0.00%)  	*__first = __value;
+ 3,122,473 ( 0.03%)  => ???:0x000000000010d9a0 (3x)
+         .               }
+-- line 913 ----------------------------------------
+-- line 922 ----------------------------------------
+         .                 const _Tp __tmp = __value;
+37,469,049 ( 0.41%)        for (; __first != __last; ++__first)
+12,489,688 ( 0.14%)  	*__first = __tmp;
+       126 ( 0.00%)  => ???:0x000000000010d9a0 (6x)
+         .               }
+-- line 925 ----------------------------------------
+-- line 1108 ----------------------------------------
+         .               inline _OutputIterator
+         4 ( 0.00%)      __fill_n_a(_OutputIterator __first, _Size __n, const _Tp& __value,
+         .           	       std::random_access_iterator_tag)
+-- line 1110 ----------------------------------------
+-- line 1114 ----------------------------------------
+         .           #endif
+        12 ( 0.00%)        if (__n <= 0)
+         .           	return __first;
+-- line 1116 ----------------------------------------
+-- line 1119 ----------------------------------------
+         .           
+        28 ( 0.00%)        std::__fill_a(__first, __first + __n, __value);
+         .                 return __first + __n;
+-- line 1121 ----------------------------------------
+-- line 1514 ----------------------------------------
+         .             __lg(long __n)
+    23,440 ( 0.00%)    { return (int)sizeof(long) * __CHAR_BIT__ - 1 - __builtin_clzl(__n); }
+         .           
+-- line 1516 ----------------------------------------
+-- line 2064 ----------------------------------------
+         .                 typename iterator_traits<_RandomAccessIterator>::difference_type
+       287 ( 0.00%)  	__trip_count = (__last - __first) >> 2;
+         .           
+       205 ( 0.00%)        for (; __trip_count > 0; --__trip_count)
+         .           	{
+-- line 2068 ----------------------------------------
+-- line 2085 ----------------------------------------
+         .           
+       156 ( 0.00%)        switch (__last - __first)
+         .           	{
+-- line 2087 ----------------------------------------
+-- line 2088 ----------------------------------------
+         .           	case 3:
+        42 ( 0.00%)  	  if (__pred(__first))
+         .           	    return __first;
+-- line 2090 ----------------------------------------
+-- line 2093 ----------------------------------------
+         .           	case 2:
+        24 ( 0.00%)  	  if (__pred(__first))
+         .           	    return __first;
+         4 ( 0.00%)  	  ++__first;
+         .           	  // FALLTHRU
+-- line 2097 ----------------------------------------
+-- line 2098 ----------------------------------------
+         .           	case 1:
+         8 ( 0.00%)  	  if (__pred(__first))
+         .           	    return __first;
+-- line 2100 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/core/Neighborhood.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 21 ----------------------------------------
+         .           
+         6 ( 0.00%)  class Neighborhood {
+       214 ( 0.00%)  => /usr/include/c++/11/bits/stl_vector.h:std::vector<std::vector<volcano::Offset, std::allocator<volcano::Offset> >, std::allocator<std::vector<volcano::Offset, std::allocator<volcano::Offset> > > >::vector(std::vector<std::vector<volcano::Offset, std::allocator<volcano::Offset> >, std::allocator<std::vector<volcano::Offset, std::allocator<volcano::Offset> > > > const&) (1x)
+         .           public:
+-- line 23 ----------------------------------------
+-- line 42 ----------------------------------------
+         .               int variantFor(std::uint64_t seed, std::uint64_t step, std::uint64_t cellIndex) const {
+73,687,460 ( 0.80%)          if (variants_.size() == 1) {
+         .                       return 0;
+-- line 44 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/ca/CaRules.hpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 97 ----------------------------------------
+         .           inline const char* describe(StopReason r) {
+        28 ( 0.00%)      switch (r) {
+         .                   case StopReason::Running: return "trwa";
+-- line 99 ----------------------------------------
+-- line 100 ----------------------------------------
+         .                   case StopReason::NoLava: return "brak płynnej lawy";
+         8 ( 0.00%)          case StopReason::NoAir: return "brak wolnych komórek (AIR)";
+         .                   case StopReason::NoChange: return "brak zmian w kroku";
+-- line 102 ----------------------------------------
+-- line 113 ----------------------------------------
+         .           // flowId pamięta maksymalną temperaturę kandydata.
+        71 ( 0.00%)  class CandidateVote {
+         .           public:
+-- line 115 ----------------------------------------
+-- line 117 ----------------------------------------
+         .           
+36,843,730 ( 0.40%)      void clear() { n_ = 0; }
+         .               bool empty() const { return n_ == 0; }
+-- line 119 ----------------------------------------
+-- line 122 ----------------------------------------
+         .               VOLCANO_NOINLINE void add(std::int32_t flowId, float temp) {
+13,853,763 ( 0.15%)          for (int i = 0; i < n_; ++i) {
+ 3,944,568 ( 0.04%)              if (ids_[i] == flowId) {
+ 1,919,441 ( 0.02%)                  ++counts_[i];
+ 1,919,441 ( 0.02%)                  maxTemp_[i] = std::max(maxTemp_[i], temp);
+         .                           return;
+-- line 127 ----------------------------------------
+-- line 130 ----------------------------------------
+         .                   assert(n_ < kMax);
+ 1,025,143 ( 0.01%)          ids_[n_] = flowId;
+ 1,025,143 ( 0.01%)          counts_[n_] = 1;
+ 1,025,143 ( 0.01%)          maxTemp_[n_] = temp;
+ 3,075,429 ( 0.03%)          ++n_;
+         .               }
+-- line 135 ----------------------------------------
+-- line 138 ----------------------------------------
+         .               // Remisujące flowId są sortowane rosnąco, więc wynik nie zależy od kolejności sąsiadów.
+11,999,880 ( 0.13%)      VOLCANO_NOINLINE int winner(std::uint64_t seed, std::uint64_t step, std::uint64_t cellIndex) const {
+ 2,999,970 ( 0.03%)          if (n_ == 1) {
+ 1,950,526 ( 0.02%)              return 0;
+         .                   }
+    49,454 ( 0.00%)          int best = 0;
+   446,364 ( 0.00%)          for (int i = 0; i < n_; ++i) {
+         .                       best = std::max(best, counts_[i]);
+-- line 145 ----------------------------------------
+-- line 148 ----------------------------------------
+         .                   int k = 0;
+   149,640 ( 0.00%)          for (int i = 0; i < n_; ++i) {
+    99,760 ( 0.00%)              if (counts_[i] == best) {
+    88,299 ( 0.00%)                  tied[k++] = i;
+         .                       }
+-- line 152 ----------------------------------------
+-- line 153 ----------------------------------------
+         .                   }
+    49,454 ( 0.00%)          if (k == 1) {
+    24,727 ( 0.00%)              return tied[0];
+         .                   }
+    32,870 ( 0.00%)          std::sort(tied, tied + k, [this](int a, int b) { return ids_[a] < ids_[b]; });
+         .                   const std::uint64_t r = hashRand(seed, step, cellIndex, kSaltTieBreak);
+    18,752 ( 0.00%)          return tied[static_cast<int>(r % static_cast<std::uint64_t>(k))];
+10,999,890 ( 0.12%)      }
+         .           
+ 1,999,980 ( 0.02%)      std::int32_t flowId(int i) const { return ids_[i]; }
+         .               float maxTemp(int i) const { return maxTemp_[i]; }
+-- line 163 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/app/Simulation.cpp
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 28 ----------------------------------------
+         .           // Liczba z podaną liczbą miejsc po przecinku (do podsumowania w konsoli).
+         8 ( 0.00%)  std::string fixed(double v, int decimals) {
+         .               char buf[64];
+-- line 30 ----------------------------------------
+-- line 32 ----------------------------------------
+         .               return buf;
+         8 ( 0.00%)  }
+         .           
+-- line 34 ----------------------------------------
+-- line 51 ----------------------------------------
+         .               CaParams p;
+         2 ( 0.00%)      p.mode = c.ca.mode;
+         2 ( 0.00%)      p.seed = c.rngSeed;
+         2 ( 0.00%)      p.maxSteps = c.ca.maxSteps;
+         2 ( 0.00%)      p.eruptionSteps = c.vents.eruptionSteps;
+         3 ( 0.00%)      p.eruptTemp = static_cast<float>(c.vents.eruptTemp);
+         3 ( 0.00%)      p.solidusTemp = static_cast<float>(c.ca.solidusTemp);
+         3 ( 0.00%)      p.coolingAmbient = static_cast<float>(c.ca.coolingAmbient);
+         3 ( 0.00%)      p.coolingLateral = static_cast<float>(c.ca.coolingLateral);
+         3 ( 0.00%)      p.coolingFall = static_cast<float>(c.ca.coolingFall);
+         2 ( 0.00%)      p.ponding = c.ca.ponding;
+         .               return p;
+-- line 62 ----------------------------------------
+-- line 64 ----------------------------------------
+         .           
+        12 ( 0.00%)  Heightmap Simulation::buildTerrain(const Config& c) {
+         2 ( 0.00%)      if (c.ca.mode == CaMode::Classic) {
+         1 ( 0.00%)          return Heightmap{};  // klasyczny rozrost — brak terenu
+         .               }
+-- line 68 ----------------------------------------
+-- line 72 ----------------------------------------
+         .               return TerrainGenerator::cone(c.terrain, c.space, c.rngSeed);
+        12 ( 0.00%)  }
+         .           
+-- line 74 ----------------------------------------
+-- line 75 ----------------------------------------
+         .           std::vector<Vent> Simulation::buildVents(const Config& c, const Heightmap& hm) {
+         2 ( 0.00%)      if (c.ca.mode == CaMode::Classic) {
+         6 ( 0.00%)          return VentPlacer::placeSeeds(c.vents.count, c.space, c.rngSeed);
+   134,452 ( 0.00%)  => <repo>/engine/src/terrain/VentPlacer.cpp:volcano::VentPlacer::placeSeeds(int, volcano::Dims const&, unsigned long) (1x)
+         .               }
+-- line 78 ----------------------------------------
+-- line 82 ----------------------------------------
+         .           template <class Storage>
+        16 ( 0.00%)  RunSummary Simulation::runWith(const std::string& outDir, TimingReport& timing) {
+         .               RunSummary s;
+-- line 84 ----------------------------------------
+-- line 87 ----------------------------------------
+         .               Timer t;
+         5 ( 0.00%)      const Neighborhood nb(cfg_.neighborhood, cfg_.space);
+     2,313 ( 0.00%)  => <repo>/engine/src/core/Neighborhood.cpp:volcano::Neighborhood::Neighborhood(volcano::NeighborhoodKind, volcano::Dims const&) (1x)
+         5 ( 0.00%)      const Boundary bc(cfg_.boundary, cfg_.ca.mode);
+        12 ( 0.00%)  => <repo>/engine/src/core/Boundary.cpp:volcano::Boundary::Boundary(volcano::BoundaryKind, volcano::CaMode) (1x)
+         9 ( 0.00%)      LavaCA<Storage> ca(cfg_.space, caParams(cfg_), nb, bc);
+36,087,018 ( 0.39%)  => <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::LavaCA(volcano::Dims const&, volcano::CaParams const&, volcano::Neighborhood const&, volcano::Boundary const&) (1x)
+         8 ( 0.00%)      timing.add("allocate", t.elapsedMs());
+       520 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        74 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .               // Model pamięci (etap 3): oba bufory z ramką i tablice pomocnicze automatu.
+-- line 92 ----------------------------------------
+-- line 93 ----------------------------------------
+         .               MemoryModel& mem = timing.memory();
+         7 ( 0.00%)      mem.allocate("caGrid", ca.gridBytes());
+       809 ( 0.00%)  => <repo>/engine/src/core/MemoryModel.hpp:volcano::MemoryModel::allocate(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned long) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         7 ( 0.00%)      mem.allocate("caAux", ca.auxBytes());
+     1,586 ( 0.00%)  => <repo>/engine/src/core/MemoryModel.hpp:volcano::MemoryModel::allocate(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned long) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .           
+-- line 96 ----------------------------------------
+-- line 98 ----------------------------------------
+         .               t.reset();
+         5 ( 0.00%)      const Heightmap hm = buildTerrain(cfg_);
+        31 ( 0.00%)  => engine/src/app/Simulation.cpp:volcano::Simulation::buildTerrain(volcano::Config const&) (1x)
+         2 ( 0.00%)      if (!hm.empty()) {
+         .                   ca.applyTerrain(hm);
+-- line 101 ----------------------------------------
+-- line 102 ----------------------------------------
+         .               }
+         7 ( 0.00%)      timing.add("terrain", t.elapsedMs());
+       384 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         8 ( 0.00%)      mem.allocate("caAux", ca.auxBytes() + hm.height.size() * sizeof(int));  // + poziomy przelewu i mapa wysokości
+       319 ( 0.00%)  => <repo>/engine/src/core/MemoryModel.hpp:volcano::MemoryModel::allocate(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned long) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .           
+-- line 105 ----------------------------------------
+-- line 107 ----------------------------------------
+         .               t.reset();
+         1 ( 0.00%)      s.vents = buildVents(cfg_, hm);
+         3 ( 0.00%)      ca.placeSeeds(s.vents);
+ 8,143,420 ( 0.09%)  => <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::placeSeeds(std::vector<volcano::Vent, std::allocator<volcano::Vent> > const&) (1x)
+         8 ( 0.00%)      timing.add("vents", t.elapsedMs());
+       110 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .           
+-- line 111 ----------------------------------------
+-- line 114 ----------------------------------------
+         .               ca.enablePhaseTiming(timing.detailEnabled());
+         2 ( 0.00%)      const int every = cfg_.output.snapshotsEvery;
+         2 ( 0.00%)      if (every <= 0) {
+         .                   t.reset();
+-- line 117 ----------------------------------------
+-- line 118 ----------------------------------------
+         .                   ca.run();
+         7 ( 0.00%)          timing.add("caSim", t.elapsedMs());
+       460 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .               } else {
+-- line 120 ----------------------------------------
+-- line 142 ----------------------------------------
+         .               }
+         3 ( 0.00%)      if (timing.detailEnabled()) {
+         .                   const CaPhaseTimes& ph = ca.phaseTimes();
+-- line 144 ----------------------------------------
+-- line 154 ----------------------------------------
+         .               t.reset();
+         2 ( 0.00%)      s.steps = ca.steps();
+         .               s.stop = ca.stopReason();
+         3 ( 0.00%)      s.activeHistory = ca.activeHistory();
+       332 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<unsigned long, std::allocator<unsigned long> >::operator=(std::vector<unsigned long, std::allocator<unsigned long> > const&) [clone .isra.0] (1x)
+         3 ( 0.00%)      s.changedHistory = ca.changedHistory();
+       332 ( 0.00%)  => /usr/include/c++/11/bits/vector.tcc:std::vector<unsigned long, std::allocator<unsigned long> >::operator=(std::vector<unsigned long, std::allocator<unsigned long> > const&) [clone .isra.0] (1x)
+         3 ( 0.00%)      s.result = ca.result();
+        78 ( 0.00%)  => <repo>/engine/src/core/Types.hpp:volcano::Microstructure::operator=(volcano::Microstructure&&) [clone .isra.0] (1x)
+         7 ( 0.00%)      mem.allocate("caResult", s.result.bytes());
+     1,485 ( 0.00%)  => <repo>/engine/src/core/MemoryModel.hpp:volcano::MemoryModel::allocate(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, unsigned long) (1x)
+        74 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         6 ( 0.00%)      const fs::path out(outDir);
+     1,356 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::path::path<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::filesystem::__cxx11::path>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::filesystem::__cxx11::path::format) (1x)
+         .               Timer tf;  // czas zapisu każdego pliku osobno (sekcja files w times.json)
+         3 ( 0.00%)      if (cfg_.output.format == OutputFormat::Txt || cfg_.output.format == OutputFormat::Both) {
+         .                   const std::string path = (out / "ca_result.txt").string();
+-- line 164 ----------------------------------------
+-- line 168 ----------------------------------------
+         .               }
+         3 ( 0.00%)      if (cfg_.output.format == OutputFormat::Bin || cfg_.output.format == OutputFormat::Both) {
+         .                   const std::string path = (out / "ca_result.bin").string();
+-- line 170 ----------------------------------------
+-- line 174 ----------------------------------------
+         .               }
+         7 ( 0.00%)      timing.add("save", t.elapsedMs());
+       120 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .               // Automat (oba bufory) i mapa terenu giną przy wyjściu z funkcji; wynik zostaje w RunSummary.
+         3 ( 0.00%)      mem.release("caGrid");
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         3 ( 0.00%)      mem.release("caAux");
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .               return s;
+        14 ( 0.00%)  }
+     1,550 ( 0.00%)  => <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::~LavaCA() (1x)
+         .           
+        17 ( 0.00%)  RunSummary Simulation::run(const std::string& outDir, TimingReport& timing) {
+         5 ( 0.00%)      const fs::path out(outDir);
+     1,356 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::path::path<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::filesystem::__cxx11::path>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::filesystem::__cxx11::path::format) (1x)
+         .               Timer tc;
+         5 ( 0.00%)      ResultWriter::writeJson((out / "config_used.json").string(), cfg_.effective);
+    48,233 ( 0.00%)  => <repo>/engine/src/io/ResultWriter.cpp:volcano::ResultWriter::writeJson(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&) (1x)
+         4 ( 0.00%)      timing.addFile((out / "config_used.json").string(), tc.elapsedMs());
+       318 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::addFile(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+         .           
+-- line 187 ----------------------------------------
+-- line 193 ----------------------------------------
+         .               } else {
+        11 ( 0.00%)          s = (cfg_.grid == GridKind::Matrix) ? runWith<MatrixStorage>(outDir, timing)
+9,062,695,434 (98.01%)  => engine/src/app/Simulation.cpp:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) (1x)
+        84 ( 0.00%)  => <repo>/engine/src/app/Simulation.hpp:volcano::RunSummary::~RunSummary() (1x)
+         .                                                        : runWith<VectorStorage>(outDir, timing);
+-- line 195 ----------------------------------------
+-- line 197 ----------------------------------------
+         .           
+         7 ( 0.00%)      nlohmann::ordered_json stats = s.caRan ? buildStats(cfg_, s) : nlohmann::ordered_json::object();
+90,061,435 ( 0.97%)  => engine/src/app/Simulation.cpp:volcano::Simulation::buildStats[abi:cxx11](volcano::Config const&, volcano::RunSummary const&) (1x)
+         3 ( 0.00%)      if (cfg_.mc.enabled) {
+         .                   // Wynik CA jest w pamięci z pełnymi danymi o stygnięciu (solidStep, arrivalStep).
+-- line 200 ----------------------------------------
+-- line 206 ----------------------------------------
+         .               Timer t;
+         3 ( 0.00%)      ResultWriter::writeJson((out / "stats.json").string(), stats);
+   100,242 ( 0.00%)  => <repo>/engine/src/io/ResultWriter.cpp:volcano::ResultWriter::writeJson(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&) (1x)
+         4 ( 0.00%)      timing.addFile((out / "stats.json").string(), t.elapsedMs());
+       451 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::addFile(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        10 ( 0.00%)      timing.add(s.mcRan ? "mcSave" : "save", t.elapsedMs());
+        85 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .               return s;
+        12 ( 0.00%)  }
+         .           
+-- line 212 ----------------------------------------
+-- line 278 ----------------------------------------
+         .           
+        20 ( 0.00%)  nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary& s) {
+         .               using ojson = nlohmann::ordered_json;
+-- line 280 ----------------------------------------
+-- line 284 ----------------------------------------
+         .               // Zliczenie komórek każdego „ziarna” i zasięgu (maks. odległość pozioma od krateru).
+         2 ( 0.00%)      std::vector<std::uint64_t> lava(flows + 1, 0);
+         .               std::vector<std::uint64_t> basalt(flows + 1, 0);
+-- line 286 ----------------------------------------
+-- line 287 ----------------------------------------
+         .               std::vector<double> reach(flows + 1, 0.0);
+         2 ( 0.00%)      std::size_t i = 0;
+       810 ( 0.00%)      for (int z = 0; z < m.dims.nz; ++z) {
+    61,004 ( 0.00%)          for (int y = 0; y < m.dims.ny; ++y) {
+ 6,181,400 ( 0.07%)              for (int x = 0; x < m.dims.nx; ++x, ++i) {
+ 2,000,000 ( 0.02%)                  const CellType t = m.type[i];
+ 4,000,000 ( 0.04%)                  const std::int32_t f = m.flowId[i];
+14,000,000 ( 0.15%)                  if ((t != CellType::Lava && t != CellType::Basalt) || f <= 0 ||
+         .                               static_cast<std::size_t>(f) > flows) {
+-- line 295 ----------------------------------------
+-- line 298 ----------------------------------------
+         .                           const std::size_t fi = static_cast<std::size_t>(f);
+ 8,000,006 ( 0.09%)                  (t == CellType::Lava ? lava : basalt)[fi] += 1;
+ 2,000,000 ( 0.02%)                  const Vent& v = s.vents[fi - 1];
+18,000,000 ( 0.19%)                  reach[fi] = std::max(reach[fi], std::hypot(double(x - v.x), double(y - v.y)));
+109,426,746 ( 1.18%)  => ???:0x000000000010d860 (2,000,000x)
+         .                       }
+-- line 302 ----------------------------------------
+-- line 306 ----------------------------------------
+         .               ojson j;
+        14 ( 0.00%)      j["mode"] = nameOf(c.ca.mode);
+       858 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+        12 ( 0.00%)  => <repo>/engine/src/io/Config.cpp:volcano::nameOf(volcano::CaMode) (2x)
+         6 ( 0.00%)      j["steps"] = s.steps;
+     1,740 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+         6 ( 0.00%)      j["stopReason"] = describe(s.stop);
+     2,202 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+         2 ( 0.00%)      std::uint64_t total = 0;
+         2 ( 0.00%)      std::uint64_t totalLava = 0;
+         .               double maxReach = 0.0;
+         2 ( 0.00%)      std::uint64_t minSize = std::numeric_limits<std::uint64_t>::max();
+         2 ( 0.00%)      std::uint64_t maxSize = 0;
+         .               ojson list = ojson::array();
+-- line 315 ----------------------------------------
+-- line 316 ----------------------------------------
+         .               const std::size_t listLimit = 10000;  // przy milionie ziaren pomijamy szczegółową listę
+        74 ( 0.00%)      for (std::size_t f = 1; f <= flows; ++f) {
+       100 ( 0.00%)          const std::uint64_t cells = lava[f] + basalt[f];
+        20 ( 0.00%)          total += cells;
+        20 ( 0.00%)          totalLava += lava[f];
+         .                   maxReach = std::max(maxReach, reach[f]);
+        20 ( 0.00%)          minSize = std::min(minSize, cells);
+         .                   maxSize = std::max(maxSize, cells);
+        40 ( 0.00%)          if (f <= listLimit) {
+         .                       const Vent& v = s.vents[f - 1];
+-- line 325 ----------------------------------------
+-- line 326 ----------------------------------------
+         .                       ojson e;
+       100 ( 0.00%)              e["flowId"] = f;
+     8,580 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (20x)
+       420 ( 0.00%)              e["vent"] = {v.x, v.y, v.z};
+    12,580 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (20x)
+     4,900 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::basic_json(std::initializer_list<nlohmann::json_abi_v3_11_3::detail::json_ref<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> > >, bool, nlohmann::json_abi_v3_11_3::detail::value_t) (20x)
+        80 ( 0.00%)              e["cells"] = cells;
+    43,999 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (20x)
+        80 ( 0.00%)              if (c.ca.mode == CaMode::Lava) {
+         .                           e["lava"] = lava[f];
+-- line 331 ----------------------------------------
+-- line 337 ----------------------------------------
+         .               }
+         8 ( 0.00%)      if (c.ca.mode == CaMode::Lava) {
+         .                   j["totalLavaVolume"] = total;   // LAVA + BASALT [komórki]
+-- line 339 ----------------------------------------
+-- line 342 ----------------------------------------
+         .               } else {
+         6 ( 0.00%)          j["grains"] = flows;
+       478 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+        30 ( 0.00%)          j["meanGrainSize"] = flows ? double(total) / double(flows) : 0.0;
+     3,768 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+        14 ( 0.00%)          j["minGrainSize"] = flows ? minSize : 0;
+       498 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+         6 ( 0.00%)          j["maxGrainSize"] = maxSize;
+       584 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+         .               }
+        18 ( 0.00%)      j["flows"] = list;
+       605 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+    27,409 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::basic_json(nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&) (2x)
+         4 ( 0.00%)      if (flows > listLimit) {
+         .                   j["flowsTruncated"] = true;
+-- line 350 ----------------------------------------
+-- line 351 ----------------------------------------
+         .               }
+         6 ( 0.00%)      j["activeCells"] = s.activeHistory;
+    68,187 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+         6 ( 0.00%)      j["changedCells"] = s.changedHistory;
+       694 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) (2x)
+         .               return j;
+        24 ( 0.00%)  }
+         .           
+        14 ( 0.00%)  int Simulation::runFromCli(const CliOptions& opt, const Timer& sinceStart) {
+         .               // Pamięć procesu przed wczytaniem danych (kod programu, biblioteki, sterta startowa) —
+-- line 358 ----------------------------------------
+-- line 359 ----------------------------------------
+         .               // punkt odniesienia dla modelu teoretycznego w sekcji memory pliku times.json.
+         4 ( 0.00%)      const ProcessMemory startMemory = ProcessInfo::memory();
+    23,442 ( 0.00%)  => <repo>/engine/src/core/ProcessInfo.cpp:volcano::ProcessInfo::memory() (1x)
+         .               TimingReport timing;
+-- line 361 ----------------------------------------
+-- line 365 ----------------------------------------
+         .               Timer t;
+         6 ( 0.00%)      Config cfg = Config::load(opt.configPath, opt.overrides);
+   428,516 ( 0.00%)  => <repo>/engine/src/io/Config.cpp:volcano::Config::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) (1x)
+        10 ( 0.00%)      timing.add("readConfig", t.elapsedMs());
+        74 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+       227 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+         3 ( 0.00%)      for (const std::string& w : cfg.warnings) {
+         .                   std::cerr << "Ostrzeżenie: " << w << '\n';
+-- line 369 ----------------------------------------
+-- line 373 ----------------------------------------
+         .               std::string outDir = opt.outDir;
+         2 ( 0.00%)      if (outDir.empty()) {
+         .                   const std::string stem = opt.configPath.empty() ? "default" : fs::path(opt.configPath).stem().string();
+-- line 375 ----------------------------------------
+-- line 377 ----------------------------------------
+         .               }
+         7 ( 0.00%)      fs::create_directories(outDir);
+    20,337 ( 0.00%)  => ???:0x000000000010da10 (1x)
+     2,404 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::path::path<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::filesystem::__cxx11::path>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::filesystem::__cxx11::path::format) (1x)
+         .           
+-- line 379 ----------------------------------------
+-- line 380 ----------------------------------------
+         .               // Wspólne informacje o przebiegu i środowisku w times.json.
+        20 ( 0.00%)      auto setCommonInfo = [&timing](const Config& c, const Dims& d) {
+         9 ( 0.00%)          timing.setInfo("cells", d.cells());
+       437 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+        24 ( 0.00%)          timing.setInfo("space", {d.nx, d.ny, d.nz});
+       736 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+       245 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::basic_json(std::initializer_list<nlohmann::json_abi_v3_11_3::detail::json_ref<nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> > >, bool, nlohmann::json_abi_v3_11_3::detail::value_t) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+        11 ( 0.00%)          timing.setInfo("neighborhood", Neighborhood::name(c.neighborhood));
+     2,013 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+        74 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         9 ( 0.00%)  => <repo>/engine/src/core/Neighborhood.cpp:volcano::Neighborhood::name(volcano::NeighborhoodKind) (1x)
+         8 ( 0.00%)          timing.setInfo("boundary", Boundary::name(c.boundary));
+       309 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+         6 ( 0.00%)  => <repo>/engine/src/core/Boundary.cpp:volcano::Boundary::name(volcano::BoundaryKind) (1x)
+        13 ( 0.00%)      };
+         .               auto setMcInfo = [&timing](const McSummary& mc) {
+-- line 387 ----------------------------------------
+-- line 392 ----------------------------------------
+         .                   timing.setInfo("mcMobility", mc.mobilityUsed);
+         1 ( 0.00%)      };
+        19 ( 0.00%)      auto setEnvInfo = [&timing]() {
+         8 ( 0.00%)          timing.setInfo("cpu", TimingReport::cpuName());
+     9,160 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::cpuName[abi:cxx11]() (1x)
+     5,261 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+         9 ( 0.00%)          timing.setInfo("compiler", TimingReport::compilerName());
+       377 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+       157 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::compilerName[abi:cxx11]() (1x)
+        74 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         6 ( 0.00%)          timing.setInfo("build", TimingReport::buildType());
+       451 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+        11 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::buildType[abi:cxx11]() (1x)
+        12 ( 0.00%)      };
+         .               // Profil (etap 3): rozmiary zapisanych plików i pamięć (szczyt procesu + model teoretyczny).
+-- line 399 ----------------------------------------
+-- line 400 ----------------------------------------
+         .               auto setResourceInfo = [&timing, &startMemory](const Dims& d) {
+         3 ( 0.00%)          timing.recordFileSizes();
+    25,393 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::recordFileSizes() (1x)
+         3 ( 0.00%)          timing.recordMemory(startMemory, d.cells());
+    47,358 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::recordMemory(volcano::ProcessMemory const&, unsigned long) (1x)
+         .               };
+-- line 403 ----------------------------------------
+-- line 404 ----------------------------------------
+         .               // Linia z czasami wszystkich sekcji.
+        12 ( 0.00%)      auto timesLine = [&timing]() {
+         .                   std::string line = "Czasy [ms]     ";
+         3 ( 0.00%)          const char* sep = "";
+        24 ( 0.00%)          for (const auto& [name, ms] : timing.sections()) {
+         .                       line += sep + name + ' ' + fixed(ms, 2);
+         7 ( 0.00%)              sep = " | ";
+         .                   }
+-- line 411 ----------------------------------------
+-- line 412 ----------------------------------------
+         .                   return line + '\n';
+        13 ( 0.00%)      };
+         .           
+-- line 414 ----------------------------------------
+-- line 415 ----------------------------------------
+         .               // --- engine --mc-from: samo MC na wyniku CA z pliku ---
+         3 ( 0.00%)      if (!opt.mcFrom.empty()) {
+         .                   const McSummary mc = runMcFrom(cfg, opt.mcFrom, outDir, timing);
+-- line 417 ----------------------------------------
+-- line 443 ----------------------------------------
+         .               // --- zwykły przebieg: CA (+ MC na bazalcie) albo samo MC na całej przestrzeni ---
+         5 ( 0.00%)      const Config cfgCopy = cfg;  // do podsumowania (Simulation przejmuje config)
+     7,483 ( 0.00%)  => <repo>/engine/src/io/Config.hpp:volcano::Config::Config(volcano::Config const&) (1x)
+         .               Simulation sim(std::move(cfg));
+         9 ( 0.00%)      const RunSummary s = sim.run(outDir, timing);
+9,152,966,732 (98.99%)  => engine/src/app/Simulation.cpp:volcano::Simulation::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) (1x)
+         7 ( 0.00%)      timing.add("total", sinceStart.elapsedMs());
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+       189 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::add(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, double) (1x)
+         .           
+-- line 448 ----------------------------------------
+-- line 450 ----------------------------------------
+         .               const Dims& d = cfgCopy.space;
+         4 ( 0.00%)      setCommonInfo(cfgCopy, d);
+     4,740 ( 0.00%)  => engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)::{lambda(volcano::Config const&, volcano::Dims const&)#1}::operator()(volcano::Config const&, volcano::Dims const&) const (1x)
+         2 ( 0.00%)      if (s.caRan) {
+         9 ( 0.00%)          timing.setInfo("steps", s.steps);
+     2,865 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+        14 ( 0.00%)          timing.setInfo("grid", nameOf(cfgCopy.grid));
+       325 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+       188 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::basic_json<char const*, char const*, 0>(char const*&&) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         6 ( 0.00%)  => <repo>/engine/src/io/Config.cpp:volcano::nameOf(volcano::GridKind) (1x)
+        13 ( 0.00%)          timing.setInfo("mode", nameOf(cfgCopy.ca.mode));
+       370 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+       188 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::basic_json<char const*, char const*, 0>(char const*&&) (1x)
+        76 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         6 ( 0.00%)  => <repo>/engine/src/io/Config.cpp:volcano::nameOf(volcano::CaMode) (1x)
+        12 ( 0.00%)          timing.setInfo("stopReason", describe(s.stop));
+       333 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::setInfo(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>) (1x)
+       260 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::basic_json<char const*, char const*, 0>(char const*&&) (1x)
+        74 ( 0.00%)  => /usr/include/c++/11/bits/basic_string.h:std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::basic_string<std::allocator<char> >(char const*, std::allocator<char> const&) [clone .constprop.0] (1x)
+         .               } else {
+-- line 457 ----------------------------------------
+-- line 459 ----------------------------------------
+         .               }
+         2 ( 0.00%)      if (s.mcRan) {
+         .                   setMcInfo(s.mc);
+-- line 461 ----------------------------------------
+-- line 462 ----------------------------------------
+         .               }
+         2 ( 0.00%)      setEnvInfo();
+    16,124 ( 0.00%)  => engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)::{lambda()#3}::operator()() const (1x)
+         .               setResourceInfo(d);
+        25 ( 0.00%)      ResultWriter::writeJson((fs::path(outDir) / "times.json").string(), timing.toJson());
+    54,236 ( 0.00%)  => <repo>/engine/src/io/ResultWriter.cpp:volcano::ResultWriter::writeJson(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const&) (1x)
+    29,110 ( 0.00%)  => <repo>/engine/src/io/TimingReport.cpp:volcano::TimingReport::toJson[abi:cxx11]() const (1x)
+     1,356 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::path::path<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::filesystem::__cxx11::path>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::filesystem::__cxx11::path::format) (1x)
+     2,182 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::operator/(std::filesystem::__cxx11::path const&, std::filesystem::__cxx11::path const&) (1x)
+       422 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::path::path<char [11], std::filesystem::__cxx11::path>(char const (&) [11], std::filesystem::__cxx11::path::format) (1x)
+       133 ( 0.00%)  => /usr/include/c++/11/bits/fs_path.h:std::filesystem::__cxx11::path::string() const (1x)
+         .           
+-- line 466 ----------------------------------------
+-- line 467 ----------------------------------------
+         .               // Podsumowanie w konsoli.
+         2 ( 0.00%)      for (const std::string& w : s.mc.warnings) {
+         .                   std::cerr << "Ostrzeżenie: " << w << '\n';
+-- line 469 ----------------------------------------
+-- line 471 ----------------------------------------
+         .               std::ostringstream os;
+         3 ( 0.00%)      os << "=== Symulacja zakończona ===\n";
+     5,287 ( 0.00%)  => ???:0x000000000010db00 (1x)
+        17 ( 0.00%)      os << "Przestrzeń     " << d.nx << " x " << d.ny << " x " << d.nz << " (" << (d.is2D() ? "2D" : "3D")
+       527 ( 0.00%)  => ???:0x000000000010db00 (3x)
+     2,830 ( 0.00%)  => ???:0x000000000010dda0 (2x)
+        18 ( 0.00%)         << ", " << d.cells() << " komórek)\n";
+       707 ( 0.00%)  => ???:0x000000000010db00 (4x)
+       334 ( 0.00%)  => ???:0x000000000010dda0 (1x)
+         2 ( 0.00%)      if (s.caRan) {
+         .                   os << "Tryb / siatka  " << nameOf(cfgCopy.ca.mode) << (s.mcRan ? " + MC" : "") << " / "
+        25 ( 0.00%)             << nameOf(cfgCopy.grid) << '\n';
+       842 ( 0.00%)  => ???:0x000000000010db00 (5x)
+         6 ( 0.00%)  => <repo>/engine/src/io/Config.cpp:volcano::nameOf(volcano::GridKind) (1x)
+         6 ( 0.00%)  => <repo>/engine/src/io/Config.cpp:volcano::nameOf(volcano::CaMode) (1x)
+         .               } else {
+-- line 478 ----------------------------------------
+-- line 481 ----------------------------------------
+         .               os << "Sąsiedztwo     " << Neighborhood::name(cfgCopy.neighborhood) << ", brzeg "
+        22 ( 0.00%)         << Boundary::name(cfgCopy.boundary) << ", seed " << cfgCopy.rngSeed << '\n';
+       865 ( 0.00%)  => ???:0x000000000010db00 (5x)
+         9 ( 0.00%)  => <repo>/engine/src/core/Neighborhood.cpp:volcano::Neighborhood::name(volcano::NeighborhoodKind) (1x)
+         6 ( 0.00%)  => <repo>/engine/src/core/Boundary.cpp:volcano::Boundary::name(volcano::BoundaryKind) (1x)
+         2 ( 0.00%)      if (s.caRan) {
+        15 ( 0.00%)          os << "Kroki          " << s.steps << " (koniec: " << describe(s.stop) << ")\n";
+       695 ( 0.00%)  => ???:0x000000000010db00 (4x)
+       320 ( 0.00%)  => ???:0x000000000010dda0 (1x)
+         4 ( 0.00%)          const nlohmann::ordered_json stats = buildStats(cfgCopy, s);
+90,061,363 ( 0.97%)  => engine/src/app/Simulation.cpp:volcano::Simulation::buildStats[abi:cxx11](volcano::Config const&, volcano::RunSummary const&) (1x)
+         3 ( 0.00%)          if (cfgCopy.ca.mode == CaMode::Lava) {
+         .                       os << "Lawa           " << stats["totalLavaVolume"].get<std::uint64_t>() << " komórek (płynna: "
+-- line 487 ----------------------------------------
+-- line 495 ----------------------------------------
+         .                   } else {
+         9 ( 0.00%)              os << "Ziarna         " << stats["grains"].get<std::uint64_t>() << ", średnia wielkość "
+       173 ( 0.00%)  => ???:0x000000000010db00 (1x)
+       150 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) const (1x)
+        14 ( 0.00%)                 << fixed(stats["meanGrainSize"].get<double>(), 1) << " komórek (min "
+       344 ( 0.00%)  => ???:0x000000000010db00 (2x)
+     2,662 ( 0.00%)  => engine/src/app/Simulation.cpp:volcano::(anonymous namespace)::fixed(double, int) (1x)
+       155 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) const (1x)
+         7 ( 0.00%)                 << stats["minGrainSize"].get<std::uint64_t>() << ", maks "
+       175 ( 0.00%)  => ???:0x000000000010db00 (1x)
+       162 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) const (1x)
+         6 ( 0.00%)                 << stats["maxGrainSize"].get<std::uint64_t>() << ")\n";
+       178 ( 0.00%)  => ???:0x000000000010db00 (1x)
+       201 ( 0.00%)  => <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void> const& nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::operator[]<char const>(char const*) const (1x)
+         .                   }
+-- line 500 ----------------------------------------
+-- line 501 ----------------------------------------
+         .               }
+         2 ( 0.00%)      if (s.mcRan) {
+         .                   os << McStage::describe(s.mc);
+-- line 503 ----------------------------------------
+-- line 504 ----------------------------------------
+         .               }
+         6 ( 0.00%)      os << timesLine() << "Wyniki         " << outDir << '\n';
+    21,558 ( 0.00%)  => engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)::{lambda()#5}::operator()() const (1x)
+       173 ( 0.00%)  => ???:0x000000000010db00 (1x)
+         .               std::cout << os.str();
+-- line 506 ----------------------------------------
+-- line 507 ----------------------------------------
+         .               return 0;
+        19 ( 0.00%)  }
+    13,095 ( 0.00%)  => <repo>/engine/src/io/TimingReport.hpp:volcano::TimingReport::~TimingReport() (1x)
+    10,364 ( 0.00%)  => <repo>/engine/src/io/Config.hpp:volcano::Config::~Config() (1x)
+       749 ( 0.00%)  => <repo>/engine/src/app/Simulation.hpp:volcano::RunSummary::~RunSummary() (1x)
+         .           
+         3 ( 0.00%)  }  // namespace volcano
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: engine/src/ca/LavaCA.hpp
+--------------------------------------------------------------------------------
+Ir                     
+
+-- line 28 ----------------------------------------
+            .           // Czasy faz kroku [ms], sumowane po krokach — tylko przy --timing-detail (etap 3).
+            4 ( 0.00%)  struct CaPhaseTimes {
+            .               double frame = 0.0;    // wypełnienie ramki (warunki brzegowe)
+-- line 30 ----------------------------------------
+-- line 36 ----------------------------------------
+            .           template <class Storage>
+            8 ( 0.00%)  class LavaCA {
+            .           public:
+-- line 38 ----------------------------------------
+-- line 39 ----------------------------------------
+            .               // Alokuje oba bufory (cur, next) — cała przestrzeń AIR.
+           12 ( 0.00%)      LavaCA(const Dims& dims, const CaParams& params, const Neighborhood& nb, const Boundary& bc)
+           22 ( 0.00%)          : dims_(dims), p_(params), nb_(nb), bc_(bc), cur_(dims), next_(dims) {
+            3 ( 0.00%)          if (params.mode == CaMode::Lava) {
+            .                       descent_.assign(dims.cells(), -1);
+-- line 43 ----------------------------------------
+-- line 45 ----------------------------------------
+            .                   // Poziomi sąsiedzi (oś pionowa to z) — używani przez regułę wypełniania zagłębień.
+            4 ( 0.00%)          horizontal_.push_back(Offset{-1, 0, 0});
+            2 ( 0.00%)          horizontal_.push_back(Offset{1, 0, 0});
+            2 ( 0.00%)          if (dims.ny > 1) {
+            3 ( 0.00%)              horizontal_.push_back(Offset{0, -1, 0});
+            3 ( 0.00%)              horizontal_.push_back(Offset{0, 1, 0});
+            .                   }
+-- line 51 ----------------------------------------
+-- line 53 ----------------------------------------
+            .                   // suma po wszystkich wariantach, więc wynik nie zależy od wylosowanego wariantu.
+            7 ( 0.00%)          for (int v = 0; v < nb_.variantCount(); ++v) {
+           25 ( 0.00%)              for (const Offset& o : nb_.variant(v)) {
+           18 ( 0.00%)                  if (o.dz == 0) {
+            .                               addUnique(sideOffsets_, o);
+           10 ( 0.00%)                  } else if (o.dz == -1 && (o.dx != 0 || o.dy != 0)) {
+            .                               diagonalFalls_ = true;
+-- line 59 ----------------------------------------
+-- line 62 ----------------------------------------
+            .                   }
+           11 ( 0.00%)      }
+            .           
+-- line 64 ----------------------------------------
+-- line 80 ----------------------------------------
+            .               // Wywołać po applyTerrain — ustala też stan początkowy liczników i warunku końca.
+           14 ( 0.00%)      void placeSeeds(const std::vector<Vent>& vents) {
+            3 ( 0.00%)          const float temp = (p_.mode == CaMode::Lava) ? p_.eruptTemp : 0.0f;
+            1 ( 0.00%)          ventByFlow_.clear();
+           32 ( 0.00%)          for (const Vent& v : vents) {
+           10 ( 0.00%)              cur_.setCell(v.x, v.y, v.z, CellState{CellType::Lava, v.flowId, temp, 0, 0});
+            .                       // Szybkie rozpoznanie krateru po flowId: krater f leży w ventByFlow_[f].
+           30 ( 0.00%)              if (v.flowId >= static_cast<std::int32_t>(ventByFlow_.size())) {
+           30 ( 0.00%)                  ventByFlow_.resize(static_cast<std::size_t>(v.flowId) + 1, Coord{-1, -1, -1});
+            .                       }
+           70 ( 0.00%)              ventByFlow_[static_cast<std::size_t>(v.flowId)] = Coord{v.x, v.y, v.z};
+            .                   }
+-- line 91 ----------------------------------------
+-- line 92 ----------------------------------------
+            .                   countInitialState();
+           11 ( 0.00%)      }
+            .           
+-- line 94 ----------------------------------------
+-- line 96 ----------------------------------------
+            .               bool step() {
+            3 ( 0.00%)          if (finished()) {
+            .                       return false;
+-- line 98 ----------------------------------------
+-- line 99 ----------------------------------------
+            .                   }
+          142 ( 0.00%)          if (phaseTiming_) {
+            .                       stepTimed();
+          213 ( 0.00%)          } else if (p_.mode == CaMode::Lava) {
+            .                       stepLava();
+-- line 103 ----------------------------------------
+-- line 111 ----------------------------------------
+            .               void run() {
+          213 ( 0.00%)          while (step()) {
+            .                   }
+-- line 113 ----------------------------------------
+-- line 128 ----------------------------------------
+            .               // Wynik w postaci płaskiej mikrostruktury (bez ramki).
+            4 ( 0.00%)      Microstructure result() const { return toMicrostructure(cur_); }
+   31,302,834 ( 0.34%)  => <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::VectorStorage>(volcano::VectorStorage const&) (1x)
+            .           
+-- line 130 ----------------------------------------
+-- line 133 ----------------------------------------
+            .               // Pomiar czasów faz kroku (--timing-detail): kroki idą wtedy przez stepTimed(). Domyślnie wyłączony.
+            2 ( 0.00%)      void enablePhaseTiming(bool on) { phaseTiming_ = on; }
+            .               const CaPhaseTimes& phaseTimes() const { return phases_; }
+-- line 135 ----------------------------------------
+-- line 137 ----------------------------------------
+            .               // Pamięć obu buforów z ramką [B] (dane komórek; MatrixStorage bez narzutu alokacji wierszy).
+            3 ( 0.00%)      std::size_t gridBytes() const { return cur_.bytes() + next_.bytes(); }
+            .               // Pamięć tablic pomocniczych [B]: D(n) (tryb lava) i poziomy przelewu niecek.
+-- line 139 ----------------------------------------
+-- line 140 ----------------------------------------
+            .               std::size_t auxBytes() const {
+            2 ( 0.00%)          return descent_.size() * sizeof(std::int8_t) + spill_.height.size() * sizeof(int);
+            .               }
+-- line 142 ----------------------------------------
+-- line 214 ----------------------------------------
+            .               static void addUnique(std::vector<Offset>& list, const Offset& o) {
+           26 ( 0.00%)          for (const Offset& e : list) {
+           21 ( 0.00%)              if (e.dx == o.dx && e.dy == o.dy && e.dz == o.dz) {
+            .                           return;
+-- line 217 ----------------------------------------
+-- line 327 ----------------------------------------
+            .               VOLCANO_NOINLINE void stepLava() {
+          142 ( 0.00%)          bc_.apply(cur_);
+            .                   computeDescent();
+-- line 329 ----------------------------------------
+-- line 334 ----------------------------------------
+            .               VOLCANO_NOINLINE void stepClassic() {
+           72 ( 0.00%)          bc_.apply(cur_);
+  141,678,299 ( 1.53%)  => <repo>/engine/src/core/Boundary.hpp:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const (71x)
+          568 ( 0.00%)          finishStep(updateClassic());
+8,845,320,472 (95.66%)  => engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic() (71x)
+       13,312 ( 0.00%)  => engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::finishStep(volcano::LavaCA<volcano::VectorStorage>::StepCounts const&) (71x)
+            .               }
+-- line 337 ----------------------------------------
+-- line 416 ----------------------------------------
+            .               // Reguły rozrostu klasycznego dla wszystkich komórek: czyta cur_, pisze next_.
+          923 ( 0.00%)      VOLCANO_NOINLINE StepCounts updateClassic() {
+          142 ( 0.00%)          const std::uint64_t t = static_cast<std::uint64_t>(steps_);
+          284 ( 0.00%)          const std::uint16_t stamp = static_cast<std::uint16_t>(std::min(steps_, 65535));
+       14,271 ( 0.00%)          std::uint64_t grains = 0;
+           71 ( 0.00%)          std::uint64_t air = 0;
+           71 ( 0.00%)          std::uint64_t changed = 0;
+           71 ( 0.00%)          std::uint64_t idx = 0;
+            .                   CandidateVote vote;
+-- line 424 ----------------------------------------
+-- line 425 ----------------------------------------
+            .           
+       21,584 ( 0.00%)          for (int z = 0; z < dims_.nz; ++z) {
+    2,172,600 ( 0.02%)              for (int y = 0; y < dims_.ny; ++y) {
+  360,680,000 ( 3.90%)                  for (int x = 0; x < dims_.nx; ++x, ++idx) {
+            .                               const CellType type = cur_.type(x, y, z);
+  142,000,000 ( 1.54%)                      if (type == CellType::Air) {
+            .                                   vote.clear();
+1,142,643,564 (12.36%)                          for (const Offset& o : nb_.offsetsFor(p_.seed, t, idx)) {
+  442,124,760 ( 4.78%)                              const int sx = x + o.dx;
+  442,124,760 ( 4.78%)                              const int sy = y + o.dy;
+  442,124,760 ( 4.78%)                              const int sz = z + o.dz;
+  442,124,760 ( 4.78%)                              if (cur_.type(sx, sy, sz) == CellType::Lava) {
+            .                                           vote.add(cur_.flowId(sx, sy, sz), 0.0f);
+-- line 437 ----------------------------------------
+-- line 439 ----------------------------------------
+            .                                   }
+  221,062,380 ( 2.39%)                          if (!vote.empty()) {
+    4,999,950 ( 0.05%)                              const int w = vote.winner(p_.seed, t, idx);
+   29,702,205 ( 0.32%)  => <repo>/engine/src/ca/CaRules.hpp:volcano::CandidateVote::winner(unsigned long, unsigned long, unsigned long) const (999,990x)
+            .                                       next_.setCell(x, y, z, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, stamp});
+      999,990 ( 0.01%)                              ++grains;
+      999,990 ( 0.01%)                              ++changed;
+    1,999,980 ( 0.02%)                              continue;
+            .                                   }
+   71,687,480 ( 0.78%)                          ++air;
+            .                               } else if (type == CellType::Lava) {
+  136,625,080 ( 1.48%)                          ++grains;
+            .                               }
+-- line 450 ----------------------------------------
+-- line 454 ----------------------------------------
+            .                   }
+          497 ( 0.00%)          return StepCounts{grains, air, changed};
+          852 ( 0.00%)      }
+            .           
+-- line 457 ----------------------------------------
+-- line 458 ----------------------------------------
+            .               // Zamiana buforów, zapis historii i sprawdzenie warunku końca.
+          426 ( 0.00%)      VOLCANO_NOINLINE void finishStep(const StepCounts& c) {
+            .                   cur_.swap(next_);
+           71 ( 0.00%)          ++steps_;
+            8 ( 0.00%)          activeHistory_.push_back(c.active);
+           16 ( 0.00%)          changedHistory_.push_back(c.changed);
+          213 ( 0.00%)          if (p_.mode == CaMode::Lava && c.active == 0) {
+            .                       stop_ = StopReason::NoLava;
+          284 ( 0.00%)          } else if (p_.mode == CaMode::Classic && c.air == 0) {
+            1 ( 0.00%)              stop_ = StopReason::NoAir;
+          140 ( 0.00%)          } else if (c.changed == 0 && !nb_.isRandom()) {
+            .                       // Przy sąsiedztwie losowym krok bez zmian nie oznacza stanu końcowego —
+-- line 469 ----------------------------------------
+-- line 471 ----------------------------------------
+            .                       stop_ = StopReason::NoChange;
+          210 ( 0.00%)          } else if (steps_ >= p_.maxSteps) {
+            .                       stop_ = StopReason::MaxSteps;
+-- line 473 ----------------------------------------
+-- line 474 ----------------------------------------
+            .                   }
+          284 ( 0.00%)      }
+            .           
+-- line 476 ----------------------------------------
+-- line 478 ----------------------------------------
+            .               void countInitialState() {
+            3 ( 0.00%)          std::uint64_t lava = 0;
+            1 ( 0.00%)          std::uint64_t air = 0;
+          303 ( 0.00%)          for (int z = 0; z < dims_.nz; ++z) {
+       30,203 ( 0.00%)              for (int y = 0; y < dims_.ny; ++y) {
+    3,020,400 ( 0.03%)                  for (int x = 0; x < dims_.nx; ++x) {
+            .                               const CellType t = cur_.type(x, y, z);
+    2,000,010 ( 0.02%)                      lava += (t == CellType::Lava) ? 1 : 0;
+    1,999,980 ( 0.02%)                      air += (t == CellType::Air) ? 1 : 0;
+            .                           }
+-- line 487 ----------------------------------------
+-- line 489 ----------------------------------------
+            .                   }
+            1 ( 0.00%)          stop_ = StopReason::Running;
+            3 ( 0.00%)          if (p_.mode == CaMode::Lava && lava == 0) {
+            .                       stop_ = StopReason::NoLava;
+            6 ( 0.00%)          } else if (p_.mode == CaMode::Classic && air == 0) {
+            .                       stop_ = StopReason::NoAir;
+            3 ( 0.00%)          } else if (p_.maxSteps <= 0) {
+            .                       stop_ = StopReason::MaxSteps;
+-- line 496 ----------------------------------------
+
+--------------------------------------------------------------------------------
+The following files chosen for auto-annotation could not be found:
+--------------------------------------------------------------------------------
+  ./math/../sysdeps/ieee754/dbl-64/e_hypot.c
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+9,117,981,349 (98.61%)  events annotated
+

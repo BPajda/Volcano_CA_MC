@@ -1,0 +1,15 @@
+{
+  "_opis": "Mały test 2D: przekrój pionowy x–z przez wulkan, 1 krater szczytowy.",
+  "space":        { "nx": 200, "ny": 1, "nz": 100 },
+  "grid":         "vector",
+  "boundary":     "absorbing",
+  "neighborhood": "moore",
+  "rngSeed":      42,
+  "terrain": { "type": "cone", "peakHeight": 70, "baseRadius": 90,
+               "craterRadius": 6, "craterDepth": 4, "noise": 0.05, "file": null },
+  "vents":   { "count": 1, "placement": "crater", "eruptionSteps": 150, "eruptTemp": 1200 },
+  "ca":      { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 2.0,
+               "coolingLateral": 8.0, "coolingFall": 5.0, "solidusTemp": 800, "ponding": true },
+  "mc":      { "enabled": false },
+  "output":  { "format": "both", "snapshotsEvery": 0 }
+}

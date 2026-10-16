@@ -1,0 +1,10 @@
+{
+  "_opis": "Klasyczny naiwny rozrost ziaren Monte Carlo na całej przestrzeni 3D, bez terenu i CA: 50x50x50, Q = 50, 50 MCS, Moore, brzeg periodyczny.",
+  "space":        { "nx": 50, "ny": 50, "nz": 50 },
+  "boundary":     "periodic",
+  "neighborhood": "moore",
+  "rngSeed":      42,
+  "mc":      { "enabled": true, "domain": "full", "Q": 50, "mcs": 50, "J": 1.0, "kT": 0.0,
+               "mobilityFromCooling": false, "statsEvery": 5 },
+  "output":  { "format": "both" }
+}

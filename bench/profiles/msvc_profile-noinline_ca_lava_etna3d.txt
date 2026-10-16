@@ -1,0 +1,29 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile-noinline, wariant ca_lava_etna3d
+# argumenty: --config configs/etna_3d.json --set output.format=none
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    73.89    13038220  engine.exe!volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates
+    17.03     3004299  engine.exe!volcano::LavaCA<volcano::VectorStorage>::updateLava
+     2.37      418194  engine.exe!volcano::LavaCA<volcano::VectorStorage>::computeDescent
+     2.34      413098  engine.exe!volcano::LavaCA<volcano::VectorStorage>::tryPonding
+     1.92      338966  engine.exe!volcano::Neighborhood::offsetsFor
+     1.18      208672  engine.exe!volcano::Boundary::apply<volcano::VectorStorage>
+     0.80      141748  ntoskrnl.exe!"Unknown"
+     0.16       27959  nvlddmkm.sys!"Unknown"
+     0.05        9461  vcruntime140.dll!"Unknown"
+     0.04        6412  engine.exe!volcano::LavaCA<volcano::VectorStorage>::descent
+     0.03        5737  engine.exe!volcano::LavaCA<volcano::VectorStorage>::hasSupport
+     0.03        4697  engine.exe!volcano::toMicrostructure<volcano::VectorStorage>
+     0.03        4682  engine.exe!volcano::LavaCA<volcano::VectorStorage>::dropDepth
+     0.01        2522  "Unknown"!"Unknown"
+     0.01        2476  engine.exe!volcano::Simulation::buildStats
+     0.01        2048  iocbios2.sys!"Unknown"
+     0.01        2005  ntdll.dll!"Unknown"
+     0.01        1533  intelppm.sys!"Unknown"
+     0.01        1501  igdkmdn64.sys!"Unknown"
+     0.01        1361  engine.exe!volcano::LavaCA<volcano::VectorStorage>::placeSeeds
+     0.01        1246  engine.exe!volcano::TerrainGenerator::fillDepressions
+     0.01         975  engine.exe!volcano::`anonymous namespace'::valueNoise
+     0.00         784  Wdf01000.sys!"Unknown"
+     0.00         736  dxgmms2.sys!"Unknown"
+     0.00         703  SteelSeries-Sonar-VAD.sys!"Unknown"

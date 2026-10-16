@@ -1,0 +1,12 @@
+{
+  "_opis": "Klasyczny rozrost ziaren (bez wulkanu) do porównań wydajności (benchmark, profil): 100x100x100, 10 ziaren, von Neumann, brzeg periodyczny.",
+  "space":        { "nx": 100, "ny": 100, "nz": 100 },
+  "grid":         "vector",
+  "boundary":     "periodic",
+  "neighborhood": "von_neumann",
+  "rngSeed":      42,
+  "vents":   { "count": 10 },
+  "ca":      { "mode": "classic", "maxSteps": 65535 },
+  "mc":      { "enabled": false },
+  "output":  { "format": "both", "snapshotsEvery": 0 }
+}

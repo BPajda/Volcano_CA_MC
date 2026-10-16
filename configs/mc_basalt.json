@@ -1,0 +1,9 @@
+{
+  "_opis": "Same parametry krystalizacji MC do uruchomienia na gotowym wyniku CA: engine --mc-from <folder_wyniku_CA> --config configs/mc_basalt.json --out <folder>. Wymiary i typy komórek pochodzą z pliku ca_result.bin / ca_result.txt.",
+  "neighborhood": "moore",
+  "boundary":     "absorbing",
+  "rngSeed":      42,
+  "mc":      { "enabled": true, "domain": "basalt", "Q": 50, "mcs": 300, "J": 1.0, "kT": 0.0,
+               "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10 },
+  "output":  { "format": "both" }
+}

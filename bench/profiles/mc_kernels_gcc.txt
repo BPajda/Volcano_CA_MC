@@ -1,0 +1,13 @@
+Kompilator: GCC 11.4.0
+hashRand x1                                       1.44 ns   (suma kontrolna 38dd11c2566a31cd)
+hashRand x2 (wybor + orientacja)                  2.13 ns   (suma kontrolna a25ff4e09199e518)
+hashRand x2, wspolny poczatek kaskady             2.12 ns   (suma kontrolna a25ff4e09199e518)
+modulo 64-bit (a*C) % N                           1.92 ns   (suma kontrolna 0000012309333fd8)
+2 x hashRand + 2 x modulo (losowanie proby)       4.03 ns   (suma kontrolna 000048bf5b0a598c)
+sasiedzi VN 6, E przed+po, losowe orient.        15.96 ns   (suma kontrolna 00000000e2b5bce5)
+sasiedzi VN 6, E przed+po, bloki 3^3             15.64 ns   (suma kontrolna 000000004e965b65)
+sasiedzi Moore 26, E przed+po, losowe            42.14 ns   (suma kontrolna 00000003c1022c25)
+sasiedzi Moore 26, E przed+po, bloki 3^3         42.26 ns   (suma kontrolna 00000002138e5249)
+exp(-dE/kT)                                       4.53 ns   (suma kontrolna 0000001c084b1602)
+CA: 27 odczytow, indeks z (x,y,z)                 1.30 ns   (suma kontrolna 0000000007baa200)
+MC: 27 odczytow, przesuniecia liniowe             6.41 ns   (suma kontrolna 0000000007baa200)

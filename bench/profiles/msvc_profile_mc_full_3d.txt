@@ -1,0 +1,25 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile, wariant mc_full_3d
+# argumenty: --config configs/mc_full_3d.json --set output.format=none --set mc.mcs=300
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    80.57     4823442  engine.exe!volcano::PottsMC::sweep
+     9.45      565762  engine.exe!volcano::PottsMC::measure
+     8.92      534042  engine.exe!volcano::Grains::label
+     0.59       35473  ntoskrnl.exe!"Unknown"
+     0.17       10227  vcruntime140.dll!"Unknown"
+     0.08        5026  engine.exe!volcano::PottsMC::crystals
+     0.06        3495  engine.exe!volcano::PottsMC::syncFrame
+     0.05        3250  ntdll.dll!"Unknown"
+     0.02        1449  engine.exe!volcano::PottsMC::initialize
+     0.02        1013  iocbios2.sys!"Unknown"
+     0.02         981  ucrtbase.dll!"Unknown"
+     0.01         500  KernelBase.dll!"Unknown"
+     0.00         258  winhvr.sys!"Unknown"
+     0.00         252  kernel32.dll!"Unknown"
+     0.00         250  engine.exe!operator delete
+     0.00         250  engine.exe!std::vector<volcano::LavaCA<volcano::MatrixStorage>::Coord,std::allocator<volcano::LavaCA<volcano::MatrixStorage>::Coord> >::~vector<volcano::LavaCA<volcano::MatrixStorage>::Coord,std::allocator<volcano::LavaCA<volcano::MatrixStorage>::Coord> >
+     0.00         250  engine.exe!__security_check_cookie
+     0.00         250  Wdf01000.sys!"Unknown"
+     0.00         250  vgk.sys!"Unknown"
+     0.00         249  nvlddmkm.sys!"Unknown"
+     0.00         173  engine.exe!std::chrono::steady_clock::now

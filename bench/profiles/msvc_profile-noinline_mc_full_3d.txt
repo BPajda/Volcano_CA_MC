@@ -1,0 +1,29 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile-noinline, wariant mc_full_3d
+# argumenty: --config configs/mc_full_3d.json --set output.format=none --set mc.mcs=300
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    59.98     3832756  engine.exe!volcano::PottsMC::unlikeNeighbors
+    16.19     1034662  engine.exe!volcano::PottsMC::sweep
+    13.05      834090  engine.exe!volcano::hashRand
+     9.28      593242  engine.exe!volcano::Grains::label
+     0.53       33590  ntoskrnl.exe!"Unknown"
+     0.45       28500  engine.exe!volcano::PottsMC::measure
+     0.16       10033  vcruntime140.dll!"Unknown"
+     0.11        6830  engine.exe!volcano::PottsMC::crystals
+     0.06        3995  engine.exe!volcano::PottsMC::syncFrame
+     0.05        3271  ntdll.dll!"Unknown"
+     0.04        2762  nvlddmkm.sys!"Unknown"
+     0.02        1009  engine.exe!volcano::PottsMC::initialize
+     0.01         763  WdFilter.sys!"Unknown"
+     0.01         753  intelppm.sys!"Unknown"
+     0.01         735  USBXHCI.SYS!"Unknown"
+     0.01         500  igdkmdn64.sys!"Unknown"
+     0.00         270  dxgmms2.sys!"Unknown"
+     0.00         261  Ntfs.sys!"Unknown"
+     0.00         256  ks.sys!"Unknown"
+     0.00         253  iocbios2.sys!"Unknown"
+     0.00         252  NETIO.SYS!"Unknown"
+     0.00         250  engine.exe!std::_Vb_iterator<std::_Wrap_alloc<std::allocator<unsigned int> > >::operator+
+     0.00         250  engine.exe!volcano::McStage::run
+     0.00         250  ucrtbase.dll!"Unknown"
+     0.00         244  engine.exe!volcano::PottsMC::fillFrame

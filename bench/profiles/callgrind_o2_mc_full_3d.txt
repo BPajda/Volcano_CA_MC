@@ -1,0 +1,109 @@
+# callgrind, build gcc-o2, wariant mc_full_3d (--config configs/mc_full_3d.json --set output.format=none)
+# valgrind-3.18.1, koszt = Ir (wykonane instrukcje), --dump-instr=no
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/mc_full_3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 969801178
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/mc_full_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/mc_full_3d/out (PID 656, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+5,634,834,413 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+3,625,000,000 (64.33%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::sweep()
+  694,244,887 (12.32%)  engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*) [<repo>/build-gcc-o2/bin/engine]
+  398,750,000 ( 7.08%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::totalEnergy() const
+  287,501,600 ( 5.10%)  engine/src/core/Rng.hpp:volcano::PottsMC::sweep()
+  225,871,592 ( 4.01%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::sweep() [<repo>/build-gcc-o2/bin/engine]
+  178,750,077 ( 3.17%)  engine/src/core/Types.hpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+   87,500,200 ( 1.55%)  /usr/include/c++/11/bits/stl_vector.h:volcano::PottsMC::sweep()
+   32,043,513 ( 0.57%)  /usr/include/c++/11/bits/stl_vector.h:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+   12,500,200 ( 0.22%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::PottsMC::sweep()
+   12,500,000 ( 0.22%)  engine/src/core/Neighborhood.hpp:volcano::PottsMC::sweep()
+   11,641,291 ( 0.21%)  ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S:__memset_avx2_unaligned_erms [/usr/lib/x86_64-linux-gnu/libc.so.6]
+   11,000,308 ( 0.20%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::totalEnergy() const [<repo>/build-gcc-o2/bin/engine]
+   10,045,392 ( 0.18%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::syncFrame(unsigned long) [<repo>/build-gcc-o2/bin/engine]
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_vector.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 89 ----------------------------------------
+         .                  	pointer;
+         .           
+         .                 struct _Vector_impl_data
+         .                 {
+         .           	pointer _M_start;
+         .           	pointer _M_finish;
+         .           	pointer _M_end_of_storage;
+         .           
+        12 ( 0.00%)  	_Vector_impl_data() _GLIBCXX_NOEXCEPT
+     1,283 ( 0.00%)  	: _M_start(), _M_finish(), _M_end_of_storage()
+         .           	{ }
+         .           
+         .           #if __cplusplus >= 201103L
+         .           	_Vector_impl_data(_Vector_impl_data&& __x) noexcept
+        52 ( 0.00%)  	: _M_start(__x._M_start), _M_finish(__x._M_finish),
+
+# --- koszt włączny (funkcja + wywoływane) ---
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/mc_full_3d/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 969801178
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/mc_full_3d.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/mc_full_3d/out (PID 656, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+5,634,834,413 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+5,634,834,413 (100.0%)  ???:0x0000000000020290 [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+5,632,528,103 (99.96%)  ???:(below main) [<repo>/build-gcc-o2/bin/engine]
+5,632,528,091 (99.96%)  ./csu/../csu/libc-start.c:__libc_start_main@@GLIBC_2.34 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+5,632,402,382 (99.96%)  ./csu/../sysdeps/nptl/libc_start_call_main.h:(below main) [/usr/lib/x86_64-linux-gnu/libc.so.6]
+5,632,389,040 (99.96%)  <repo>/engine/src/main.cpp:main
+5,632,388,113 (99.96%)  engine/src/main.cpp:main [<repo>/build-gcc-o2/bin/engine]
+5,632,382,551 (99.96%)  <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)
+5,632,345,311 (99.96%)  engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&) [<repo>/build-gcc-o2/bin/engine]
+5,631,527,147 (99.94%)  engine/src/app/Simulation.cpp:volcano::Simulation::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) [<repo>/build-gcc-o2/bin/engine]
+5,631,326,257 (99.94%)  <repo>/engine/src/app/McStage.cpp:volcano::McStage::run(volcano::Config const&, volcano::Microstructure const*, volcano::CoolingData, volcano::TimingReport&)
+5,631,308,619 (99.94%)  engine/src/app/McStage.cpp:volcano::McStage::run(volcano::Config const&, volcano::Microstructure const*, volcano::CoolingData, volcano::TimingReport&) [<repo>/build-gcc-o2/bin/engine]
+4,262,028,032 (75.64%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::sweep()
+3,625,000,000 (64.33%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::sweep()
+1,348,327,969 (23.93%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::measure(volcano::GrainLabels*, volcano::McMeasureTimes*) const
+1,348,322,203 (23.93%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::measure(volcano::GrainLabels*, volcano::McMeasureTimes*) const [<repo>/build-gcc-o2/bin/engine]
+  916,093,899 (16.26%)  <repo>/engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+  694,274,455 (12.32%)  engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*) [<repo>/build-gcc-o2/bin/engine]
+  418,000,847 ( 7.42%)  engine/src/mc/PottsMC.cpp:volcano::PottsMC::totalEnergy() const [<repo>/build-gcc-o2/bin/engine]
+  398,750,000 ( 7.08%)  engine/src/mc/PottsMC.hpp:volcano::PottsMC::totalEnergy() const
+  287,501,600 ( 5.10%)  engine/src/core/Rng.hpp:volcano::PottsMC::sweep()

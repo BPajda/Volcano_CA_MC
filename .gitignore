@@ -1,0 +1,38 @@
+# Katalogi budowania (presety CMake)
+/build*/
+/out/
+CMakeUserPresets.json
+
+# IDE
+.vs/
+.vscode/
+
+# Python
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Wyniki symulacji, serii i benchmarków z katalogu głównego — generowane (silnik i GUI tworzą katalogi same);
+# dane pomiarowe cytowane w dokumentacji są w bench/results/ (w repozytorium)
+/results/
+
+# GUI: configi zadań i serii (generowane jak foldery results/gui/<id>/) i lokalne ustawienia
+# (ścieżka do silnika itp., wzór: gui/settings.example.json)
+/configs/gui/
+/gui/settings.json
+# Serie z tools/make_series.py (configs/series/<id>/ — generowane; wyniki w results/series/)
+/configs/series/
+
+# Kafelki wysokości pobrane przez tools/fetch_dem.py (cache; mapy wynikowe są w configs/heightmaps/)
+/tools/.dem_cache/
+
+# Raport: HTML to produkt pośredni tools/build_report.py (PDF zostaje)
+/docs/*.html
+
+# Sesje profilera Visual Studio, logi
+*.diagsession
+*.log
+
+# Konwencje pracy lokalnej i lokalna lista słów do kontroli eksportu (nie trafiają do repozytorium)
+/CLAUDE.md
+/tools/export_minimal/slownictwo.txt

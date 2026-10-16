@@ -1,0 +1,17 @@
+{
+  "_opis": "Etna — prawdziwy teren: erupcja boczna ze szczeliny na południowym zboczu (2170–2480 m), inspirowana erupcją z 2001 r. (nie jej odtworzenie).",
+  "_uwaga": "Szczelina N–S z trzech kraterów [74, 60], [75, 62], [76, 64] w rejonie 37,71–37,72 N, 14,99–15,01 E (tools/latlon_to_grid.py etna 37.712 14.995 37.718 15.002). Parametry lawy jak w etna_real.json. Model nie jest skalibrowany fizycznie — to symulacja na prawdziwym terenie, nie prognoza.",
+  "space": { "nx": 160, "ny": 160, "nz": 70 },
+  "grid": "vector",
+  "boundary": "absorbing",
+  "neighborhood": "moore",
+  "rngSeed": 2001,
+  "terrain": { "type": "file", "file": "configs/heightmaps/etna.csv", "peakHeight": 70, "baseRadius": 90,
+               "craterRadius": 6, "craterDepth": 4, "noise": 0.05 },
+  "vents": { "count": 3, "placement": "positions", "positions": [[74, 60], [75, 62], [76, 64]],
+             "eruptionSteps": 150, "eruptTemp": 1200 },
+  "ca": { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 3.0, "coolingLateral": 80.0, "coolingFall": 4.0,
+          "solidusTemp": 800, "ponding": true },
+  "mc": { "enabled": false },
+  "output": { "format": "bin", "snapshotsEvery": 0 }
+}

@@ -1,0 +1,17 @@
+{
+  "_opis": "Etna — prawdziwy teren (AWS Terrain Tiles, 160×160 komórek po ~234 m, przewyższenie ×4,2): erupcja z trzech kraterów szczytowych.",
+  "_uwaga": "Kratery szczytowe: Voragine [73, 80], Krater Północno-Wschodni [74, 82], Krater Południowo-Wschodni [76, 78] (tools/latlon_to_grid.py; docs/etap-6-prawdziwe-wulkany.md). Model nie jest skalibrowany fizycznie — to symulacja na prawdziwym terenie, nie prognoza.",
+  "space": { "nx": 160, "ny": 160, "nz": 70 },
+  "grid": "vector",
+  "boundary": "absorbing",
+  "neighborhood": "moore",
+  "rngSeed": 2001,
+  "terrain": { "type": "file", "file": "configs/heightmaps/etna.csv", "peakHeight": 70, "baseRadius": 90,
+               "craterRadius": 6, "craterDepth": 4, "noise": 0.05 },
+  "vents": { "count": 3, "placement": "positions", "positions": [[73, 80], [74, 82], [76, 78]],
+             "eruptionSteps": 150, "eruptTemp": 1200 },
+  "ca": { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 3.0, "coolingLateral": 80.0, "coolingFall": 4.0,
+          "solidusTemp": 800, "ponding": true },
+  "mc": { "enabled": false },
+  "output": { "format": "bin", "snapshotsEvery": 0 }
+}

@@ -1,0 +1,27 @@
+# Profil CPU MSVC (VSDiagnostics CpuUsageHigh + xperf -a profile), build msvc-profile, wariant ca_lava_test3d
+# argumenty: --config configs/test_3d.json --set output.format=none
+# udział = próbki funkcji / wszystkie próbki procesu engine.exe (czas „self”, bez wywoływanych)
+ udział %        waga  funkcja
+    91.08     1662368  engine.exe!volcano::LavaCA<volcano::VectorStorage>::updateLava
+     3.74       68254  engine.exe!volcano::LavaCA<volcano::VectorStorage>::computeDescent
+     1.94       35379  engine.exe!volcano::Neighborhood::offsetsFor
+     1.42       25858  engine.exe!volcano::Boundary::apply<volcano::VectorStorage>
+     0.66       12066  ntoskrnl.exe!"Unknown"
+     0.51        9352  nvlddmkm.sys!"Unknown"
+     0.17        3055  ntdll.dll!"Unknown"
+     0.09        1636  vcruntime140.dll!"Unknown"
+     0.08        1460  Ntfs.sys!"Unknown"
+     0.04         753  intelppm.sys!"Unknown"
+     0.04         743  engine.exe!volcano::LavaCA<volcano::VectorStorage>::dropDepth
+     0.04         731  vgk.sys!"Unknown"
+     0.03         505  engine.exe!volcano::Simulation::buildStats
+     0.03         504  engine.exe!volcano::toMicrostructure<volcano::VectorStorage>
+     0.02         416  engine.exe!volcano::`anonymous namespace'::latticeValue
+     0.01         268  iocbios2.sys!"Unknown"
+     0.01         258  engine.exe!std::_Destroy_range<std::allocator<std::basic_string<char,std::char_traits<char>,std::allocator<char> > > >
+     0.01         255  engine.exe!volcano::TerrainGenerator::cone
+     0.01         250  win32kbase.sys!"Unknown"
+     0.01         250  engine.exe!volcano::TerrainGenerator::fillDepressions
+     0.01         250  engine.exe!std::_Pop_heap_hole_by_index<std::pair<int,unsigned __int64> *,std::pair<int,unsigned __int64>,std::greater<std::pair<int,unsigned __int64> > >
+     0.01         250  engine.exe!volcano::LavaCA<volcano::VectorStorage>::placeSeeds
+     0.01         243  FLTMGR.SYS!"Unknown"

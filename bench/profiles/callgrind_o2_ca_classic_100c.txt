@@ -1,0 +1,109 @@
+# callgrind, build gcc-o2, wariant ca_classic_100c (--config configs/classic_ref.json --set output.format=none)
+# valgrind-3.18.1, koszt = Ir (wykonane instrukcje), --dump-instr=no
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/ca_classic_100c/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 837288193
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/classic_ref.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/ca_classic_100c/out (PID 644, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+9,246,293,945 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+4,414,457,612 (47.74%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+3,854,408,820 (41.69%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic() [<repo>/build-gcc-o2/bin/engine]
+  328,906,110 ( 3.56%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+  105,426,746 ( 1.14%)  ./math/../sysdeps/ieee754/dbl-64/e_hypot.c:hypot@@GLIBC_2.35 [/usr/lib/x86_64-linux-gnu/libm.so.6]
+   89,879,042 ( 0.97%)  engine/src/core/Storage.hpp:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const
+   73,687,460 ( 0.80%)  /usr/include/c++/11/bits/stl_iterator.h:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+   73,687,460 ( 0.80%)  engine/src/core/Neighborhood.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+   66,631,852 ( 0.72%)  engine/src/ca/CaRules.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+   54,244,354 ( 0.59%)  engine/src/app/Simulation.cpp:volcano::Simulation::buildStats[abi:cxx11](volcano::Config const&, volcano::RunSummary const&) [<repo>/build-gcc-o2/bin/engine]
+   40,517,428 ( 0.44%)  /usr/include/c++/11/bits/stl_vector.h:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const
+   28,895,468 ( 0.31%)  engine/src/ca/CaRules.hpp:volcano::CandidateVote::winner(unsigned long, unsigned long, unsigned long) const [<repo>/build-gcc-o2/bin/engine]
+   24,979,352 ( 0.27%)  /usr/include/c++/11/bits/stl_algobase.h:std::vector<unsigned short, std::allocator<unsigned short> >::_M_fill_assign(unsigned long, unsigned short const&)
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: /usr/include/c++/11/bits/stl_iterator.h
+--------------------------------------------------------------------------------
+Ir                  
+
+-- line 176 ----------------------------------------
+         .                 // 1012. reverse_iterator default ctor should value initialize
+         .                 _GLIBCXX17_CONSTEXPR
+         .                 reverse_iterator() : current() { }
+         .           
+         .                 /**
+         .                  *  This %iterator will move in the opposite direction that @p x does.
+         .                 */
+         .                 explicit _GLIBCXX17_CONSTEXPR
+         1 ( 0.00%)        reverse_iterator(iterator_type __x) : current(__x) { }
+         .           
+         .                 /**
+         .                  *  The copy constructor is normal.
+         .                 */
+         .                 _GLIBCXX17_CONSTEXPR
+         .                 reverse_iterator(const reverse_iterator& __x)
+         .                 : current(__x.current) { }
+
+# --- koszt włączny (funkcja + wywoływane) ---
+--------------------------------------------------------------------------------
+Profile data file '/tmp/volcano_prof/cg_gcc-o2/ca_classic_100c/callgrind.out' (creator: callgrind-3.18.1)
+--------------------------------------------------------------------------------
+I1 cache: 
+D1 cache: 
+LL cache: 
+Timerange: Basic block 0 - 837288193
+Trigger: Program termination
+Profiled target:  <repo>/build-gcc-o2/bin/engine --config configs/classic_ref.json --set output.format=none --out /tmp/volcano_prof/cg_gcc-o2/ca_classic_100c/out (PID 644, part 1)
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Thresholds:       99
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                     
+--------------------------------------------------------------------------------
+9,246,293,945 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+9,246,293,945 (100.0%)  ???:0x0000000000020290 [/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2]
+9,243,987,631 (99.98%)  ???:(below main) [<repo>/build-gcc-o2/bin/engine]
+9,243,987,619 (99.98%)  ./csu/../csu/libc-start.c:__libc_start_main@@GLIBC_2.34 [/usr/lib/x86_64-linux-gnu/libc.so.6]
+9,243,861,910 (99.97%)  ./csu/../sysdeps/nptl/libc_start_call_main.h:(below main) [/usr/lib/x86_64-linux-gnu/libc.so.6]
+9,243,848,568 (99.97%)  <repo>/engine/src/main.cpp:main
+9,243,847,641 (99.97%)  engine/src/main.cpp:main [<repo>/build-gcc-o2/bin/engine]
+9,243,841,935 (99.97%)  <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&)
+9,243,759,653 (99.97%)  engine/src/app/Simulation.cpp:volcano::Simulation::runFromCli(volcano::CliOptions const&, volcano::Timer const&) [<repo>/build-gcc-o2/bin/engine]
+9,152,966,732 (98.99%)  engine/src/app/Simulation.cpp:volcano::Simulation::run(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) [<repo>/build-gcc-o2/bin/engine]
+9,062,695,434 (98.01%)  engine/src/app/Simulation.cpp:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&) [<repo>/build-gcc-o2/bin/engine]
+9,018,316,281 (97.53%)  engine/src/ca/LavaCA.hpp:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&)
+8,845,320,472 (95.66%)  engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic() [<repo>/build-gcc-o2/bin/engine]
+4,414,457,612 (47.74%)  engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+  328,906,110 ( 3.56%)  /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::updateClassic()
+  180,122,798 ( 1.95%)  engine/src/app/Simulation.cpp:volcano::Simulation::buildStats[abi:cxx11](volcano::Config const&, volcano::RunSummary const&) [<repo>/build-gcc-o2/bin/engine]
+  141,678,299 ( 1.53%)  <repo>/engine/src/core/Boundary.hpp:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const
+  109,426,746 ( 1.18%)  ???:0x000000000010d860 [???]
+  105,426,746 ( 1.14%)  ./math/../sysdeps/ieee754/dbl-64/e_hypot.c:hypot@@GLIBC_2.35 [/usr/lib/x86_64-linux-gnu/libm.so.6]
+   89,879,042 ( 0.97%)  engine/src/core/Storage.hpp:void volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const
+

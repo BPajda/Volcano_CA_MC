@@ -1,0 +1,11 @@
+{
+  "_opis": "Klasyczny naiwny rozrost ziaren Monte Carlo (wariant naiwny, kroki 1–5) na całej przestrzeni 2D, bez terenu i CA: 200x200, Q = 50, 100 MCS, von Neumann, brzeg periodyczny.",
+  "_uwaga": "2D w płaszczyźnie x–y (nz = 1), jak klasyczny rozrost CA w benchmarku; w trybie full nie obowiązuje przekrój x–z lawy.",
+  "space":        { "nx": 200, "ny": 200, "nz": 1 },
+  "boundary":     "periodic",
+  "neighborhood": "von_neumann",
+  "rngSeed":      42,
+  "mc":      { "enabled": true, "domain": "full", "Q": 50, "mcs": 100, "J": 1.0, "kT": 0.0,
+               "mobilityFromCooling": false, "statsEvery": 10 },
+  "output":  { "format": "both" }
+}

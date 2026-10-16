@@ -1,0 +1,15 @@
+# Rdzeń wydajnościowy (P) vs energooszczędny (E), i9-13900HX, MSVC Release (build/Release/engine.exe)
+# 09.10.2026 ~15:35, po macierzy pomiarów; 5 powtórzeń, mediana [min–max] [ms], output.format=none,
+# proces przypięty (psutil.cpu_affinity) do procesora logicznego 2 (rdzeń P) albo 18 (rdzeń E).
+# Procesory logiczne 0–15 = rdzenie P (EfficiencyClass 1), 16–31 = rdzenie E (EfficiencyClass 0).
+
+wariant                                   LP 2 (P)                 LP 18 (E)                E/P
+classic_ref (100^3, VN, 10 zarodków)      545,4 [513,5–600,7]      1288,3 [1260,5–1495,7]   2,36
+test_3d (lava 64x64x48)                   1946,2 [1867,0–1971,4]   4397,0 [4284,8–6076,9]   2,26
+mc_full_3d (50^3, Moore, 50 MCS)          850,2 [805,2–898,7]      2093,6 [1501,2–2339,8]   2,46
+MC full 1000x1000, VN, 10 MCS             766,0 [617,1–842,4]      2199,5 [1749,9–2528,0]   2,87
+
+# Wniosek: bez przypięcia system może uruchomić symulację na rdzeniu E i czas rośnie 2,3–2,9x.
+# Te same warianty na rdzeniu P były w tej sesji o 5–10% wolniejsze niż w macierzy profile_2026-10-09
+# sprzed godziny (classic_ref 499 ms, test_3d 1773 ms) — zmienność między sesjami (temperatura, tło);
+# porównania przed/po optymalizacji robić w jednej sesji, naprzemiennie (A/B).

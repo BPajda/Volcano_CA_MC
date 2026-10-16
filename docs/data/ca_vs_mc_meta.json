@@ -1,0 +1,83 @@
+{
+ "backgroundBefore": {
+  "available": true,
+  "cpuPercentAll": 13.2,
+  "logicalCpus": 32,
+  "top": [
+   {
+    "name": "WmiPrvSE.exe",
+    "cpuPercentOfOneCpu": 126.8
+   },
+   {
+    "name": "MsMpEng.exe",
+    "cpuPercentOfOneCpu": 67.9
+   },
+   {
+    "name": "System",
+    "cpuPercentOfOneCpu": 38.5
+   },
+   {
+    "name": "svchost.exe",
+    "cpuPercentOfOneCpu": 28.6
+   },
+   {
+    "name": "python.exe",
+    "cpuPercentOfOneCpu": 23.2
+   }
+  ]
+ },
+ "series": "20261010-212000_ca_vs_mc",
+ "template": "ca_vs_mc",
+ "date": "2026-10-10 21:20:21",
+ "durationS": 21.4,
+ "counts": {
+  "queued": 0,
+  "running": 0,
+  "done": 16,
+  "error": 0,
+  "cancelled": 0,
+  "interrupted": 0
+ },
+ "queue": {
+  "workers": 1,
+  "pin": {
+   "enabled": true,
+   "cpus": [
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14
+   ]
+  }
+ },
+ "backgroundAfter": {
+  "available": true,
+  "cpuPercentAll": 13.0,
+  "logicalCpus": 32,
+  "top": [
+   {
+    "name": "WmiPrvSE.exe",
+    "cpuPercentOfOneCpu": 102.3
+   },
+   {
+    "name": "XtuService.exe",
+    "cpuPercentOfOneCpu": 87.0
+   },
+   {
+    "name": "System",
+    "cpuPercentOfOneCpu": 62.0
+   },
+   {
+    "name": "svchost.exe",
+    "cpuPercentOfOneCpu": 25.1
+   },
+   {
+    "name": "python.exe",
+    "cpuPercentOfOneCpu": 24.7
+   }
+  ]
+ }
+}

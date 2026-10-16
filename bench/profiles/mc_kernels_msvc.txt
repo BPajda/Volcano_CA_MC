@@ -1,0 +1,14 @@
+Kompilator: MSVC 1938
+hashRand x1                                       1.31 ns   (suma kontrolna 38dd11c2566a31cd)
+hashRand x2 (wybor + orientacja)                  2.04 ns   (suma kontrolna a25ff4e09199e518)
+hashRand x2, wspolny poczatek kaskady             2.04 ns   (suma kontrolna a25ff4e09199e518)
+modulo 64-bit (a*C) % N                           1.95 ns   (suma kontrolna 0000012309333fd8)
+2 x hashRand + 2 x modulo (losowanie proby)       4.09 ns   (suma kontrolna 000048bf5b0a598c)
+sasiedzi VN 6, E przed+po, losowe orient.        17.88 ns   (suma kontrolna 00000000e2b5bce5)
+sasiedzi VN 6, E przed+po, bloki 3^3             38.91 ns   (suma kontrolna 000000004e965b65)
+sasiedzi Moore 26, E przed+po, losowe            63.21 ns   (suma kontrolna 00000003c1022c25)
+sasiedzi Moore 26, E przed+po, bloki 3^3         78.13 ns   (suma kontrolna 00000002138e5249)
+exp(-dE/kT)                                       5.37 ns   (suma kontrolna 0000001c084b1602)
+CA: 27 odczytow, indeks z (x,y,z)                 4.20 ns   (suma kontrolna 0000000007baa200)
+MC: 27 odczytow, przesuniecia liniowe             6.49 ns   (suma kontrolna 0000000007baa200)
+
