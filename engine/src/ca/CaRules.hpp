@@ -65,6 +65,18 @@
 // Brak terenu i temperatury. Komórka AIR z sąsiadem-ziarnem (dowolny kierunek) dostaje
 // najczęstszy flowId wśród sąsiadów (remis -> hashRand) i arrivalStep = t.
 // Koniec: brak komórek AIR.
+//
+// ===== Które komórki mogą się zmienić w kroku (automat frontalny, ca.sweep = front, etap 8) =====
+// Z reguł wyżej: zmienić się może tylko komórka LAVA (reguła 2) i komórka AIR, która ma wśród
+// sąsiadów (w DOWOLNYM wariancie sąsiedztwa — przy pentagonal/hexagonal wariant zależy od kroku
+// i komórki) lawę/ziarno: reguła 1 (lawa obok, nad, po skosie) i wypełnianie zagłębień (lawa
+// dokładnie pod c). ROCK, BASALT i ziarno classic nie zmieniają się nigdy, AIR bez lawy w sąsiedztwie
+// nie dostaje kandydatów. Automat frontalny przetwarza więc tylko te komórki, tymi samymi funkcjami
+// reguł co pełny przebieg (ca.sweep = full, wersja referencyjna), a liczniki (lawa, AIR, zmiany) liczy
+// z tych samych warunków — wynik i historia liczników są bitowo te same (testy w test_front.cpp).
+// Reguła końca „krok bez zmian” zostaje: przy sąsiedztwie deterministycznym AIR z lawą w sąsiedztwie,
+// która się nie zmieniła, nie zmieni się też w następnym kroku, jeśli nic wokół się nie zmieni.
+// Każda nowa reguła = sprawdzić, czy zbiór „może się zmienić” nadal ją obejmuje (LavaCA::frontCandidates).
 
 #include <algorithm>
 #include <cassert>
@@ -89,6 +101,7 @@ struct CaParams {
     float coolingLateral = 1.5f;
     float coolingFall = 0.1f;
     bool ponding = true;
+    bool frontSweep = true;  // ca.sweep: true = automat frontalny (front), false = pełny przebieg (full) — etap 8
 };
 
 // Powód zakończenia symulacji.

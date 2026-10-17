@@ -23,6 +23,9 @@ __pycache__/
 # Serie z tools/make_series.py (configs/series/<id>/ — generowane; wyniki w results/series/)
 /configs/series/
 
+# Binarki „przed” do testów A/B optymalizacji (bench/ab.py) — lokalne, odtwarzalne z historii repozytorium
+/bench/baseline/
+
 # Kafelki wysokości pobrane przez tools/fetch_dem.py (cache; mapy wynikowe są w configs/heightmaps/)
 /tools/.dem_cache/
 

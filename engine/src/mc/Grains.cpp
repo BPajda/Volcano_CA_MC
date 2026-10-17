@@ -17,17 +17,6 @@ std::uint32_t findRoot(std::vector<std::uint32_t>& parent, std::uint32_t i) {
     return i;
 }
 
-// Łączy zbiory a i b; reprezentantem zostaje mniejszy indeks (wynik nie zależy od kolejności).
-void unite(std::vector<std::uint32_t>& parent, std::uint32_t a, std::uint32_t b) {
-    a = findRoot(parent, a);
-    b = findRoot(parent, b);
-    if (a < b) {
-        parent[b] = a;
-    } else if (b < a) {
-        parent[a] = b;
-    }
-}
-
 // Zawija współrzędną na osi periodycznej; -1 = poza przestrzenią (oś nieperiodyczna).
 int wrapOrOut(int v, int n, bool periodic) {
     if (v >= 0 && v < n) {
@@ -58,6 +47,33 @@ GrainLabels Grains::label(const CrystalMap& m, bool moore, const bool periodic[3
         }
     }
 
+    // OPTYMALIZACJA (etap 8, k5): komórka, której sąsiedzi „do przodu” nie wychodzą poza przestrzeń w żadnej osi
+    // (wnętrze — prawie wszystkie komórki), sięga do nich przez stałe przesunięcie liniowe w tablicy bez ramki,
+    // bez zawijania współrzędnych i liczenia globalIndex; reprezentant komórki jest liczony raz, a nie przy każdym
+    // połączeniu. Wynik bitowo ten sam: składowe spójności nie zależą od kolejności połączeń, a reprezentantem
+    // każdego ziarna jest zawsze jego najmniejszy indeks (join zostawia mniejszy reprezentanta).
+    // Dodatkowo: gdy sąsiad x+1 ma tę samą orientację (będzie w tym samym ziarnie), sąsiedzi „do przodu” komórki
+    // wspólni z sąsiadami x+1 (przesunięcie o − (1,0,0) też jest „do przodu”) są pomijani — połączy je komórka x+1
+    // (Moore 3D: 8 z 13 sprawdzeń; von Neumann: brak wspólnych).
+    const std::ptrdiff_t snx = d.nx;
+    const std::ptrdiff_t sny = d.ny;
+    const auto isForward = [&](int dx, int dy, int dz) {
+        for (const Offset& f : forward) {
+            if (f.dx == dx && f.dy == dy && f.dz == dz) {
+                return true;
+            }
+        }
+        return false;
+    };
+    const bool plusX = isForward(1, 0, 0);
+    std::vector<std::ptrdiff_t> forwardLin;    // sprawdzane zawsze
+    std::vector<std::ptrdiff_t> coveredByNext;  // sprawdzane tylko, gdy x+1 ma inną orientację
+    for (const Offset& o : forward) {
+        const std::ptrdiff_t lin = o.dx + snx * (o.dy + sny * o.dz);
+        (plusX && isForward(o.dx - 1, o.dy, o.dz) ? coveredByNext : forwardLin).push_back(lin);
+    }
+    const auto innerAxis = [](int v, int n) { return n == 1 || (v >= 1 && v <= n - 2); };
+
     GrainLabels g;
     g.root.resize(n);
     for (std::size_t i = 0; i < n; ++i) {
@@ -67,9 +83,38 @@ GrainLabels Grains::label(const CrystalMap& m, bool moore, const bool periodic[3
     std::size_t i = 0;
     for (int z = 0; z < d.nz; ++z) {
         for (int y = 0; y < d.ny; ++y) {
+            const bool innerYZ = innerAxis(y, d.ny) && (d.nz == 1 || z <= d.nz - 2);
             for (int x = 0; x < d.nx; ++x, ++i) {
                 const std::int32_t s = m.crystal[i];
                 if (s <= 0) {
+                    continue;
+                }
+                std::uint32_t ri = findRoot(g.root, static_cast<std::uint32_t>(i));
+                // Połączenie zbioru komórki i (reprezentant ri) ze zbiorem komórki j; mniejszy reprezentant zostaje.
+                const auto join = [&](std::size_t j) {
+                    const std::uint32_t rj = findRoot(g.root, static_cast<std::uint32_t>(j));
+                    if (rj < ri) {
+                        g.root[ri] = rj;
+                        ri = rj;
+                    } else if (ri < rj) {
+                        g.root[rj] = ri;
+                    }
+                };
+                if (innerYZ && innerAxis(x, d.nx)) {
+                    const std::int32_t* const c = m.crystal.data() + i;
+                    for (const std::ptrdiff_t lin : forwardLin) {
+                        if (c[lin] == s) {
+                            join(static_cast<std::size_t>(static_cast<std::ptrdiff_t>(i) + lin));
+                        }
+                    }
+                    if (plusX && c[1] == s) {
+                        continue;  // wspólnych sąsiadów połączy komórka x+1 (wnętrze: ten sam wiersz)
+                    }
+                    for (const std::ptrdiff_t lin : coveredByNext) {
+                        if (c[lin] == s) {
+                            join(static_cast<std::size_t>(static_cast<std::ptrdiff_t>(i) + lin));
+                        }
+                    }
                     continue;
                 }
                 for (const Offset& o : forward) {
@@ -81,7 +126,7 @@ GrainLabels Grains::label(const CrystalMap& m, bool moore, const bool periodic[3
                     }
                     const std::size_t j = static_cast<std::size_t>(globalIndex(d, qx, qy, qz));
                     if (m.crystal[j] == s) {
-                        unite(g.root, static_cast<std::uint32_t>(i), static_cast<std::uint32_t>(j));
+                        join(j);
                     }
                 }
             }

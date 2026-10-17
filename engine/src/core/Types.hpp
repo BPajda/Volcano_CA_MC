@@ -51,6 +51,20 @@ struct Dims {
 
     bool is2D() const { return activeAxes() == 2; }
 
+    // Szerokość ramki w osi x / y / z (etap 8): 1 komórka w osi o rozmiarze > 1, 0 w nieużywanej osi
+    // przestrzeni 2D. Sąsiedztwo 2D tej osi nie dotyka, więc ramka w niej była tylko kopiowana przy każdym
+    // kroku (classic 2D: 45% czasu kroku) i zajmowała 2/3 pamięci siatki (etap 3, punkt 2.2).
+    // OPTYMALIZACJA: ramka tylko w osiach używanych przez sąsiedztwo.
+    int frameX() const { return nx > 1 ? 1 : 0; }
+    int frameY() const { return ny > 1 ? 1 : 0; }
+    int frameZ() const { return nz > 1 ? 1 : 0; }
+
+    // Liczba komórek razem z ramką.
+    std::size_t framedCells() const {
+        return static_cast<std::size_t>(nx + 2 * frameX()) * static_cast<std::size_t>(ny + 2 * frameY()) *
+               static_cast<std::size_t>(nz + 2 * frameZ());
+    }
+
     friend bool operator==(const Dims& a, const Dims& b) {
         return a.nx == b.nx && a.ny == b.ny && a.nz == b.nz;
     }

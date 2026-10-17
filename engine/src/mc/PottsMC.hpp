@@ -2,7 +2,7 @@
 // PottsMC — naiwny rozrost ziaren Monte Carlo (model Pottsa) — kroki 1–5 wersji naiwnej.
 // Opis reguł, domeny, mobilności i statystyk: McRules.hpp.
 //
-// Siatka: własne płaskie tablice z ramką 1 komórki (układ jak VectorStorage):
+// Siatka: własne płaskie tablice z ramką 1 komórki w osiach o rozmiarze > 1 (układ jak VectorStorage):
 //   spin_     — orientacja int32 (1..Q w domenie, 0 poza),
 //   mask_     — uint8: bit kInDomain (komórka należy do domeny), bit kPeriodicEdge (komórka
 //               leży przy ścianie periodycznej — jej zmiana wymaga odświeżenia kopii w ramce),
@@ -105,10 +105,10 @@ private:
     static constexpr std::uint8_t kInDomain = 1;
     static constexpr std::uint8_t kPeriodicEdge = 2;
 
-    // Indeks w tablicy z ramką (współrzędne od -1 do n włącznie).
+    // Indeks w tablicy z ramką (współrzędne od -1 do n włącznie w osiach z ramką; base_ = indeks (0, 0, 0)).
     std::size_t frameIndex(int x, int y, int z) const {
-        return static_cast<std::size_t>(x + 1) +
-               sx_ * (static_cast<std::size_t>(y + 1) + sy_ * static_cast<std::size_t>(z + 1));
+        return base_ + static_cast<std::size_t>(x) +
+               sx_ * (static_cast<std::size_t>(y) + sy_ * static_cast<std::size_t>(z));
     }
 
     // Przesunięcia liniowe sąsiadów komórki o globalnym indeksie gidx w kroku MCS t.
@@ -118,15 +118,46 @@ private:
 
     // Liczba sąsiadów W DOMENIE o orientacji różnej od s: Σ (1 − δ(s, S_j)).
     // Sąsiad spoza domeny (skała, powietrze, ramka absorbująca) nie wnosi energii.
+    // OPTYMALIZACJA (etap 8): bez skoku warunkowego i bez odczytu maski. Orientacja 0 ma dokładnie komórka spoza
+    // domeny (w domenie 1..Q, także kopie w ramce periodycznej), więc liczba „innych” = liczba sąsiadów w domenie
+    // (S_j != 0) minus liczba sąsiadów o orientacji s (s >= 1). Porównania dają 0/1 dodawane arytmetycznie —
+    // MSVC kompilował wcześniejszy warunek (maska && S_j != s) do źle przewidywanego skoku (etap 3, punkt 2.4).
     VOLCANO_NOINLINE int unlikeNeighbors(std::size_t i, std::int32_t s,
                                          const std::vector<std::ptrdiff_t>& offsets) const {
-        int n = 0;
+        const std::int32_t* const spin = spin_.data() + i;
+        const std::int32_t match = (s != 0) ? s : -1;  // s = 0 (spoza domeny): różni są wszyscy sąsiedzi w domenie
+        int inDomain = 0;
+        int same = 0;
         for (const std::ptrdiff_t o : offsets) {
-            const std::size_t j = static_cast<std::size_t>(static_cast<std::ptrdiff_t>(i) + o);
-            n += ((mask_[j] & kInDomain) != 0 && spin_[j] != s) ? 1 : 0;
+            const std::int32_t sj = spin[o];
+            inDomain += static_cast<int>(sj != 0);
+            same += static_cast<int>(sj == match);
         }
-        return n;
+        return inDomain - same;
     }
+
+    // Kroki 2 i 4 naraz: liczba sąsiadów w domenie o orientacji różnej od a (przed zmianą) i od b (po zmianie)
+    // w JEDNYM przejściu po sąsiadach (a, b >= 1). Wynik jak dwa wywołania unlikeNeighbors.
+    // OPTYMALIZACJA (etap 8): jedno przejście zamiast dwóch, bez skoków warunkowych.
+    static void unlikeBeforeAfter(const std::int32_t* spinAtCell, std::int32_t a, std::int32_t b,
+                                  const std::ptrdiff_t* offsets, std::size_t count, int& before, int& after) {
+        int inDomain = 0;
+        int sameA = 0;
+        int sameB = 0;
+        for (std::size_t k = 0; k < count; ++k) {
+            const std::int32_t sj = spinAtCell[offsets[k]];
+            inDomain += static_cast<int>(sj != 0);
+            sameA += static_cast<int>(sj == a);
+            sameB += static_cast<int>(sj == b);
+        }
+        before = inDomain - sameA;
+        after = inDomain - sameB;
+    }
+
+    // Pętla prób jednego MCS. Szablon: decyzje stałe w czasie kroku (mobilność włączona, sąsiedztwo losowe)
+    // wybrane raz przed pętlą, nie w każdej próbie (OPTYMALIZACJA, etap 8).
+    template <bool kMobility, bool kRandomNb>
+    std::uint64_t sweepTrials();
 
     // Wypełnia całą ramkę: oś periodyczna — kopia przeciwległej warstwy, inaczej poza domeną.
     void fillFrame();
@@ -137,8 +168,10 @@ private:
     McParams p_;
     Neighborhood nb_;
     bool periodic_[3];
-    std::size_t sx_;  // nx + 2
-    std::size_t sy_;  // ny + 2
+    int frame_[3];        // szerokość ramki w osiach x, y, z (Dims::frameX/Y/Z: 0 w nieużywanej osi 2D)
+    std::size_t sx_;      // nx + 2·fx
+    std::size_t sy_;      // ny + 2·fy
+    std::size_t base_;    // indeks komórki (0, 0, 0)
     std::vector<std::int32_t> spin_;
     std::vector<std::uint8_t> mask_;
     std::vector<float> mobility_;

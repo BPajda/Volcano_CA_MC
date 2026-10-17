@@ -1,0 +1,72 @@
+{
+  "unit": "ms",
+  "readConfig": 83.336,
+  "allocate": 0.314,
+  "terrain": 0.018,
+  "vents": 0.008,
+  "caSim": 77.728,
+  "save": 69.97,
+  "total": 306.66,
+  "cells": 20000,
+  "space": [
+    200,
+    1,
+    100
+  ],
+  "neighborhood": "moore",
+  "boundary": "absorbing",
+  "steps": 351,
+  "grid": "vector",
+  "mode": "lava",
+  "stopReason": "brak płynnej lawy",
+  "cpu": "13th Gen Intel(R) Core(TM) i9-13900HX",
+  "compiler": "GCC 11.4.0",
+  "build": "Release",
+  "files": {
+    "config_used.json": {
+      "bytes": 916,
+      "writeMs": 7.494
+    },
+    "ca_result.txt": {
+      "bytes": 327231,
+      "writeMs": 19.863
+    },
+    "ca_result.bin": {
+      "bytes": 260020,
+      "writeMs": 21.078
+    },
+    "stats.json": {
+      "bytes": 5673,
+      "writeMs": 28.889
+    }
+  },
+  "memory": {
+    "method": "getrusage (ru_maxrss), /proc/self/statm",
+    "startRssBytes": 2084864,
+    "endRssBytes": 5505024,
+    "peakRssBytes": 6684672,
+    "model": {
+      "peakBytes": 1888712,
+      "peakBytesPerCell": 94.436,
+      "peakBlocks": {
+        "caGrid": 1607112,
+        "caAux": 21600,
+        "caResult": 260000
+      },
+      "blocks": {
+        "caGrid": {
+          "bytes": 1607112,
+          "bytesPerCell": 80.356
+        },
+        "caAux": {
+          "bytes": 21600,
+          "bytesPerCell": 1.08
+        },
+        "caResult": {
+          "bytes": 260000,
+          "bytesPerCell": 13.0
+        }
+      }
+    }
+  }
+}

@@ -79,6 +79,7 @@ CaParams Simulation::caParams(const Config& c) {
     p.coolingLateral = static_cast<float>(c.ca.coolingLateral);
     p.coolingFall = static_cast<float>(c.ca.coolingFall);
     p.ponding = c.ca.ponding;
+    p.frontSweep = c.ca.frontSweep;
     return p;
 }
 
@@ -157,7 +158,7 @@ RunSummary Simulation::runWith(const std::string& outDir, TimingReport& timing) 
             t.reset();
             char name[32];
             std::snprintf(name, sizeof(name), "step_%06d.bin", ca.steps());
-            mem.allocate("caSnapshotTemp", ca.gridBytes() / 2);  // chwilowa kopia wnętrza siatki
+            mem.allocate("caSnapshotTemp", ca.state().bytes());  // chwilowa kopia wnętrza siatki (jak jeden bufor)
             ResultWriter::writeBin((snapDir / name).string(), ca.result());
             mem.release("caSnapshotTemp");
             snapMs += t.elapsedMs();
@@ -177,6 +178,10 @@ RunSummary Simulation::runWith(const std::string& outDir, TimingReport& timing) 
         timing.add("caSim", caMs);
         timing.add("snapshots", snapMs);
         timing.addFile(snapDir.string(), snapMs);
+    }
+    if (ca.frontSweep()) {
+        // Listy automatu frontalnego (etap 8): pojemność po przebiegu = największy rozmiar w trakcie.
+        mem.allocate("caFront", ca.frontBytes());
     }
     if (timing.detailEnabled()) {
         const CaPhaseTimes& ph = ca.phaseTimes();
@@ -217,6 +222,7 @@ RunSummary Simulation::runWith(const std::string& outDir, TimingReport& timing) 
     // Automat (oba bufory) i mapa terenu giną przy wyjściu z funkcji; wynik zostaje w RunSummary.
     mem.release("caGrid");
     mem.release("caAux");
+    mem.release("caFront");
     return s;
 }
 

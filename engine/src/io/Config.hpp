@@ -61,6 +61,10 @@ struct CaConfig {
     double coolingFall = 0.1;     // stygnięcie przy spadaniu [°C]
     double solidusTemp = 800.0;   // poniżej tej temperatury lawa zastyga w bazalt [°C]
     bool ponding = true;          // wypełnianie zagłębień (rozszerzenie reguł, patrz CaRules.hpp)
+    // ca.sweep (etap 8): "front" — automat frontalny (tylko komórki, które mogą się zmienić), "full" — pełny
+    // przebieg (wersja referencyjna). Wynik bitowo ten sam. Pole 1 B w miejscu wypełnienia — rozmiar struktury
+    // bez zmian (układ kodu MSVC, etap 6, punkt 7).
+    bool frontSweep = true;
 };
 
 // Krystalizacja Monte Carlo (etap 2) — opis algorytmu w mc/McRules.hpp.

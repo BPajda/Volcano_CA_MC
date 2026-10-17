@@ -35,6 +35,31 @@ TEST_CASE_TEMPLATE("Brzeg periodyczny (classic): zawijanie we wszystkich osiach"
     CHECK(s.flowId(4, 3, 5) == 11);
 }
 
+TEST_CASE_TEMPLATE("Brzeg 2D: ramka tylko w płaszczyźnie siatki, zawijanie i narożniki (etap 8)", S, VectorStorage,
+                   MatrixStorage) {
+    // Płaszczyzna x–y (nz = 1): ramka w x i y; w osi z nie ma ramki (sąsiedztwo 2D jej nie używa).
+    S s(Dims{4, 3, 1});
+    s.setFlowId(0, 0, 0, 11);
+    s.setFlowId(3, 2, 0, 22);
+    s.setFlowId(3, 1, 0, 33);
+    Boundary(BoundaryKind::Periodic, CaMode::Classic).apply(s);
+    CHECK(s.flowId(-1, 1, 0) == 33);
+    CHECK(s.flowId(4, 0, 0) == 11);
+    CHECK(s.flowId(0, 3, 0) == 11);
+    CHECK(s.flowId(-1, -1, 0) == 22);  // narożnik ramki = przeciwległy narożnik wnętrza
+    CHECK(s.flowId(4, 3, 0) == 11);
+    CHECK(s.flowId(3, 2, 0) == 22);    // wnętrze nietknięte
+    // Przekrój x–z lawy (ny = 1): absorbujący brzeg = VOID w x i z.
+    S t(Dims{5, 1, 4});
+    t.setType(2, 0, 1, CellType::Lava);
+    Boundary(BoundaryKind::Absorbing, CaMode::Lava).apply(t);
+    CHECK(t.type(-1, 0, 0) == CellType::Void);
+    CHECK(t.type(5, 0, 3) == CellType::Void);
+    CHECK(t.type(2, 0, -1) == CellType::Void);
+    CHECK(t.type(-1, 0, 4) == CellType::Void);
+    CHECK(t.type(2, 0, 1) == CellType::Lava);
+}
+
 TEST_CASE_TEMPLATE("Brzeg periodyczny w trybie lava: x, y zawinięte, z zawsze VOID", S, VectorStorage, MatrixStorage) {
     S s(Dims{4, 3, 5});
     s.setType(3, 1, 2, CellType::Lava);

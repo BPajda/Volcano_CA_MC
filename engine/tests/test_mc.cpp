@@ -4,6 +4,7 @@
 #include "doctest.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -13,6 +14,7 @@
 #include "app/Simulation.hpp"
 #include "core/Boundary.hpp"
 #include "core/Neighborhood.hpp"
+#include "core/Rng.hpp"
 #include "io/Config.hpp"
 #include "io/ResultReader.hpp"
 #include "io/ResultWriter.hpp"
@@ -363,6 +365,122 @@ TEST_CASE("Grains: liczba spójnych składowych na ręcznym przykładzie (VN, Mo
     const GrainLabels g3 = Grains::label(c, true, none);
     CHECK(g3.grains == 2);
     CHECK(g3.size[g3.root[0]] == 7);
+}
+
+namespace {
+
+// Etykiety ziaren prostym BFS (wszyscy sąsiedzi, zawijanie współrzędnych) — odniesienie dla Grains::label
+// (etap 8, k5: szybka ścieżka dla wnętrza). Reprezentant ziarna = najmniejszy indeks składowej.
+GrainLabels labelReference(const CrystalMap& m, bool moore, const bool periodic[3]) {
+    const Dims& d = m.dims;
+    const Neighborhood conn(moore ? NeighborhoodKind::Moore : NeighborhoodKind::VonNeumann, d);
+    GrainLabels g;
+    g.root.assign(d.cells(), GrainLabels::kNone);
+    g.size.assign(d.cells(), 0);
+    const int n[3] = {d.nx, d.ny, d.nz};
+    for (std::size_t start = 0; start < d.cells(); ++start) {
+        if (m.crystal[start] <= 0 || g.root[start] != GrainLabels::kNone) {
+            continue;
+        }
+        std::vector<std::size_t> queue{start};
+        g.root[start] = static_cast<std::uint32_t>(start);  // pierwsza komórka składowej w kolejności indeksów
+        for (std::size_t q = 0; q < queue.size(); ++q) {
+            const std::size_t i = queue[q];
+            const int c[3] = {static_cast<int>(i % d.nx), static_cast<int>((i / d.nx) % d.ny),
+                              static_cast<int>(i / (static_cast<std::size_t>(d.nx) * d.ny))};
+            for (const Offset& o : conn.variant(0)) {
+                int p[3] = {c[0] + o.dx, c[1] + o.dy, c[2] + o.dz};
+                bool ok = true;
+                for (int a = 0; a < 3; ++a) {
+                    if (p[a] < 0 || p[a] >= n[a]) {
+                        ok = ok && periodic[a];
+                        p[a] = (p[a] + n[a]) % n[a];
+                    }
+                }
+                const std::size_t j = static_cast<std::size_t>(globalIndex(d, p[0], p[1], p[2]));
+                if (ok && m.crystal[j] == m.crystal[i] && g.root[j] == GrainLabels::kNone) {
+                    g.root[j] = static_cast<std::uint32_t>(start);
+                    queue.push_back(j);
+                }
+            }
+        }
+        g.size[start] = static_cast<std::uint32_t>(queue.size());
+        g.cells += queue.size();
+        ++g.grains;
+    }
+    return g;
+}
+
+}  // namespace
+
+TEST_CASE("Grains: szybka ścieżka wnętrza = BFS (2D, 3D, VN, Moore, brzegi, oś rozmiaru 2)") {
+    const Dims dims[] = {{17, 13, 1}, {15, 1, 11}, {1, 12, 9}, {9, 8, 7}, {2, 6, 5}, {6, 2, 3}, {5, 4, 2}};
+    for (const Dims& d : dims) {
+        for (const bool moore : {false, true}) {
+            for (int mask = 0; mask < 8; ++mask) {
+                const bool periodic[3] = {(mask & 1) != 0 && d.nx > 1, (mask & 2) != 0 && d.ny > 1,
+                                          (mask & 4) != 0 && d.nz > 1};
+                // Kilka orientacji (duże składowe) i komórki spoza domeny (orientacja 0).
+                CrystalMap m;
+                m.dims = d;
+                m.crystal.resize(d.cells());
+                for (std::size_t i = 0; i < d.cells(); ++i) {
+                    m.crystal[i] = static_cast<std::int32_t>(hashRand(7, mask, i, moore ? 1 : 2) % 4);
+                }
+                CAPTURE(d.nx);
+                CAPTURE(d.ny);
+                CAPTURE(d.nz);
+                CAPTURE(moore);
+                CAPTURE(mask);
+                const GrainLabels fast = Grains::label(m, moore, periodic);
+                const GrainLabels ref = labelReference(m, moore, periodic);
+                CHECK(fast.grains == ref.grains);
+                CHECK(fast.cells == ref.cells);
+                CHECK(fast.root == ref.root);
+                for (std::size_t i = 0; i < d.cells(); ++i) {
+                    if (ref.root[i] == i) {
+                        CHECK(fast.size[i] == ref.size[i]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("MC: energia całkowita (pary „do przodu”) = połowa sumy energii komórek, bitowo") {
+    struct Case {
+        Dims d;
+        NeighborhoodKind nb;
+        BoundaryKind bc;
+    };
+    const Case cases[] = {{{12, 9, 1}, NeighborhoodKind::VonNeumann, BoundaryKind::Periodic},
+                          {{12, 9, 1}, NeighborhoodKind::Moore, BoundaryKind::Absorbing},
+                          {{10, 1, 8}, NeighborhoodKind::Moore, BoundaryKind::Periodic},
+                          {{7, 6, 5}, NeighborhoodKind::Moore, BoundaryKind::Periodic},
+                          {{7, 6, 5}, NeighborhoodKind::VonNeumann, BoundaryKind::Absorbing},
+                          {{2, 5, 4}, NeighborhoodKind::Moore, BoundaryKind::Periodic},  // oś rozmiaru 2
+                          {{7, 6, 5}, NeighborhoodKind::Pentagonal, BoundaryKind::Periodic},
+                          {{12, 9, 1}, NeighborhoodKind::Hexagonal, BoundaryKind::Absorbing}};
+    for (const Case& c : cases) {
+        const std::string nbName = Neighborhood::name(c.nb);
+        CAPTURE(nbName);
+        for (const double J : {1.0, 0.37}) {
+            PottsMC mc = fullMc(c.d, c.nb, c.bc, params(4, J));
+            for (int k = 0; k < 3; ++k) {
+                mc.sweep();
+            }
+            // Odniesienie: wzór sprzed etapu 8 — 0.5 · J · Σ_i (liczba sąsiadów w domenie o innej orientacji).
+            std::uint64_t unlike = 0;
+            for (int z = 0; z < c.d.nz; ++z) {
+                for (int y = 0; y < c.d.ny; ++y) {
+                    for (int x = 0; x < c.d.nx; ++x) {
+                        unlike += static_cast<std::uint64_t>(std::llround(mc.energyAt(x, y, z) / J));
+                    }
+                }
+            }
+            CHECK(mc.totalEnergy() == 0.5 * J * static_cast<double>(unlike));
+        }
+    }
 }
 
 TEST_CASE("MC basalt: wynik z pliku (--mc-from) = wynik w pamięci; txt bez mobilności") {

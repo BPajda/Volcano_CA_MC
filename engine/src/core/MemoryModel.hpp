@@ -10,6 +10,11 @@
 //
 // Rejestracja jest jawna (allocate/release w kodzie etapów), a nie przez własny alokator:
 // gorące pętle i typy tablic zostają bez zmian, więc pomiar nie zaburza wyników ani czasów.
+//
+// Rozmiar siatek z ramką podają same struktury (VectorStorage::bytes, PottsMC::bytes — liczba komórek
+// z ramką Dims::framedCells()). Od etapu 8 ramka jest tylko w osiach o rozmiarze > 1, więc w 2D model
+// daje 2 · 13 B · (nx+2)(ny+2) zamiast 2 · 13 B · (nx+2)(ny+2) · 3 (CA classic 2D: ~91 → ~39 B/komórkę
+// razem z kopią wyniku 13 B; test w test_profile.cpp).
 
 #include <algorithm>
 #include <cstddef>

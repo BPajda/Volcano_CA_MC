@@ -58,6 +58,21 @@ inline double hashUniform(std::uint64_t seed, std::uint64_t step, std::uint64_t 
            (1.0 / 9007199254740992.0);
 }
 
+// Kaskada hashRand rozbita na ogniwa (etap 8). Pętla, w której seed i krok są stałe, liczy dwa pierwsze
+// ogniwa raz przed pętlą (hashPrefix), ogniwo indeksu raz na próbę/komórkę (hashIndex) — wspólne dla
+// wszystkich decyzji tej próby — i tylko ostatnie ogniwo osobno dla każdej soli (hashSalt). Wynik bitowo
+// ten sam: hashRand(seed, step, i, salt) == hashSalt(hashIndex(hashPrefix(seed, step), i), salt).
+// OPTYMALIZACJA: w próbie MC 3 wywołania splitmix64 zamiast 8 (test w test_rng.cpp).
+inline std::uint64_t hashPrefix(std::uint64_t seed, std::uint64_t step) {
+    return splitmix64(splitmix64(seed ^ 0xA0761D6478BD642FULL) ^ step);
+}
+inline std::uint64_t hashIndex(std::uint64_t prefix, std::uint64_t globalIndex) {
+    return splitmix64(prefix ^ globalIndex);
+}
+inline std::uint64_t hashSalt(std::uint64_t indexHash, std::uint64_t salt) { return splitmix64(indexHash ^ salt); }
+// Liczba z [0, 1) z gotowego hasha — jak hashUniform.
+inline double toUniform(std::uint64_t r) { return static_cast<double>(r >> 11) * (1.0 / 9007199254740992.0); }
+
 // Liczba całkowita z [0, n) z generatora mt19937_64 (n > 0).
 // Operacja modulo ma pomijalne obciążenie dla n << 2^64, a w przeciwieństwie do
 // std::uniform_int_distribution daje identyczny wynik na każdym kompilatorze.

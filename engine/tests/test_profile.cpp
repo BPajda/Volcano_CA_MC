@@ -17,6 +17,7 @@
 #include "core/Storage.hpp"
 #include "io/Config.hpp"
 #include "io/TimingReport.hpp"
+#include "mc/PottsMC.hpp"
 
 using namespace volcano;
 
@@ -93,7 +94,7 @@ TEST_CASE("MemoryModel: szczyt to największa suma żyjących tablic i jego skł
 
 TEST_CASE("Model pamięci CA: oba bufory z ramką po 13 B na komórkę") {
     const Dims d{10, 8, 6};
-    const Config c = Config::load("", {"ca.mode=classic", "space.nx=10", "space.ny=8", "space.nz=6"});
+    const Config c = Config::load("", {"ca.mode=classic", "space.nx=10", "space.ny=8", "space.nz=6", "ca.sweep=full"});
     LavaCA<VectorStorage> ca(d, Simulation::caParams(c), Neighborhood(c.neighborhood, d),
                              Boundary(c.boundary, c.ca.mode));
     const std::size_t perCell = sizeof(CellType) + sizeof(std::int32_t) + sizeof(float) + 2 * sizeof(std::uint16_t);
@@ -103,6 +104,30 @@ TEST_CASE("Model pamięci CA: oba bufory z ramką po 13 B na komórkę") {
     Microstructure m;
     m.resize(d);
     CHECK(m.bytes() == d.cells() * perCell);
+}
+
+TEST_CASE("Model pamięci CA 2D: ramka tylko w osiach używanych przez sąsiedztwo (etap 8)") {
+    const std::size_t perCell = 13;
+    // Płaszczyzna x–y (nz = 1): ramka w x i y, bez dwóch warstw z = -1 i z = 1 (wcześniej 3·N_f).
+    const Dims xy{10, 8, 1};
+    const Config c = Config::load("", {"ca.mode=classic", "space.nx=10", "space.ny=8", "space.nz=1", "ca.sweep=full"});
+    LavaCA<VectorStorage> ca(xy, Simulation::caParams(c), Neighborhood(c.neighborhood, xy),
+                             Boundary(c.boundary, c.ca.mode));
+    CHECK(xy.framedCells() == 12 * 10 * 1);
+    CHECK(ca.gridBytes() == 2 * 12 * 10 * 1 * perCell);
+    CHECK(MatrixStorage(xy).bytes() == VectorStorage(xy).bytes());
+    // Przekrój x–z lawy (ny = 1): ramka w x i z.
+    const Dims xz{20, 1, 9};
+    CHECK(xz.framedCells() == 22 * 1 * 11);
+    CHECK(VectorStorage(xz).bytes() == 22 * 11 * perCell);
+    // 3D: ramka we wszystkich osiach jak wcześniej.
+    CHECK(Dims{4, 3, 2}.framedCells() == 6 * 5 * 4);
+    // MC 2D: orientacja int32 + maska uint8 na komórkę z ramką (+ listy domeny po initialize).
+    const Dims mcd{30, 20, 1};
+    McParams mp;
+    PottsMC mc(mcd, mp, Neighborhood(NeighborhoodKind::Moore, mcd), Boundary(BoundaryKind::Periodic, CaMode::Classic));
+    const std::size_t linear = 8 * sizeof(std::ptrdiff_t);  // przesunięcia 8 sąsiadów Moore 2D
+    CHECK(mc.bytes() == 32 * 22 * (sizeof(std::int32_t) + sizeof(std::uint8_t)) + linear);
 }
 
 TEST_CASE("TimingReport: sekcje files, memory i detail") {
@@ -163,7 +188,7 @@ TEST_CASE("Pomiar czasów faz (--timing-detail) nie zmienia wyniku CA") {
 TEST_CASE("times.json z przebiegu: rozmiary plików, pamięć i model teoretyczny") {
     const auto dir = tempDir("profile_run");
     Config c = Config::load("", {"ca.mode=classic", "space.nx=20", "space.ny=20", "space.nz=20", "vents.count=4",
-                                 "output.format=both", "mc.enabled=false"});
+                                 "output.format=both", "mc.enabled=false", "ca.sweep=full"});
     TimingReport t;
     t.enableDetail(true);
     Simulation sim(c);
@@ -179,4 +204,20 @@ TEST_CASE("times.json z przebiegu: rozmiary plików, pamięć i model teoretyczn
     CHECK(j["memory"]["model"]["peakBytes"].get<std::uint64_t>() == 22ULL * 22 * 22 * 13 * 2 + 8000ULL * 13);
     CHECK(j["detail"].contains("caRules"));
     CHECK_FALSE(j["detail"].contains("caDescent"));
+
+    // Automat frontalny (domyślny, etap 8): jeden bufor z ramką + znaczniki kandydatów (1 B/komórkę) + listy
+    // frontu + wynik bez ramki.
+    const auto dirFront = tempDir("profile_run_front");
+    Config f = Config::load("", {"ca.mode=classic", "space.nx=20", "space.ny=20", "space.nz=20", "vents.count=4",
+                                 "output.format=bin", "mc.enabled=false"});
+    TimingReport tf;
+    Simulation(f).run(dirFront.string(), tf);
+    tf.recordMemory(ProcessInfo::memory(), f.space.cells());
+    const auto jf = tf.toJson();
+    const auto& blocks = jf["memory"]["model"]["blocks"];
+    REQUIRE(blocks.contains("caFront"));
+    CHECK(blocks["caGrid"]["bytes"].get<std::uint64_t>() == 22ULL * 22 * 22 * 13);
+    CHECK(blocks["caAux"]["bytes"].get<std::uint64_t>() == 8000ULL);
+    CHECK(jf["memory"]["model"]["peakBytes"].get<std::uint64_t>() ==
+          22ULL * 22 * 22 * 13 + 8000ULL + blocks["caFront"]["bytes"].get<std::uint64_t>() + 8000ULL * 13);
 }

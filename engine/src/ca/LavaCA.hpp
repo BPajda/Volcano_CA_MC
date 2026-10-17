@@ -2,12 +2,31 @@
 // Automat komórkowy spływu lawy (i klasycznego rozrostu ziaren) — szablon po
 // reprezentacji siatki Storage (VectorStorage / MatrixStorage).
 //
-// Synchroniczny CA z podwójnym buforem: krok czyta wyłącznie cur_, pisze wyłącznie
-// next_, po kroku bufory są zamieniane (swap, bez kopiowania). Każda komórka next_
-// zależy tylko od cur_, więc pętla jest trywialnie równoległa (planowane OpenMP/MPI).
+// Synchroniczny CA: nowy stan każdej komórki zależy tylko od stanu z początku kroku (cur_).
+// Pełny przebieg pisze do drugiego bufora next_ i zamienia bufory (swap, bez kopiowania);
+// automat frontalny zbiera zmiany na listach i stosuje je po regułach. W obu wersjach reguły
+// czytają tylko cur_, więc pętla jest trywialnie równoległa (planowane OpenMP/MPI).
 // Losowość pochodzi z hashRand(seed, krok, globalnyIndeks, sól) — wynik jest identyczny
 // dla obu reprezentacji siatki (sprawdza to benchmark i testy).
 // Reguły są opisane w CaRules.hpp.
+//
+// Dwa sposoby przetwarzania kroku (ca.sweep, etap 8) — wynik bitowo ten sam, łącznie z licznikami:
+//   full  — pełny przebieg (wersja referencyjna): każda komórka cur_ -> next_, potem swap;
+//   front — automat frontalny (domyślnie): tylko komórki, które w tym kroku MOGĄ się zmienić:
+//           tryb lava — wszystkie komórki LAVA (stygną) + komórki AIR, które mają lawę wśród sąsiadów
+//           (suma wszystkich wariantów sąsiedztwa, także „pod spodem” dla wypełniania zagłębień);
+//           tryb classic — komórki AIR obok ziaren dodanych w poprzednim kroku + komórki AIR, które
+//           były kandydatami, a nie zmieniły się (możliwe tylko przy sąsiedztwie losowym).
+//           Inne komórki nie mogą się zmienić: AIR zmienia się tylko, gdy w sąsiedztwie jest lawa/ziarno,
+//           ROCK i BASALT nigdy, ziarno classic nigdy. Krok czyta wyłącznie cur_ i zbiera listę zmian,
+//           którą stosuje do cur_ po przetworzeniu wszystkich komórek (synchroniczność bez drugiego
+//           bufora — next_ nie jest wtedy alokowany). Ramka jest wypełniana raz, potem tylko kopie
+//           zmienionych komórek przy ścianach periodycznych (Boundary::syncCell). Liczniki (lawa, AIR,
+//           zmiany) wychodzą z tych samych reguł, a komórki nieprzetworzone wnoszą stałe sumy.
+//           Listy są trzymane osobno dla każdej warstwy (oś z; w płaszczyźnie x–y oś y): kandydatów
+//           warstwy k wyznaczają tylko listy warstw k-1..k+1, reguły warstwy czytają tylko cur_
+//           i piszą tylko listy tej warstwy — pod zrównoleglenie po warstwach (etap 9).
+// OPTYMALIZACJA: automat frontalny zamiast pełnego przebiegu (99,99% przeszukań w lawie nic nie znajdowało).
 
 #include <algorithm>
 #include <cstdint>
@@ -36,9 +55,15 @@ struct CaPhaseTimes {
 template <class Storage>
 class LavaCA {
 public:
-    // Alokuje oba bufory (cur, next) — cała przestrzeń AIR.
+    // Alokuje bufory — cała przestrzeń AIR: cur i next (full) albo tylko cur + znaczniki frontu (front).
     LavaCA(const Dims& dims, const CaParams& params, const Neighborhood& nb, const Boundary& bc)
-        : dims_(dims), p_(params), nb_(nb), bc_(bc), cur_(dims), next_(dims) {
+        : dims_(dims),
+          p_(params),
+          nb_(nb),
+          bc_(bc),
+          cur_(dims),
+          next_(params.frontSweep ? Storage() : Storage(dims)),
+          front_(params.frontSweep) {
         if (params.mode == CaMode::Lava) {
             descent_.assign(dims.cells(), -1);
         }
@@ -59,6 +84,33 @@ public:
                     diagonalFalls_ = true;
                 }
             }
+        }
+        // Sąsiedzi jako przesunięcia liniowe (etap 8): ta sama kolejność co w wariantach sąsiedztwa.
+        for (int v = 0; v < nb_.variantCount(); ++v) {
+            std::vector<NbStep> list;
+            for (const Offset& o : nb_.variant(v)) {
+                list.push_back(NbStep{o, cur_.linear(o)});
+            }
+            nbSteps_.push_back(list);
+        }
+        for (const Offset& o : sideOffsets_) {
+            side_.push_back(NbStep{o, cur_.linear(o)});
+        }
+        // Automat frontalny: oś warstw, przesunięcia wszystkich wariantów pogrupowane wg przesunięcia
+        // w osi warstw (-1, 0, 1) i znaczniki „komórka jest już na liście kandydatów”.
+        if (front_) {
+            layerZ_ = dims.nz > 1;
+            layerPeriodic_ = layerZ_ ? bc_.periodicZ() : bc_.periodicY();
+            std::vector<Offset> all;
+            for (int v = 0; v < nb_.variantCount(); ++v) {
+                for (const Offset& o : nb_.variant(v)) {
+                    addUnique(all, o);
+                }
+            }
+            for (const Offset& o : all) {
+                rev_[(layerZ_ ? o.dz : o.dy) + 1].push_back(o);
+            }
+            mark_.assign(dims.cells(), 0);
         }
     }
 
@@ -99,6 +151,8 @@ public:
         }
         if (phaseTiming_) {
             stepTimed();
+        } else if (front_) {
+            stepFront();
         } else if (p_.mode == CaMode::Lava) {
             stepLava();
         } else {
@@ -106,6 +160,9 @@ public:
         }
         return !finished();
     }
+
+    // Czy krok idzie automatem frontalnym (ca.sweep = front).
+    bool frontSweep() const { return front_; }
 
     // Kroki aż do spełnienia warunku końca.
     void run() {
@@ -134,20 +191,60 @@ public:
     void enablePhaseTiming(bool on) { phaseTiming_ = on; }
     const CaPhaseTimes& phaseTimes() const { return phases_; }
 
-    // Pamięć obu buforów z ramką [B] (dane komórek; MatrixStorage bez narzutu alokacji wierszy).
+    // Pamięć buforów z ramką [B] (dane komórek; MatrixStorage bez narzutu alokacji wierszy):
+    // full — cur i next, front — tylko cur.
     std::size_t gridBytes() const { return cur_.bytes() + next_.bytes(); }
-    // Pamięć tablic pomocniczych [B]: D(n) (tryb lava) i poziomy przelewu niecek.
+    // Pamięć tablic pomocniczych [B]: D(n) (tryb lava), poziomy przelewu niecek, znaczniki frontu.
     std::size_t auxBytes() const {
-        return descent_.size() * sizeof(std::int8_t) + spill_.height.size() * sizeof(int);
+        return descent_.size() * sizeof(std::int8_t) + spill_.height.size() * sizeof(int) +
+               mark_.size() * sizeof(std::uint8_t);
+    }
+    // Pamięć list automatu frontalnego [B] (pojemność — największy rozmiar w trakcie przebiegu).
+    std::size_t frontBytes() const {
+        std::size_t b = layers_.capacity() * sizeof(FrontLayer);
+        for (const FrontLayer& l : layers_) {
+            b += (l.src.capacity() + l.cand.capacity() + l.nextSrc.capacity()) * sizeof(Coord) +
+                 l.changes.capacity() * sizeof(Change);
+        }
+        return b;
     }
 
 private:
+    using Pos = typename Storage::Pos;
+
     // Położenie komórki (do tablicy kraterów).
     struct Coord {
         int x;
         int y;
         int z;
     };
+
+    // Sąsiad: przesunięcie (dx, dy, dz) i odpowiadające mu przesunięcie liniowe w buforze z ramką.
+    // OPTYMALIZACJA (etap 8): sąsiad = pozycja + lin zamiast indeksu z (x, y, z) przy każdym odczycie.
+    struct NbStep {
+        Offset o;
+        std::ptrdiff_t lin;
+    };
+
+    // Zmiana jednej komórki w kroku automatu frontalnego: położenie i nowy stan.
+    struct Change {
+        Coord c;
+        CellState s;
+    };
+
+    // Listy automatu frontalnego dla jednej warstwy (wartość osi z; w płaszczyźnie x–y osi y).
+    struct FrontLayer {
+        std::vector<Coord> src;       // lava: komórki LAVA; classic: ziarna dodane w poprzednim kroku
+        std::vector<Coord> cand;      // komórki AIR do sprawdzenia w tym kroku (bez powtórzeń — mark_)
+        std::vector<Coord> nextSrc;   // src na następny krok (budowana przez reguły)
+        std::vector<Change> changes;  // zmiany tego kroku (stosowane po regułach wszystkich warstw)
+    };
+
+    // Lista sąsiadów komórki idx w kroku o stałej części hasha prefix = hashPrefix(seed, krok) —
+    // ten sam wariant co nb_.offsetsFor(seed, krok, idx), bez pełnej kaskady hashRand na komórkę.
+    const std::vector<NbStep>& stepsFor(std::uint64_t prefix, std::uint64_t idx) const {
+        return nbSteps_[static_cast<std::size_t>(nb_.variantFromPrefix(prefix, idx))];
+    }
 
     // Czy komórka (x, y, z) z danym flowId jest kraterem (O(1) dzięki ventByFlow_).
     bool isVent(std::int32_t flowId, int x, int y, int z) const {
@@ -200,11 +297,11 @@ private:
     // (lawa może się rozlewać po płaskim). Lawa płynie tylko w kierunku największego
     // spadku — tak powstają jęzory zamiast wachlarza (plan projektu §3.3: „lawa woli
     // spływać w dół”; podobnie wypływ do najniższych sąsiadów w modelach SCIARA).
-    VOLCANO_NOINLINE int descent(int x, int y, int z) const {
+    VOLCANO_NOINLINE int descent(int x, int y, int z, Pos p) const {
         int best = 0;
-        for (const Offset& h : sideOffsets_) {
-            if (cur_.type(x + h.dx, y + h.dy, z) == CellType::Air) {
-                best = std::max(best, dropDepth(x + h.dx, y + h.dy, z));
+        for (const NbStep& h : side_) {
+            if (cur_.type(Storage::shifted(p, h.o, h.lin)) == CellType::Air) {
+                best = std::max(best, dropDepth(x + h.o.dx, y + h.o.dy, z));
             }
         }
         return best;
@@ -243,11 +340,13 @@ private:
     }
 
     // Zbiera kandydatów (lawa, która może wpłynąć do komórki AIR c) — reguła 1 z CaRules.hpp.
-    VOLCANO_NOINLINE void gatherLavaCandidates(int x, int y, int z, std::uint64_t t, std::uint64_t idx,
-                                               CandidateVote& vote) const {
+    // p = pozycja c w buforze, prefix = hashPrefix(seed, t) (wybór wariantu sąsiedztwa).
+    VOLCANO_NOINLINE void gatherLavaCandidates(int x, int y, int z, Pos p, std::uint64_t prefix,
+                                               std::uint64_t idx, CandidateVote& vote) const {
         vote.clear();
         int cDrop = kUnknown;  // spadek z komórki c — liczony leniwie
-        for (const Offset& o : nb_.offsetsFor(p_.seed, t, idx)) {
+        for (const NbStep& s : stepsFor(prefix, idx)) {
+            const Offset& o = s.o;
             if (o.dz < 0) {
                 // Lawa się nie wspina: sąsiad poniżej nie wpływa do c.
                 // Wyjątek: wypełnianie zagłębienia z komórki dokładnie pod c.
@@ -256,10 +355,11 @@ private:
                 }
                 continue;
             }
-            const int sz = z + o.dz;
-            if (cur_.type(x + o.dx, y + o.dy, sz) != CellType::Lava) {
+            if (cur_.type(Storage::shifted(p, o, s.lin)) != CellType::Lava) {
                 continue;  // (ramka absorbująca to VOID — nigdy nie jest lawą)
             }
+            // Dalej (rzadko — sąsiad jest lawą) współrzędne jak dotąd.
+            const int sz = z + o.dz;
             // Źródło z ramki periodycznej zawijamy do wnętrza (ramka jest jego kopią) —
             // dalsze sprawdzenia sięgają do sąsiadów źródła, czyli poza ramkę.
             const int sx = wrap(x + o.dx, dims_.nx);
@@ -305,10 +405,11 @@ private:
         std::size_t i = 0;
         for (int z = 0; z < dims_.nz; ++z) {
             for (int y = 0; y < dims_.ny; ++y) {
-                for (int x = 0; x < dims_.nx; ++x, ++i) {
+                Pos p = cur_.pos(0, y, z);
+                for (int x = 0; x < dims_.nx; ++x, ++i, p = Storage::nextX(p)) {
                     std::int8_t d = -1;
-                    if (cur_.type(x, y, z) == CellType::Lava && hasSupport(x, y, z)) {
-                        d = static_cast<std::int8_t>(descent(x, y, z));
+                    if (cur_.type(p) == CellType::Lava && hasSupport(x, y, z)) {
+                        d = static_cast<std::int8_t>(descent(x, y, z, p));
                     }
                     descent_[i] = d;
                 }
@@ -336,11 +437,254 @@ private:
         finishStep(updateClassic());
     }
 
+    // ===================== automat frontalny (ca.sweep = front, etap 8) =====================
+
+    // Krok automatu frontalnego: D(n) dla lawy -> kandydaci -> reguły (czytają cur_) -> zmiany do cur_.
+    VOLCANO_NOINLINE void stepFront() {
+        if (!frontReady_) {
+            initFront();
+        }
+        if (p_.mode == CaMode::Lava) {
+            frontDescent();
+        }
+        frontCandidates();
+        const StepCounts c = frontRules();
+        frontApply();
+        finishStep(c);
+    }
+
+    // Warstwa komórki (oś z, a w płaszczyźnie x–y oś y).
+    int layerOf(const Coord& c) const { return layerZ_ ? c.z : c.y; }
+
+    // Przed pierwszym krokiem: ramka (raz — dalej Boundary::syncCell), listy lawy / ziaren z całej siatki
+    // i sumy komórek LAVA i AIR (komórki spoza frontu wnoszą do liczników stałe wartości).
+    VOLCANO_NOINLINE void initFront() {
+        bc_.apply(cur_);
+        layers_.assign(static_cast<std::size_t>(layerZ_ ? dims_.nz : dims_.ny), FrontLayer{});
+        lavaTotal_ = 0;
+        airTotal_ = 0;
+        for (int z = 0; z < dims_.nz; ++z) {
+            for (int y = 0; y < dims_.ny; ++y) {
+                for (int x = 0; x < dims_.nx; ++x) {
+                    const CellType t = cur_.type(x, y, z);
+                    if (t == CellType::Lava) {
+                        const Coord c{x, y, z};
+                        layers_[static_cast<std::size_t>(layerOf(c))].src.push_back(c);
+                        ++lavaTotal_;
+                    } else if (t == CellType::Air) {
+                        ++airTotal_;
+                    }
+                }
+            }
+        }
+        frontReady_ = true;
+    }
+
+    // D(n) tylko dla komórek lawy (descent_ jest czytane wyłącznie dla źródła, które jest lawą — wartości
+    // dla pozostałych komórek nie są używane, więc nie trzeba ich zerować co krok jak w computeDescent).
+    VOLCANO_NOINLINE void frontDescent() {
+        for (const FrontLayer& l : layers_) {
+            for (const Coord& c : l.src) {
+                const Pos p = cur_.pos(c.x, c.y, c.z);
+                std::int8_t d = -1;
+                if (hasSupport(c.x, c.y, c.z)) {
+                    d = static_cast<std::int8_t>(descent(c.x, c.y, c.z, p));
+                }
+                descent_[static_cast<std::size_t>(globalIndex(dims_, c.x, c.y, c.z))] = d;
+            }
+        }
+    }
+
+    // Współrzędne sąsiada w odwróconym kierunku: zawinięcie w osiach periodycznych, false poza wnętrzem
+    // w osiach absorbujących (tam ramka to VOID — nie wpływa na nic).
+    bool insideWrapped(int& x, int& y, int& z) const {
+        const auto fix = [](int& v, int n, bool periodic) {
+            if (v >= 0 && v < n) {
+                return true;
+            }
+            if (!periodic) {
+                return false;
+            }
+            v = v < 0 ? v + n : v - n;
+            return true;
+        };
+        return fix(x, dims_.nx, bc_.periodicX()) && fix(y, dims_.ny, bc_.periodicY()) &&
+               fix(z, dims_.nz, bc_.periodicZ());
+    }
+
+    // Kandydaci: komórki AIR c, dla których jakieś src L leży w sąsiedztwie c (L = c + o dla przesunięcia
+    // o z dowolnego wariantu, więc c = L - o). Kandydaci warstwy k pochodzą tylko z src warstw k-1..k+1
+    // (grupa przesunięć rev_[d] daje warstwę k z warstwy k + d) — warstwa pisze tylko własną listę
+    // i własne znaczniki, co pozwoli liczyć warstwy równolegle. Classic: lista cand zostaje z poprzedniego
+    // kroku (kandydaci, którzy się nie zmienili — sąsiedztwo losowe); znaczniki pilnują braku powtórzeń.
+    VOLCANO_NOINLINE void frontCandidates() {
+        const int nl = static_cast<int>(layers_.size());
+        for (int k = 0; k < nl; ++k) {
+            FrontLayer& dst = layers_[static_cast<std::size_t>(k)];
+            for (int d = -1; d <= 1; ++d) {
+                int s = k + d;
+                if (s < 0 || s >= nl) {
+                    if (!layerPeriodic_) {
+                        continue;
+                    }
+                    s = wrap(s, nl);
+                }
+                const std::vector<Offset>& group = rev_[d + 1];
+                for (const Coord& l : layers_[static_cast<std::size_t>(s)].src) {
+                    for (const Offset& o : group) {
+                        int x = l.x - o.dx;
+                        int y = l.y - o.dy;
+                        int z = l.z - o.dz;
+                        if (!insideWrapped(x, y, z)) {
+                            continue;
+                        }
+                        std::uint8_t& m = mark_[static_cast<std::size_t>(globalIndex(dims_, x, y, z))];
+                        if (m != 0 || cur_.type(x, y, z) != CellType::Air) {
+                            continue;
+                        }
+                        m = 1;
+                        dst.cand.push_back(Coord{x, y, z});
+                    }
+                }
+            }
+        }
+    }
+
+    // Reguły dla komórek frontu (te same co w updateLava / updateClassic): czytają tylko cur_, piszą listy
+    // zmian i nowe src każdej warstwy. Zwraca liczniki kroku identyczne z pełnym przebiegiem.
+    // W pętli po warstwach zmieniają się tylko listy i znaczniki tej warstwy oraz lokalne sumy (stay, changed,
+    // born) — w wersji równoległej warstwy dzielone między wątki, sumy przez redukcję.
+    VOLCANO_NOINLINE StepCounts frontRules() {
+        const std::uint64_t t = static_cast<std::uint64_t>(steps_);
+        const bool erupting = steps_ < p_.eruptionSteps;
+        const std::uint16_t stamp = static_cast<std::uint16_t>(std::min(steps_, 65535));
+        const std::uint64_t prefix = hashPrefix(p_.seed, t);
+        const bool lavaMode = p_.mode == CaMode::Lava;
+        std::uint64_t stay = 0;  // lawa, która pozostała lawą
+        std::uint64_t changed = 0;
+        std::uint64_t born = 0;  // nowe komórki lawy / ziarna
+        CandidateVote vote;
+        for (FrontLayer& l : layers_) {
+            l.changes.clear();
+            l.nextSrc.clear();
+            if (lavaMode) {
+                // Komórki lawy: krater w trakcie erupcji ma eruptTemp, reszta stygnie; poniżej solidusa — bazalt.
+                for (const Coord& c : l.src) {
+                    CellState s = cur_.cell(cur_.pos(c.x, c.y, c.z));
+                    const float before = s.temp;
+                    if (erupting && isVent(s.flowId, c.x, c.y, c.z)) {
+                        s.temp = p_.eruptTemp;
+                    } else {
+                        s.temp -= p_.coolingAmbient;
+                    }
+                    if (s.temp < p_.solidusTemp) {
+                        s.type = CellType::Basalt;
+                        s.solidStep = stamp;
+                        ++changed;
+                        l.changes.push_back(Change{c, s});
+                    } else {
+                        ++stay;
+                        l.nextSrc.push_back(c);
+                        if (s.temp != before) {
+                            ++changed;
+                            l.changes.push_back(Change{c, s});
+                        }
+                    }
+                }
+                // Komórki AIR obok lawy: kandydaci, głosowanie, temperatura >= solidus -> lawa.
+                for (const Coord& c : l.cand) {
+                    const std::uint64_t idx = globalIndex(dims_, c.x, c.y, c.z);
+                    mark_[static_cast<std::size_t>(idx)] = 0;
+                    gatherLavaCandidates(c.x, c.y, c.z, cur_.pos(c.x, c.y, c.z), prefix, idx, vote);
+                    if (!vote.empty()) {
+                        const int w = vote.winner(p_.seed, t, idx);
+                        const float temp = vote.maxTemp(w);
+                        if (temp >= p_.solidusTemp) {
+                            l.changes.push_back(Change{c, CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp}});
+                            l.nextSrc.push_back(c);
+                            ++born;
+                            ++changed;
+                        }
+                    }
+                }
+                l.cand.clear();
+            } else {
+                // Classic: AIR z sąsiadem-ziarnem dostaje najczęstszy flowId; bez zmiany zostaje kandydatem.
+                std::size_t keep = 0;
+                for (std::size_t i = 0; i < l.cand.size(); ++i) {
+                    const Coord c = l.cand[i];
+                    const std::uint64_t idx = globalIndex(dims_, c.x, c.y, c.z);
+                    const Pos p = cur_.pos(c.x, c.y, c.z);
+                    vote.clear();
+                    for (const NbStep& st : stepsFor(prefix, idx)) {
+                        const Pos n = Storage::shifted(p, st.o, st.lin);
+                        if (cur_.type(n) == CellType::Lava) {
+                            vote.add(cur_.flowId(n), 0.0f);
+                        }
+                    }
+                    if (!vote.empty()) {
+                        const int w = vote.winner(p_.seed, t, idx);
+                        l.changes.push_back(Change{c, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, stamp}});
+                        l.nextSrc.push_back(c);
+                        mark_[static_cast<std::size_t>(idx)] = 0;
+                        ++born;
+                        ++changed;
+                    } else {
+                        l.cand[keep++] = c;
+                    }
+                }
+                l.cand.resize(keep);
+            }
+        }
+        // Liczniki jak w pełnym przebiegu: lava — lawa po kroku; classic — wszystkie ziarna; AIR — wolne komórki.
+        born_ = born;  // dla frontApply (sumy komórek LAVA / AIR)
+        const std::uint64_t active = lavaMode ? stay + born : lavaTotal_ + born;
+        return StepCounts{active, airTotal_ - born, changed};
+    }
+
+    // Zmiany kroku do cur_ (po regułach wszystkich warstw), kopie zmienionych komórek w ramce periodycznej,
+    // nowe listy src i sumy komórek LAVA / AIR.
+    VOLCANO_NOINLINE void frontApply() {
+        const bool periodic = bc_.periodicX() || bc_.periodicY() || bc_.periodicZ();
+        std::uint64_t lava = 0;
+        for (FrontLayer& l : layers_) {
+            for (const Change& ch : l.changes) {
+                cur_.setCell(cur_.pos(ch.c.x, ch.c.y, ch.c.z), ch.s);
+                if (periodic) {
+                    bc_.syncCell(cur_, ch.c.x, ch.c.y, ch.c.z);
+                }
+            }
+            l.src.swap(l.nextSrc);
+            lava += l.src.size();
+        }
+        lavaTotal_ = (p_.mode == CaMode::Lava) ? lava : lavaTotal_ + born_;
+        airTotal_ -= born_;
+    }
+
     // Ten sam krok z pomiarem czasu faz (--timing-detail). Osobna ścieżka: stoper wewnątrz
     // stepLava zmieniał kod generowany przez MSVC dla głównej pętli (krok lawy wolniejszy
     // o ~10% — test A/B w profilu z etapu 3), a zwykły przebieg ma zostać punktem odniesienia.
     VOLCANO_NOINLINE void stepTimed() {
         LapTimer phase(true);
+        if (front_) {
+            // Automat frontalny: ramka = wypełnienie przy pierwszym kroku, reguły = kandydaci + reguły,
+            // koniec kroku = zmiany do cur_ (z kopiami w ramce periodycznej), historia, warunek końca.
+            if (!frontReady_) {
+                initFront();
+            }
+            phase.lap(phases_.frame);
+            if (p_.mode == CaMode::Lava) {
+                frontDescent();
+                phase.lap(phases_.descent);
+            }
+            frontCandidates();
+            const StepCounts c = frontRules();
+            phase.lap(phases_.rules);
+            frontApply();
+            finishStep(c);
+            phase.lap(phases_.finish);
+            return;
+        }
         bc_.apply(cur_);
         phase.lap(phases_.frame);
         StepCounts counts;
@@ -366,29 +710,30 @@ private:
         std::uint64_t air = 0;
         std::uint64_t changed = 0;
         std::uint64_t idx = 0;  // globalIndex(x, y, z) — pętle idą w kolejności pamięci
+        const std::uint64_t prefix = hashPrefix(p_.seed, t);
         CandidateVote vote;
 
         for (int z = 0; z < dims_.nz; ++z) {
             for (int y = 0; y < dims_.ny; ++y) {
-                for (int x = 0; x < dims_.nx; ++x, ++idx) {
-                    const CellType type = cur_.type(x, y, z);
+                Pos p = cur_.pos(0, y, z);  // pozycja (x, y, z) w obu buforach
+                for (int x = 0; x < dims_.nx; ++x, ++idx, p = Storage::nextX(p)) {
+                    const CellType type = cur_.type(p);
                     if (type == CellType::Air) {
-                        gatherLavaCandidates(x, y, z, t, idx, vote);
+                        gatherLavaCandidates(x, y, z, p, prefix, idx, vote);
                         if (!vote.empty()) {
                             const int w = vote.winner(p_.seed, t, idx);
                             const float temp = vote.maxTemp(w);
                             if (temp >= p_.solidusTemp) {
-                                next_.setCell(x, y, z,
-                                              CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp});
+                                next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp});
                                 ++lava;
                                 ++changed;
                                 continue;
                             }
                         }
-                        next_.setCell(x, y, z, cur_.cell(x, y, z));
+                        next_.setCell(p, cur_.cell(p));
                         ++air;
                     } else if (type == CellType::Lava) {
-                        CellState c = cur_.cell(x, y, z);
+                        CellState c = cur_.cell(p);
                         const float before = c.temp;
                         if (erupting && isVent(c.flowId, x, y, z)) {
                             c.temp = p_.eruptTemp;  // krater zasilany z komina
@@ -403,9 +748,9 @@ private:
                             ++lava;
                             changed += (c.temp != before) ? 1 : 0;
                         }
-                        next_.setCell(x, y, z, c);
+                        next_.setCell(p, c);
                     } else {
-                        next_.setCell(x, y, z, cur_.cell(x, y, z));  // ROCK, BASALT
+                        next_.setCell(p, cur_.cell(p));  // ROCK, BASALT
                     }
                 }
             }
@@ -421,25 +766,25 @@ private:
         std::uint64_t air = 0;
         std::uint64_t changed = 0;
         std::uint64_t idx = 0;
+        const std::uint64_t prefix = hashPrefix(p_.seed, t);
         CandidateVote vote;
 
         for (int z = 0; z < dims_.nz; ++z) {
             for (int y = 0; y < dims_.ny; ++y) {
-                for (int x = 0; x < dims_.nx; ++x, ++idx) {
-                    const CellType type = cur_.type(x, y, z);
+                Pos p = cur_.pos(0, y, z);
+                for (int x = 0; x < dims_.nx; ++x, ++idx, p = Storage::nextX(p)) {
+                    const CellType type = cur_.type(p);
                     if (type == CellType::Air) {
                         vote.clear();
-                        for (const Offset& o : nb_.offsetsFor(p_.seed, t, idx)) {
-                            const int sx = x + o.dx;
-                            const int sy = y + o.dy;
-                            const int sz = z + o.dz;
-                            if (cur_.type(sx, sy, sz) == CellType::Lava) {
-                                vote.add(cur_.flowId(sx, sy, sz), 0.0f);
+                        for (const NbStep& s : stepsFor(prefix, idx)) {
+                            const Pos n = Storage::shifted(p, s.o, s.lin);
+                            if (cur_.type(n) == CellType::Lava) {
+                                vote.add(cur_.flowId(n), 0.0f);
                             }
                         }
                         if (!vote.empty()) {
                             const int w = vote.winner(p_.seed, t, idx);
-                            next_.setCell(x, y, z, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, stamp});
+                            next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, stamp});
                             ++grains;
                             ++changed;
                             continue;
@@ -448,16 +793,18 @@ private:
                     } else if (type == CellType::Lava) {
                         ++grains;
                     }
-                    next_.setCell(x, y, z, cur_.cell(x, y, z));
+                    next_.setCell(p, cur_.cell(p));
                 }
             }
         }
         return StepCounts{grains, air, changed};
     }
 
-    // Zamiana buforów, zapis historii i sprawdzenie warunku końca.
+    // Zamiana buforów (pełny przebieg; automat frontalny pisze od razu do cur_), zapis historii i warunek końca.
     VOLCANO_NOINLINE void finishStep(const StepCounts& c) {
-        cur_.swap(next_);
+        if (!front_) {
+            cur_.swap(next_);
+        }
         ++steps_;
         activeHistory_.push_back(c.active);
         changedHistory_.push_back(c.changed);
@@ -505,6 +852,8 @@ private:
     Storage next_;
     std::vector<Offset> horizontal_;   // poziomi sąsiedzi (wypełnianie zagłębień)
     std::vector<Offset> sideOffsets_;  // komórki obok (ten sam poziom) — kierunki spływu
+    std::vector<std::vector<NbStep>> nbSteps_;  // sąsiedzi każdego wariantu z przesunięciami liniowymi
+    std::vector<NbStep> side_;                // sideOffsets_ z przesunięciami liniowymi (D(n))
     bool diagonalFalls_ = false;       // czy sąsiedztwo pozwala spływać po skosie (dz=-1, dx/dy≠0)
     static constexpr int kMaxDrop = 16;  // urwisko głębsze niż tyle poziomów liczy się jak kMaxDrop
     static constexpr int kUnknown = -100;  // znacznik „jeszcze nie policzone”
@@ -517,6 +866,17 @@ private:
     std::vector<std::uint64_t> changedHistory_;
     bool phaseTiming_ = false;         // --timing-detail: mierzyć czasy faz kroku
     CaPhaseTimes phases_;
+    // --- automat frontalny ---
+    bool front_ = true;                // ca.sweep = front
+    bool frontReady_ = false;          // listy zbudowane (pierwszy krok)
+    bool layerZ_ = true;               // oś warstw: z (3D, przekrój x–z) albo y (płaszczyzna x–y)
+    bool layerPeriodic_ = false;       // czy oś warstw jest periodyczna
+    std::vector<Offset> rev_[3];       // przesunięcia wszystkich wariantów wg przesunięcia w osi warstw -1/0/1
+    std::vector<std::uint8_t> mark_;   // globalIndex -> 1: komórka jest na liście kandydatów
+    std::vector<FrontLayer> layers_;   // listy frontu każdej warstwy
+    std::uint64_t lavaTotal_ = 0;      // komórki LAVA (classic: ziarna) przed krokiem
+    std::uint64_t airTotal_ = 0;       // komórki AIR przed krokiem
+    std::uint64_t born_ = 0;           // nowe komórki lawy / ziarna w bieżącym kroku
 };
 
 }  // namespace volcano

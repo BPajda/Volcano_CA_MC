@@ -4,6 +4,8 @@
 // O(N · α(N)) — jeden przebieg po siatce, bez kolejki BFS i bez rekurencji.
 // Spójność: von Neumann (tylko ściany) albo Moore (ściany, krawędzie, narożniki) —
 // wybór opisany w McRules.hpp. Brzegi periodyczne łączą ziarna przez krawędź przestrzeni.
+// Od etapu 8 komórki wnętrza sięgają do sąsiadów przez stałe przesunięcie liniowe (bez zawijania),
+// zawijanie współrzędnych zostaje tylko dla komórek przy brzegu (statystyki MC ~2× tańsze).
 
 #include <cstddef>
 #include <cstdint>

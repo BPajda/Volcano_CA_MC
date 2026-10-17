@@ -85,6 +85,7 @@ add_executable(engine_tests
     tests/test_config.cpp
     tests/test_terrain.cpp
     tests/test_ca.cpp
+    tests/test_front.cpp
     tests/test_io.cpp
     tests/test_mc.cpp
     tests/test_profile.cpp

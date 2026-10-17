@@ -15,12 +15,15 @@ PottsMC::PottsMC(const Dims& dims, const McParams& params, const Neighborhood& n
       p_(params),
       nb_(nb),
       periodic_{bc.periodicX() && dims.nx > 1, bc.periodicY() && dims.ny > 1, bc.periodicZ() && dims.nz > 1},
-      sx_(static_cast<std::size_t>(dims.nx) + 2),
-      sy_(static_cast<std::size_t>(dims.ny) + 2) {
+      frame_{dims.frameX(), dims.frameY(), dims.frameZ()},
+      sx_(static_cast<std::size_t>(dims.nx + 2 * dims.frameX())),
+      sy_(static_cast<std::size_t>(dims.ny + 2 * dims.frameY())),
+      base_(static_cast<std::size_t>(dims.frameX()) +
+            sx_ * (static_cast<std::size_t>(dims.frameY()) + sy_ * static_cast<std::size_t>(dims.frameZ()))) {
     if (p_.Q < 2) {
         throw std::invalid_argument("MC wymaga co najmniej 2 orientacji (Q >= 2)");
     }
-    const std::size_t n = sx_ * sy_ * (static_cast<std::size_t>(dims.nz) + 2);
+    const std::size_t n = dims.framedCells();
     spin_.assign(n, 0);
     mask_.assign(n, 0);
     // Przesunięcia liniowe: sąsiad (x+dx, y+dy, z+dz) ma indeks i + dx + sx·(dy + sy·dz).
@@ -112,6 +115,9 @@ void PottsMC::fillFrame() {
     const int nx = dims_.nx;
     const int ny = dims_.ny;
     const int nz = dims_.nz;
+    const int fx = frame_[0];  // ramka tylko w osiach o rozmiarze > 1 (etap 8)
+    const int fy = frame_[1];
+    const int fz = frame_[2];
     // Kopia komórki src do ramki (tylko bit domeny — bit „przy ścianie” dotyczy wnętrza).
     auto copy = [this](std::size_t dst, std::size_t src) {
         spin_[dst] = spin_[src];
@@ -123,7 +129,7 @@ void PottsMC::fillFrame() {
     };
     // Kolejność osi x -> y -> z, każda kolejna obejmuje ramkę poprzednich (krawędzie i narożniki
     // ramki są wtedy poprawnie zawinięte) — jak Boundary::apply.
-    for (int z = 0; z < nz; ++z) {
+    for (int z = 0; z < nz && fx; ++z) {
         for (int y = 0; y < ny; ++y) {
             if (periodic_[0]) {
                 copy(frameIndex(-1, y, z), frameIndex(nx - 1, y, z));
@@ -134,8 +140,8 @@ void PottsMC::fillFrame() {
             }
         }
     }
-    for (int z = 0; z < nz; ++z) {
-        for (int x = -1; x <= nx; ++x) {
+    for (int z = 0; z < nz && fy; ++z) {
+        for (int x = -fx; x < nx + fx; ++x) {
             if (periodic_[1]) {
                 copy(frameIndex(x, -1, z), frameIndex(x, ny - 1, z));
                 copy(frameIndex(x, ny, z), frameIndex(x, 0, z));
@@ -145,8 +151,8 @@ void PottsMC::fillFrame() {
             }
         }
     }
-    for (int y = -1; y <= ny; ++y) {
-        for (int x = -1; x <= nx; ++x) {
+    for (int y = -fy; y < ny + fy && fz; ++y) {
+        for (int x = -fx; x < nx + fx; ++x) {
             if (periodic_[2]) {
                 copy(frameIndex(x, y, -1), frameIndex(x, y, nz - 1));
                 copy(frameIndex(x, y, nz), frameIndex(x, y, 0));
@@ -161,8 +167,8 @@ void PottsMC::fillFrame() {
 void PottsMC::syncFrame(std::size_t i) {
     // Współrzędne komórki z indeksu z ramką (rzadka operacja — tylko zmiany przy ścianie).
     const std::size_t rest = i / sx_;
-    const int c[3] = {static_cast<int>(i % sx_) - 1, static_cast<int>(rest % sy_) - 1,
-                      static_cast<int>(rest / sy_) - 1};
+    const int c[3] = {static_cast<int>(i % sx_) - frame_[0], static_cast<int>(rest % sy_) - frame_[1],
+                      static_cast<int>(rest / sy_) - frame_[2]};
     const int n[3] = {dims_.nx, dims_.ny, dims_.nz};
     // Położenia kopii w każdej osi: sama komórka, a przy ścianie periodycznej także ramka
     // po przeciwnej stronie (x = 0 -> x = nx, x = nx-1 -> x = -1).
@@ -191,44 +197,64 @@ void PottsMC::syncFrame(std::size_t i) {
     }
 }
 
-std::uint64_t PottsMC::sweep() {
+template <bool kMobility, bool kRandomNb>
+std::uint64_t PottsMC::sweepTrials() {
     const std::uint64_t t = static_cast<std::uint64_t>(sweeps_);
     const std::uint64_t n = domainFrame_.size();
     const std::uint64_t otherStates = static_cast<std::uint64_t>(p_.Q - 1);
-    const bool useMobility = !mobility_.empty();
+    // OPTYMALIZACJA (etap 8): stała część kaskady hashRand (seed, krok MCS) liczona raz przed pętlą; w próbie
+    // jedno ogniwo numeru próby wspólne dla wszystkich jej decyzji + ogniwo soli (Rng.hpp, hashPrefix).
+    const std::uint64_t prefix = hashPrefix(p_.seed, t);
+    // Wskaźniki w zmiennych lokalnych: MSVC nie czyta ich wtedy z obiektu w każdej próbie.
+    std::int32_t* const spin = spin_.data();
+    const std::size_t* const domainFrame = domainFrame_.data();
+    const std::ptrdiff_t* const offsets0 = linear_[0].data();
+    const std::size_t count0 = linear_[0].size();
+    std::uint64_t attempts = 0;
     std::uint64_t acceptedNow = 0;
+    std::uint64_t uphill = 0;
 
     // 1 MCS = tyle prób, ile komórek w domenie.
     for (std::uint64_t a = 0; a < n; ++a) {
+        const std::uint64_t h = hashIndex(prefix, a);  // = wspólna część hashRand(seed, t, a, ·)
+
         // Krok 1: losowa selekcja elementu — losowanie ZE ZWRACANIEM z listy komórek domeny.
-        // OPTYMALIZACJA: losowanie bez powtórzeń (permutacja listy) i próby tylko dla komórek na granicy ziaren.
-        const std::size_t k = static_cast<std::size_t>(hashRand(p_.seed, t, a, kSaltMcPick) % n);
-        const std::size_t i = domainFrame_[k];
+        const std::size_t k = static_cast<std::size_t>(hashSalt(h, kSaltMcPick) % n);
+        const std::size_t i = domainFrame[k];
 
         // Mobilność (tryb basalt): z prawdopodobieństwem 1 − m_i próba jest pomijana —
         // szybko zastygła lawa prawie nie przebudowuje kryształów.
-        if (useMobility && hashUniform(p_.seed, t, a, kSaltMcMobility) >= static_cast<double>(mobility_[i])) {
-            continue;
+        if constexpr (kMobility) {
+            if (toUniform(hashSalt(h, kSaltMcMobility)) >= static_cast<double>(mobility_[i])) {
+                continue;
+            }
         }
-        ++attempts_;
-        const std::vector<std::ptrdiff_t>& offsets = offsetsFor(t, domainGlobal_[k]);
-        const std::int32_t current = spin_[i];
-
-        // Krok 2: energia sieci otaczającej element przed zmianą: E = J · Σ (1 − δ(S_i, S_j)).
-        // OPTYMALIZACJA: E_przed i E_po w jednym przejściu po sąsiadach.
-        const double energyBefore = p_.J * unlikeNeighbors(i, current, offsets);
+        ++attempts;
+        const std::ptrdiff_t* offsets = offsets0;
+        std::size_t count = count0;
+        if constexpr (kRandomNb) {
+            const std::vector<std::ptrdiff_t>& v =
+                linear_[static_cast<std::size_t>(nb_.variantFromPrefix(prefix, domainGlobal_[k]))];
+            offsets = v.data();
+            count = v.size();
+        }
+        const std::int32_t current = spin[i];
 
         // Krok 3: nowa orientacja losowana z całego zbioru 1..Q, różna od obecnej
-        // (Q − 1 możliwości; wartości >= obecnej przesuwamy o 1).
-        // OPTYMALIZACJA: nowa orientacja tylko spośród orientacji sąsiadów.
-        std::int32_t proposed =
-            1 + static_cast<std::int32_t>(hashRand(p_.seed, t, a, kSaltMcOrient) % otherStates);
+        // (Q − 1 możliwości; wartości >= obecnej przesuwamy o 1). Nie zależy od energii, więc liczona
+        // przed krokiem 2 — wtedy kroki 2 i 4 to jedno przejście po sąsiadach.
+        std::int32_t proposed = 1 + static_cast<std::int32_t>(hashSalt(h, kSaltMcOrient) % otherStates);
         if (proposed >= current) {
             ++proposed;
         }
 
-        // Krok 4: energia po zmianie i zmiana energii ΔE.
-        const double energyAfter = p_.J * unlikeNeighbors(i, proposed, offsets);
+        // Krok 2 i krok 4: energia sieci otaczającej element przed zmianą E = J · Σ (1 − δ(S_i, S_j)),
+        // energia po zmianie i ΔE — liczby sąsiadów „innych” w jednym przejściu (unlikeBeforeAfter).
+        int unlikeBefore = 0;
+        int unlikeAfter = 0;
+        unlikeBeforeAfter(spin + i, current, proposed, offsets, count, unlikeBefore, unlikeAfter);
+        const double energyBefore = p_.J * unlikeBefore;
+        const double energyAfter = p_.J * unlikeAfter;
         const double deltaE = energyAfter - energyBefore;
 
         // Krok 5: akceptacja Metropolisa — ΔE <= 0 zawsze; ΔE > 0 z prawdopodobieństwem
@@ -236,16 +262,29 @@ std::uint64_t PottsMC::sweep() {
         // OPTYMALIZACJA: tablica exp(−ΔE/kT) dla możliwych ΔE = J · k.
         bool accept = deltaE <= 0.0;
         if (!accept && p_.kT > 0.0) {
-            accept = hashUniform(p_.seed, t, a, kSaltMcAccept) < std::exp(-deltaE / p_.kT);
-            uphill_ += accept ? 1 : 0;
+            accept = toUniform(hashSalt(h, kSaltMcAccept)) < std::exp(-deltaE / p_.kT);
+            uphill += accept ? 1 : 0;
         }
         if (accept) {
-            spin_[i] = proposed;
+            spin[i] = proposed;
             ++acceptedNow;
             if ((mask_[i] & kPeriodicEdge) != 0) {
                 syncFrame(i);  // kopie komórki w ramce periodycznej muszą zobaczyć zmianę
             }
         }
+    }
+    attempts_ += attempts;
+    uphill_ += uphill;
+    return acceptedNow;
+}
+
+std::uint64_t PottsMC::sweep() {
+    const bool useMobility = !mobility_.empty();
+    std::uint64_t acceptedNow;
+    if (nb_.isRandom()) {
+        acceptedNow = useMobility ? sweepTrials<true, true>() : sweepTrials<false, true>();
+    } else {
+        acceptedNow = useMobility ? sweepTrials<true, false>() : sweepTrials<false, false>();
     }
     accepted_ += acceptedNow;
     ++sweeps_;
@@ -309,6 +348,33 @@ double PottsMC::deltaEnergy(int x, int y, int z, std::int32_t s) const {
 double PottsMC::totalEnergy() const {
     const std::uint64_t t = static_cast<std::uint64_t>(sweeps_);
     std::uint64_t unlike = 0;
+    if (!nb_.isRandom()) {
+        // OPTYMALIZACJA (etap 8): sąsiedztwo symetryczne (von Neumann, Moore) — każda para sąsiadów raz, przez
+        // przesunięcia „do przodu” (dodatnie przesunięcie liniowe). Para (i, i+o) z sumy po wszystkich sąsiadach ma
+        // odpowiednik (i+o, i) z przesunięciem −o (także przez ramkę periodyczną), więc pełna suma = 2 · suma „do
+        // przodu”, a 0.5 · J · 2P == J · P bitowo (mnożenie przez 0.5 i 2 jest dokładne). Para z komórką spoza domeny
+        // (orientacja 0) nie wnosi energii — jak w unlikeNeighbors. Pomiar ~2× szybszy (etap 8, k5).
+        std::vector<std::ptrdiff_t> forward;
+        for (const std::ptrdiff_t o : linear_[0]) {
+            if (o > 0) {
+                forward.push_back(o);
+            }
+        }
+        // Bez skoków warunkowych (jak unlikeNeighbors): różnych = w domenie (S_j != 0) − tej samej orientacji (s >= 1).
+        std::uint64_t inDomain = 0;
+        std::uint64_t same = 0;
+        for (const std::size_t i : domainFrame_) {
+            const std::int32_t* const spin = spin_.data() + i;
+            const std::int32_t s = *spin;
+            for (const std::ptrdiff_t o : forward) {
+                const std::int32_t sj = spin[o];
+                inDomain += static_cast<std::uint64_t>(sj != 0);
+                same += static_cast<std::uint64_t>(sj == s);
+            }
+        }
+        unlike = inDomain - same;
+        return p_.J * static_cast<double>(unlike);
+    }
     for (std::size_t k = 0; k < domainFrame_.size(); ++k) {
         const std::size_t i = domainFrame_[k];
         unlike += static_cast<std::uint64_t>(unlikeNeighbors(i, spin_[i], offsetsFor(t, domainGlobal_[k])));

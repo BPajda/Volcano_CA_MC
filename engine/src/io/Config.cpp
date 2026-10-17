@@ -165,7 +165,7 @@ ojson Config::defaultsJson() {
                    "eruptTemp": 1200 },
       "ca":      { "mode": "lava", "maxSteps": 5000, "coolingAmbient": 0.3,
                    "coolingLateral": 1.5, "coolingFall": 0.1, "solidusTemp": 800,
-                   "ponding": true },
+                   "ponding": true, "sweep": "front" },
       "mc":      { "enabled": false, "domain": "basalt", "Q": 50, "mcs": 100, "J": 1.0, "kT": 0.0,
                    "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10,
                    "snapshotsEvery": 0 },
@@ -317,6 +317,7 @@ Config Config::fromJson(const ojson& j) {
     c.ca.coolingFall = getNumber(j, "ca.coolingFall", 0.0, 1e6);
     c.ca.solidusTemp = getNumber(j, "ca.solidusTemp", -1e6, 1e6);
     c.ca.ponding = getBool(j, "ca.ponding");
+    c.ca.frontSweep = getEnum<bool>(j, "ca.sweep", {{"front", true}, {"full", false}});
 
     if (runsCa && c.ca.mode == CaMode::Lava && c.space.is2D() && c.space.ny != 1) {
         throw ConfigError("W trybie lava przestrzeń 2D to przekrój pionowy x–z: wymagane ny = 1 "

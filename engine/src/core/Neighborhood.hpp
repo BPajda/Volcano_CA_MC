@@ -47,6 +47,16 @@ public:
         return static_cast<int>(r % variants_.size());
     }
 
+    // To samo co variantFor, gdy stała część hasha (seed, krok) jest już policzona — prefix = hashPrefix(seed, step)
+    // (pętla prób MC, etap 8). Wynik bitowo ten sam.
+    int variantFromPrefix(std::uint64_t prefix, std::uint64_t cellIndex) const {
+        if (variants_.size() == 1) {
+            return 0;
+        }
+        const std::uint64_t r = hashSalt(hashIndex(prefix, cellIndex), kSaltNeighborhood);
+        return static_cast<int>(r % variants_.size());
+    }
+
     // Przesunięcia sąsiadów komórki o globalnym indeksie cellIndex w kroku step.
     // Dla sąsiedztw deterministycznych zawsze ten sam (jedyny) wariant.
     const std::vector<Offset>& offsetsFor(std::uint64_t seed, std::uint64_t step,
