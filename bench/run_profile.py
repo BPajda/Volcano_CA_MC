@@ -56,6 +56,9 @@ except ImportError:  # pragma: no cover
 
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ab import public_name  # noqa: E402  (nazwy procesów tła w wynikach — ta sama lista co test A/B)
+
 ROOT = Path(__file__).resolve().parent.parent
 CONFIGS = ROOT / "configs"
 IS_WINDOWS = os.name == "nt"
@@ -178,7 +181,8 @@ def build_plan(quick: bool, groups: list[str], use_gcc: bool, main_label: str, g
             for nb in ("von_neumann", "moore"):
                 add(mc_variant("mc", nx, ny, nz, nb, 10 if quick else 100), main_builds)
     if "lava" in groups:
-        names = ["test_2d"] if quick else ["test_2d", "test_3d", "etna_3d", "lava_mc_2d", "lava_mc_3d"]
+        # etna_real (prawdziwy teren, 1,8 mln komórek) — od etapu 8 (przypadek A/B automatu frontalnego).
+        names = ["test_2d"] if quick else ["test_2d", "test_3d", "etna_3d", "etna_real", "lava_mc_2d", "lava_mc_3d"]
         for name in names:
             add(file_variant("lava", name), main_builds)
     if "big" in groups and not quick:
@@ -272,8 +276,9 @@ def background_load(seconds: float = 2.0) -> dict:
         except psutil.Error:
             pass
     top.sort(reverse=True)
+    # Nazwy spoza listy procesów systemowych i programistycznych — jako „inny program” (ab.public_name).
     return {"totalPercent": total,
-            "topProcesses": [{"name": n, "percentOfOneCpu": round(c, 1)} for c, n in top[:5]]}
+            "topProcesses": [{"name": public_name(n), "percentOfOneCpu": round(c, 1)} for c, n in top[:5]]}
 
 
 def run_capture(cmd: list[str]) -> str:
@@ -537,6 +542,8 @@ def main() -> int:
     ap.add_argument("--gcc-label", default="gcc-O3", help="etykieta buildu GCC")
     ap.add_argument("--groups", default="classic,mc,lava,big,compilers,detail,benchmark",
                     help="grupy: classic, mc, lava, big, compilers, detail, benchmark")
+    ap.add_argument("--cases", help="tylko wybrane warianty z planu grup (id po przecinku, lista: --dry-run); "
+                                    "np. skrócony profil przed/po w etapie 8")
     ap.add_argument("--cpu", type=int, default=2, help="procesor logiczny do przypięcia (domyślnie 2 — rdzeń P)")
     ap.add_argument("--no-pin", action="store_true", help="bez przypinania do rdzenia")
     ap.add_argument("--priority", choices=["high", "normal"], default="high", help="priorytet procesu engine (Windows)")
@@ -558,6 +565,12 @@ def main() -> int:
                                       path=str(args.gcc_engine))
 
     plan = build_plan(quick, groups, args.gcc, args.engine_label, args.gcc_label)
+    if args.cases:
+        wanted = [c.strip() for c in args.cases.split(",") if c.strip()]
+        unknown = [c for c in wanted if c not in {v["id"] for v in plan}]
+        if unknown:
+            ap.error(f"nieznane warianty --cases: {', '.join(unknown)} (lista: --dry-run z tymi samymi --groups)")
+        plan = [v for v in plan if v["id"] in wanted]
     # Pomijamy buildy, których programu brak (np. nie zbudowano gcc-o0) — z ostrzeżeniem.
     missing = sorted({b for v in plan for b in v["builds"] if not (ROOT / BUILDS[b]["path"]).exists()
                       and not Path(BUILDS[b]["path"]).exists()})

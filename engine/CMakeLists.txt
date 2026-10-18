@@ -25,8 +25,12 @@ if(MSVC)
     target_compile_options(volcano_options INTERFACE
         /W4 /permissive- /utf-8 $<$<CONFIG:Release>:${VOLCANO_RELEASE_OPT}>)
 else()
+    # -falign-functions=64 (etap 8): każda funkcja zaczyna się na początku linii 64 B, więc położenie pętli automatu
+    # i MC względem linii pamięci podręcznej nie zależy od kodu w innych plikach. Bez tego zmiana niezwiązanego pliku
+    # (np. ResultWriter.cpp, +16 B kodu) przesuwała funkcje LavaCA o 16 B i zmieniała caSim o 3–25% przy identycznym
+    # kodzie maszynowym (pomiar A/B w bench/results/ab/ab_k7a_gcc_*.md). Wyniki bez zmian (tylko wyrównanie kodu).
     target_compile_options(volcano_options INTERFACE
-        -Wall -Wextra $<$<CONFIG:Release>:${VOLCANO_RELEASE_OPT}>)
+        -Wall -Wextra $<$<CONFIG:Release>:${VOLCANO_RELEASE_OPT}> $<$<CONFIG:Release>:-falign-functions=64>)
 endif()
 if(VOLCANO_PROFILE_NOINLINE)
     target_compile_definitions(volcano_options INTERFACE VOLCANO_PROFILE_NOINLINE)

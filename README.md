@@ -89,9 +89,13 @@ Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie
   bo liczba kroków CA rośnie jak bok siatki; w 3D zostaje ~30×.
 - Mobilność ze stygnięcia daje w wolno stygnącej lawie ziarna średnio **5,0× większe** niż w szybko zastygłej
   (`lava_mc_3d`; bez mobilności — 2,2×, tyle wynika z samej geometrii cienkiej warstwy).
-- Profil: w CA lawy **68–83% czasu** zajmuje przeszukiwanie sąsiadów komórek powietrza, które w 99,99% przypadków
-  nic nie znajduje — stąd automat frontalny jako pierwsza optymalizacja. Różnica MSVC/GCC w MC (2–3×) to jeden
-  skok warunkowy w pętli energii; w eksperymencie zmiana jednej linii skróciła MC 200² w MSVC ze 172 do 68 ms.
+- Profil: w CA lawy **68–83% czasu** zajmowało przeszukiwanie sąsiadów komórek powietrza, które w 99,99% przypadków
+  nic nie znajduje — stąd automat frontalny jako pierwsza optymalizacja. Różnica MSVC/GCC w MC (2–3×) to był jeden
+  skok warunkowy w pętli energii.
+- **Optymalizacja sekwencyjna** (automat frontalny, MC bez skoku warunkowego, przesunięcia liniowe sąsiadów, tańsze
+  statystyki i zapis): erupcja Etny (1,8 mln komórek) liczy się **~200× szybciej** (automat: 13,1 s → 39 ms), CA classic
+  7–17×, MC 1,4–2×, pamięć CA 2D 91 → 28–36 B na komórkę — przy wynikach **bitowo identycznych** z wersją sprzed zmian,
+  co sprawdza test A/B każdego kroku ([docs/etap-8-optymalizacja-sekwencyjna.md](docs/etap-8-optymalizacja-sekwencyjna.md)).
 - Model pamięci z kodu (~40 B na komórkę w CA 3D) zgadza się z pomiarem szczytu procesu z dokładnością 0–4%.
 
 ![Czas symulacji CA i MC vs liczba komórek, 2D i 3D, z krotnością MC/CA](docs/img/raport/ca_vs_mc.png)
@@ -101,16 +105,17 @@ Zestawienie wyników przykładowych przypadków: [docs/wyniki.md](docs/wyniki.md
 
 ## Dokumentacja
 
-Spis dokumentacji — opisy etapów 1–7, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
+Spis dokumentacji — opisy etapów 1–8, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
 
 ## Dalszy rozwój
 
-- **Optymalizacja sekwencyjna:** automat frontalny (przetwarzanie tylko komórek przy lawie), przesunięcia liniowe
-  sąsiadów zamiast indeksu z trzech współrzędnych, ramka tylko w osiach używanych przez sąsiedztwo, MC bez skoku
-  warunkowego i z próbami tylko na granicach ziaren — lista priorytetowa z szacowanym zyskiem:
-  [docs/etap-3-profilowanie.md](docs/etap-3-profilowanie.md), punkt 2.3.
-- **OpenMP:** podział pętli kroku CA na pasy; synchroniczny automat i losowość z funkcji skrótu położenia dają ten
-  sam wynik dla każdej liczby wątków. MC wymaga podziału na niesąsiadujące podzbiory (szachownica).
+- **Optymalizacja sekwencyjna — zrobiona** (etap 8): automat frontalny, przesunięcia liniowe sąsiadów, ramka tylko
+  w osiach używanych przez sąsiedztwo, MC bez skoku warunkowego, tańsze statystyki MC i zapis plików tekstowych.
+  Do zrobienia: warianty MC zmieniające proces losowy (próby tylko na granicach ziaren, losowanie bez powtórzeń,
+  propozycja orientacji z sąsiadów) z walidacją statystyczną, mniejsze typy pól.
+- **OpenMP:** automat frontalny ma listy komórek per warstwa, niezależne w obrębie fazy kroku — gotowe do podziału
+  między wątki; synchroniczny automat i losowość z funkcji skrótu położenia dają ten sam wynik dla każdej liczby wątków.
+  MC wymaga podziału na niesąsiadujące podzbiory (szachownica). Pomiary na rdzeniach wydajnościowych, 1–8 wątków.
 - **MPI:** podział przestrzeni na pasy lub kostki, ramka jako komórki nadmiarowe (ghost cells) wymieniane co krok,
   równoległy zapis wyników — siatka 1000³ potrzebuje ~40–50 GB pamięci ([engine/src/parallel/](engine/src/parallel/README.md)).
 

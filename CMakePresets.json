@@ -35,6 +35,17 @@
       }
     },
     {
+      "name": "msvc-release-avx2",
+      "inherits": "msvc-base",
+      "displayName": "MSVC Release /arch:AVX2 (etap 8, porównanie flag)",
+      "description": "Release z instrukcjami AVX2 (procesory od ok. 2013 r.) — porównanie z domyślnym /O2; domyślny preset bez zmian (przenośność).",
+      "binaryDir": "${sourceDir}/build-msvc-avx2",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG /arch:AVX2"
+      }
+    },
+    {
       "name": "msvc-profile",
       "inherits": "msvc-base",
       "displayName": "MSVC Release + PDB (profiler Visual Studio, etap 3)",
@@ -66,6 +77,14 @@
       "displayName": "GCC Release",
       "binaryDir": "${sourceDir}/build-gcc-release",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "gcc-release-native",
+      "inherits": "gcc-base",
+      "displayName": "GCC Release -march=native (etap 8, porównanie flag)",
+      "description": "Release z instrukcjami procesora, na którym kompilujemy (program nieprzenośny) — porównanie z domyślnym -O3.",
+      "binaryDir": "${sourceDir}/build-gcc-native",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG -march=native" }
     },
     {
       "name": "gcc-debug",
@@ -130,9 +149,11 @@
     { "name": "msvc-release", "configurePreset": "msvc-release", "configuration": "Release" },
     { "name": "msvc-debug",   "configurePreset": "msvc-debug",   "configuration": "Debug" },
     { "name": "msvc-o1",      "configurePreset": "msvc-o1",      "configuration": "Release" },
+    { "name": "msvc-release-avx2", "configurePreset": "msvc-release-avx2", "configuration": "Release" },
     { "name": "msvc-profile", "configurePreset": "msvc-profile", "configuration": "Release" },
     { "name": "msvc-profile-noinline", "configurePreset": "msvc-profile-noinline", "configuration": "Release" },
     { "name": "gcc-release",  "configurePreset": "gcc-release" },
+    { "name": "gcc-release-native", "configurePreset": "gcc-release-native" },
     { "name": "gcc-debug",    "configurePreset": "gcc-debug" },
     { "name": "gcc-o0",       "configurePreset": "gcc-o0" },
     { "name": "gcc-o2",       "configurePreset": "gcc-o2" },
@@ -145,6 +166,8 @@
     { "name": "msvc-debug",   "configurePreset": "msvc-debug",   "configuration": "Debug",   "output": { "outputOnFailure": true } },
     { "name": "msvc-o1",      "configurePreset": "msvc-o1",      "configuration": "Release", "output": { "outputOnFailure": true } },
     { "name": "gcc-release",  "configurePreset": "gcc-release",  "output": { "outputOnFailure": true } },
+    { "name": "msvc-release-avx2", "configurePreset": "msvc-release-avx2", "configuration": "Release", "output": { "outputOnFailure": true } },
+    { "name": "gcc-release-native", "configurePreset": "gcc-release-native", "output": { "outputOnFailure": true } },
     { "name": "gcc-debug",    "configurePreset": "gcc-debug",    "output": { "outputOnFailure": true } },
     { "name": "gcc-o0",       "configurePreset": "gcc-o0",       "output": { "outputOnFailure": true } },
     { "name": "gcc-o2",       "configurePreset": "gcc-o2",       "output": { "outputOnFailure": true } }

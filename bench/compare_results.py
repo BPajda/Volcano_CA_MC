@@ -62,7 +62,8 @@ def main() -> int:
     ap.add_argument("--args", action="append", default=[], metavar="ETYKIETA=ARGUMENTY",
                     help='dodatkowe argumenty jednego programu, np. "full=--set ca.sweep=full"')
     ap.add_argument("--configs", help="tylko wybrane configi (nazwy bez .json, po przecinku)")
-    ap.add_argument("--name", default="zgodnosc", help="nazwa pliku wyniku w bench/results/ab/")
+    ap.add_argument("--name", default="zgodnosc", help="nazwa pliku wyniku (<nazwa>.md)")
+    ap.add_argument("--out", default=str(ROOT / "bench" / "results" / "ab"), help="folder wyniku (domyślnie bench/results/ab)")
     args = ap.parse_args()
     if not sys.stdout.isatty():
         sys.stdout.reconfigure(encoding="utf-8")
@@ -129,7 +130,7 @@ def main() -> int:
             "folderu wejściowego --mc-from; MSVC ↔ GCC: txt/csv bez różnicy końców linii CRLF/LF).", "",
             "| Config | pliki | " + " | ".join(f"{l} = {labels[0]}" for l in labels[1:]) + " |",
             "|---|---|" + "---|" * (len(labels) - 1)]
-    out_dir = ROOT / "bench" / "results" / "ab"
+    out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / f"{args.name}.md", "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(head + rows) + "\n")

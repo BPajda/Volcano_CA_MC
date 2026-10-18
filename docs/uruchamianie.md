@@ -345,6 +345,36 @@ python bench\plot_profile.py                                           # wykresy
   (profiler Visual Studio z linii poleceń). Opis wyników: `docs\etap-3-profilowanie.md`.
 - Pomiary: Release, zamknięte inne programy, zasilanie sieciowe; < 5 ms traktuj jako szum.
 
+### 7.1 Porównanie programów: test A/B i zgodność bitowa (etap 8)
+
+```powershell
+python bench\ab.py --list                                              # stały zestaw 13 przypadków (CA lawa, classic, MC)
+python bench\ab.py --bin przed=bench\baseline\engine_przed_msvc.exe --bin nowy=build\Release\engine.exe --groups ca_lava --out results\ab_test
+python bench\ab.py --bin full=build\Release\engine.exe --bin front=build\Release\engine.exe --args "full=--set ca.sweep=full" --groups ca_lava --out results\ab_test
+python bench\ab.py --wsl --bin przed=bench/baseline/engine_przed_gcc --bin nowy=build-gcc-release/bin/engine --groups mc --out results/ab_test
+python bench\ab.py --from-raw bench\results\ab\ab_k7_msvc_ca_raw.csv,bench\results\ab\ab_k7_msvc_mc_raw.csv --labels k5,k7 --name ab_razem --out results\ab_test
+python bench\compare_results.py --bin przed=bench\baseline\engine_przed_msvc.exe --bin msvc=build\Release\engine.exe --bin gcc=wsl:build-gcc-release/bin/engine --name zgodnosc_test --out results\ab_test
+python bench\run_profile.py --full --gcc --groups classic,mc,lava,big,detail --cases test_3d,etna_real --name profil_test --out results\profil_test
+python bench\plot_etap8.py                                             # docs\img\etap8_*.png z profili _przed2/_po i tabel A/B
+```
+
+- `ab.py` uruchamia programy **naprzemiennie** (A B, potem B A), przypięte do procesora 2 (rdzeń P), 5–11 powtórzeń, i po
+  każdym powtórzeniu porównuje wyniki **bitowo** z pierwszym programem; tabela `<nazwa>.md`, mediany `.csv`, każdy
+  przebieg `_raw.csv` w folderze `--out` (domyślnie `bench\results\ab\` — tam są wyniki etapu 8, więc próby kieruj
+  gdzie indziej, np. do `results\`). `--groups ca_lava,ca_classic,mc`, `--cases` (id z `--list`), `--reps`,
+  `--args "etykieta=…"` (np. drugi tryb tego samego programu), `--wsl` (programy GCC w WSL), `--from-raw` (jedna tabela
+  z pomiaru podzielonego na części).
+- `compare_results.py` liczy wszystkie `configs\*.json` każdym programem i porównuje foldery wyników bajt po bajcie
+  (przedrostek `wsl:` — program Linux w WSL, więc tabela sprawdza też MSVC ↔ GCC); kod wyjścia 1 przy różnicy.
+- Programy odniesienia (`bench\baseline\`) są lokalne (w `.gitignore`) — zbuduj je z wybranego commitu i skopiuj tam.
+- Presety do porównania flag (etap 8, bez zysku — domyślnych nie zmieniają): `cmake --preset msvc-release-avx2`
+  + `cmake --build --preset msvc-release-avx2` (program `build-msvc-avx2\Release\engine.exe`) i w WSL
+  `cmake --preset gcc-release-native && cmake --build --preset gcc-release-native -j 4` (`build-gcc-native/bin/engine`,
+  nieprzenośny — instrukcje procesora, na którym kompilujesz).
+- `run_profile.py --cases` — tylko wybrane warianty planu (lista: `--dry-run` z tymi samymi `--groups`); profil gorących
+  miejsc po etapie 8: `wsl -e bash -lc "ETAP8=1 bash bench/profile_gcc.sh"` (po zbudowaniu presetu `gcc-profile-noinline`).
+- Opis metodyki i wyników: `docs\etap-8-optymalizacja-sekwencyjna.md`.
+
 ## 8. Szybki przegląd możliwości (demo, ≈ 6–8 min)
 
 **Przygotowanie:** zbudowany silnik (2.3), `python -m gui` uruchomione, policzone:
@@ -474,6 +504,7 @@ są pomijane (komentarze, np. `"_opis"`), dozwolone są też komentarze `//`.
 | `ca.cooling*` | stygnięcie na krok (`Ambient`), przy rozlewaniu (`Lateral`) i spływie w dół (`Fall`) [°C] |
 | `ca.solidusTemp` | poniżej tej temperatury lawa zastyga w bazalt |
 | `ca.ponding` | wypełnianie zagłębień (krater) — rozszerzenie reguł, opis w `engine/src/ca/CaRules.hpp` |
+| `ca.sweep` | `front` (domyślnie) — automat frontalny: w kroku tylko komórki, które mogą się zmienić; `full` — pełny przebieg wszystkich komórek (wersja referencyjna); wynik bitowo ten sam |
 | `mc.enabled` | krystalizacja Monte Carlo po CA (albo zamiast CA — `mc.domain = full`) |
 | `mc.domain` | `basalt` — komórki BASALT/LAVA z wyniku CA (wymaga `ca.mode = lava`); `full` — cała przestrzeń, bez terenu i CA |
 | `mc.Q`, `mc.mcs` | liczba orientacji (≥ 2) i kroków Monte Carlo (1 MCS = tyle prób, ile komórek domeny) |

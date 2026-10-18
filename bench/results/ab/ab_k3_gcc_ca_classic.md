@@ -28,4 +28,4 @@ Optymalizacja 3 (przesunięcia liniowe sąsiadów w CA), GCC — część ca_cla
 | classic_300x300x300_s100_vn | total | 16 530 [16 042–17 844] | 15 720 [15 633–17 201] | 9 406 [8 817–9 807] | ×0.951 | ×0.569 | ×0.598 | tak |
 | classic_300x300x300_s100_vn | procWall | 16 676 [16 188–18 000] | 15 859 [15 776–17 361] | 9 554 [8 954–9 966] | ×0.951 | ×0.573 | ×0.602 | tak |
 
-Tło (Windows, poza WSL): start 21% (WmiPrvSE.exe 203%, SRE.exe 43%, System 41%), koniec 20%.
+Tło (Windows, poza WSL): start 21% (WmiPrvSE.exe 203%, inny program 43%, System 41%), koniec 20%.

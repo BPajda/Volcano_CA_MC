@@ -138,8 +138,25 @@ def pin_self(cpu: int) -> str:
     return f"sched_setaffinity({{{cpu}}}) (WSL2: procesor wirtualny)"
 
 
+# Procesy, których nazwy zapisujemy w wynikach (system, narzędzia programistyczne); każda inna nazwa trafia do
+# plików jako „inny program” — wyniki są w repozytorium publicznym, a lista programów użytkownika do nich nie należy.
+PUBLIC_PROCESSES = {
+    "python.exe", "python3", "svchost.exe", "wmiprvse.exe", "msmpeng.exe", "system", "registry", "vmmem",
+    "vmmemwsl", "wslservice.exe", "wsl.exe", "explorer.exe", "dwm.exe", "searchindexer.exe", "searchprotocolhost.exe",
+    "compattelrunner.exe", "backgrounddownload.exe", "tiworker.exe", "trustedinstaller.exe", "audiodg.exe",
+    "csrss.exe", "conhost.exe", "powershell.exe", "cmd.exe", "bash.exe", "code.exe", "msbuild.exe", "cl.exe",
+    "engine.exe", "memory compression", "system idle process",
+}
+
+
+def public_name(name: str) -> str:
+    """Nazwa procesu do zapisu w wynikach: z listy PUBLIC_PROCESSES albo „inny program”."""
+    return name if (name or "").lower() in PUBLIC_PROCESSES else "inny program"
+
+
 def background_load(seconds: float = 2.0) -> dict:
-    """Obciążenie CPU przez inne programy [% całego CPU] i 5 największych procesów (Windows, psutil)."""
+    """Obciążenie CPU przez inne programy [% całego CPU] i 5 największych procesów (Windows, psutil;
+    nazwy spoza PUBLIC_PROCESSES jako „inny program”)."""
     if psutil is None:
         return {}
     procs = list(psutil.process_iter(["name"]))
@@ -157,7 +174,7 @@ def background_load(seconds: float = 2.0) -> dict:
         except psutil.Error:
             pass
     top.sort(reverse=True)
-    return {"totalPercent": total, "top": [f"{n} {c:.0f}%" for c, n in top[:5]]}
+    return {"totalPercent": total, "top": [f"{public_name(n)} {c:.0f}%" for c, n in top[:5]]}
 
 
 def process_cpu_seconds(proc: subprocess.Popen) -> float | None:
@@ -363,6 +380,7 @@ def resummarize(args: argparse.Namespace, plan: list[dict]) -> int:
     summary, md = summarize(raw, labels, plan)
     name = args.name or src.stem.replace("_raw", "") + "_" + "_".join(labels)
     out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
     if summary:
         skeys = list(dict.fromkeys(k for s in summary for k in s))
         with open(out_dir / f"{name}.csv", "w", encoding="utf-8", newline="") as f:
@@ -450,7 +468,9 @@ def main() -> int:
             rest.append("--keep")
         cmd = ["wsl", "-e", "env", "PYTHONIOENCODING=utf-8", "python3", wsl_path(Path(__file__)), "--inside-wsl",
                *conv, *rest, "--groups", args.groups, "--min-reps", str(args.min_reps), "--cpu", str(args.cpu),
-               "--name", name, "--out", wsl_path(Path(args.out)), "--note", args.note]
+               "--name", name, "--out", wsl_path(Path(args.out))]
+        if args.note:  # pusty argument wsl.exe odrzuca (Wsl/Service/E_INVALIDARG)
+            cmd += ["--note", args.note]
         r = subprocess.run(cmd)
         load_end = background_load()
         md = Path(args.out) / f"{name}.md"

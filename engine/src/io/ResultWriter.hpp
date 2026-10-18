@@ -43,9 +43,14 @@ namespace volcano {
 class ResultWriter {
 public:
     static constexpr std::uint32_t kBinVersion = 2;
+    static constexpr int kTempChars = 64;  // miejsce na temperaturę w formatTemp (z zapasem na snprintf)
 
-    // Zapis tekstowy, buforowany (bez std::endl — jeden zapis na ~1 MB danych).
+    // Zapis tekstowy, buforowany (jeden zapis na ~1 MB danych, bez strumieni i printf — etap 8, k7).
     static void writeTxt(const std::string& path, const Microstructure& m);
+
+    // Temperatura jako tekst z 1 miejscem po przecinku — te same znaki co printf("%.1f", (double)v), bez printf.
+    // Pisze do out (co najmniej kTempChars bajtów; za tekstem może zostać '\0'); zwraca liczbę znaków.
+    static std::size_t formatTemp(char* out, float v);
 
     // Zapis binarny — surowe tablice po nagłówku.
     static void writeBin(const std::string& path, const Microstructure& m);

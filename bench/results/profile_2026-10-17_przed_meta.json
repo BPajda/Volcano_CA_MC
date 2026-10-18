@@ -61,14 +61,14 @@
   "priority": "HIGH_PRIORITY_CLASS",
   "builds": {
     "msvc-O2": {
-      "path": "D:\\Uczelnia\\9.Sem\\Metody Dyskretne w ZSO\\volcano-ca-mc\\bench\\baseline\\engine_przed_msvc.exe",
+      "path": "<repo>\\bench\\baseline\\engine_przed_msvc.exe",
       "runner": "win",
       "flags": "/O2 /Ob2 /DNDEBUG (CMake Release) /W4 /permissive- /utf-8",
       "compiler": "MSVC 19.38",
       "buildType": "Release"
     },
     "gcc-O3": {
-      "path": "D:\\Uczelnia\\9.Sem\\Metody Dyskretne w ZSO\\volcano-ca-mc\\bench\\baseline\\engine_przed_gcc",
+      "path": "<repo>\\bench\\baseline\\engine_przed_gcc",
       "runner": "wsl",
       "flags": "-O3 -DNDEBUG -Wall -Wextra (preset gcc-release)",
       "compiler": "GCC 11.4.0",
@@ -114,7 +114,7 @@
     {
       "started": "2026-10-17T07:53:26",
       "durationMinutes": 20.7,
-      "command": "bench/run_profile.py --full --gcc --name profile_2026-10-17_przed --engine D:\\Uczelnia\\9.Sem\\Metody Dyskretne w ZSO\\volcano-ca-mc\\bench\\baseline\\engine_przed_msvc.exe --gcc-engine D:\\Uczelnia\\9.Sem\\Metody Dyskretne w ZSO\\volcano-ca-mc\\bench\\baseline\\engine_przed_gcc",
+      "command": "bench/run_profile.py --full --gcc --name profile_2026-10-17_przed --engine <repo>\\bench\\baseline\\engine_przed_msvc.exe --gcc-engine <repo>\\bench\\baseline\\engine_przed_gcc",
       "groups": [
         "classic",
         "mc",

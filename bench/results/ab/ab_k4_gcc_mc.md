@@ -32,4 +32,4 @@ Optymalizacja 4 (automat frontalny), GCC — część mc pełnego zestawu (scalo
 | lava_mc_3d | total | 1 073 [1 063–1 143] | 866 [841–896] | 113 [109–116] | ×0.807 | ×0.106 | ×0.131 | tak |
 | lava_mc_3d | procWall | 1 074 [1 064–1 144] | 867 [843–898] | 115 [111–118] | ×0.807 | ×0.107 | ×0.132 | tak |
 
-Tło (Windows, poza WSL): start 23% (WmiPrvSE.exe 308%, python.exe 75%, SRE.exe 58%), koniec 20%.
+Tło (Windows, poza WSL): start 23% (WmiPrvSE.exe 308%, python.exe 75%, inny program 58%), koniec 20%.

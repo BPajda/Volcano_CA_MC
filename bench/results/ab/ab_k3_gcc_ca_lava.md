@@ -19,4 +19,4 @@ Optymalizacja 3 (przesunięcia liniowe sąsiadów w CA), GCC — część ca_lav
 | lava_mc_2d_ca | total | 45.4 [42.9–52.3] | 36.7 [35.0–41.6] | 29.5 [28.1–33.6] | ×0.808 | ×0.649 | ×0.804 | tak |
 | lava_mc_2d_ca | procWall | 46.4 [43.8–53.4] | 37.7 [35.9–42.9] | 30.3 [29.1–34.7] | ×0.812 | ×0.654 | ×0.805 | tak |
 
-Tło (Windows, poza WSL): start 15% (WmiPrvSE.exe 205%, SRE.exe 84%, svchost.exe 36%), koniec 19%.
+Tło (Windows, poza WSL): start 15% (WmiPrvSE.exe 205%, inny program 84%, svchost.exe 36%), koniec 19%.

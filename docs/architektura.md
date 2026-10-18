@@ -72,6 +72,7 @@ volcano-ca-mc/
 │   ├── fetch_dem.py                    prawdziwy teren: kafelki AWS Terrain Tiles → configs/heightmaps/<nazwa>.csv/.png/.json (etap 6)
 │   └── latlon_to_grid.py               (szer., dł.) ↔ kolumna (x, y) siatki mapy z prawdziwego terenu (etap 6)
 ├── bench/                              profil i pomiary (etap 3): run_profile.py, plot_profile.py, profile_gcc.sh, profile_msvc.py, results/, profiles/
+│                                       etap 8: ab.py (test A/B), compare_results.py (zgodność bitowa), plot_etap8.py, results/ab/
 ├── configs/                            przykładowe configi (test_2d, test_3d, etna_3d, classic_ref, lava_mc_*, mc_full_*, heightmap_*,
 │                                       etna_real, etna_real_boczna, wezuwiusz_real), heightmaps/ (mapy CSV + PNG + JSON, README z przypisaniem
 │                                       danych); gui/ i series/ — generowane (poza repozytorium)
@@ -136,24 +137,29 @@ liczył przebieg. Czas tego etapu to sekcja `readConfig` w `times.json` (`Simula
 
 ### Krok 3. Alokacja siatki: VectorStorage vs MatrixStorage, ramka, SoA
 
-**Co się dzieje:** automat dostaje **dwa bufory** siatki (`cur` — stan bieżący, `next` — następny). Każde pole
-komórki to **osobna tablica** (SoA, *structure of arrays*): `type` (1 B), `flowId` (4 B), `temp` (4 B),
-`solidStep` i `arrivalStep` (po 2 B) — 13 B na komórkę w buforze. Dookoła siatki jest **ramka 1 komórki**
-(współrzędne −1 i n są poprawne), więc sąsiad komórki z brzegu zawsze istnieje — warunki brzegowe to
-wypełnienie ramki (krok 6). Dwie reprezentacje: `VectorStorage` — jedna płaska `std::vector` na pole, indeks
-z trzech współrzędnych; `MatrixStorage` — `vector<vector<vector<T>>>` (porównanie dwóch reprezentacji siatki).
-Obie mają ten sam interfejs, a automat jest **szablonem** `LavaCA<Storage>` — wybór następuje raz, bez funkcji
-wirtualnych w gorącej pętli.
+**Co się dzieje:** pełny przebieg automatu (`ca.sweep = full`) ma **dwa bufory** siatki (`cur` — stan bieżący,
+`next` — następny); domyślny automat frontalny (`ca.sweep = front`, etap 8) — **jeden** bufor i listy zmian (krok 6).
+Każde pole komórki to **osobna tablica** (SoA, *structure of arrays*): `type` (1 B), `flowId` (4 B), `temp` (4 B),
+`solidStep` i `arrivalStep` (po 2 B) — 13 B na komórkę w buforze. Dookoła siatki jest **ramka 1 komórki** w osiach
+używanych przez sąsiedztwo (w 2D tylko w dwóch osiach płaszczyzny — `Dims::frameX/Y/Z`, etap 8), więc sąsiad komórki
+z brzegu zawsze istnieje — warunki brzegowe to wypełnienie ramki (krok 6). Dwie reprezentacje: `VectorStorage` — jedna
+płaska `std::vector` na pole; `MatrixStorage` — `vector<vector<vector<T>>>` (porównanie dwóch reprezentacji siatki).
+Automat sięga do komórek przez **pozycję** `Storage::Pos` (VectorStorage — indeks w tablicy z ramką, MatrixStorage —
+współrzędne): sąsiad = pozycja + przesunięcie liniowe `linear(o) = dx + sx·(dy + sy·dz)` policzone raz w konstruktorze
+automatu, następna komórka w osi x = `nextX(p)`. Obie reprezentacje mają ten sam interfejs, a automat jest **szablonem**
+`LavaCA<Storage>` — wybór następuje raz, bez funkcji wirtualnych w gorącej pętli.
 
-**Gdzie:** `engine/src/core/Storage.hpp` — `VectorStorage` (32–117), `index()` (103–107), `MatrixStorage` (124–205);
-wybór w `engine/src/app/Simulation.cpp`, `Simulation::run()` (223–255), alokacja w `Simulation::runWith()` (106–221).
+**Gdzie:** `engine/src/core/Storage.hpp` — `VectorStorage` (42–161), `linear()` (99–103), `index()` (145–150),
+`MatrixStorage` (168–276); wybór w `engine/src/app/Simulation.cpp`, `Simulation::run()` (229–261), alokacja
+w `Simulation::runWith()` (107–227).
 
 ```cpp
-// VectorStorage: indeks w płaskiej tablicy z ramką; asercja łapie wyjście poza ramkę (Debug).
+// VectorStorage: indeks w płaskiej tablicy z ramką (tylko w osiach używanych); base_ = indeks komórki (0, 0, 0).
 std::size_t index(int x, int y, int z) const {
-    assert(x >= -1 && x <= dims_.nx && y >= -1 && y <= dims_.ny && z >= -1 && z <= dims_.nz);
-    return static_cast<std::size_t>(x + 1) +
-           sx_ * (static_cast<std::size_t>(y + 1) + sy_ * static_cast<std::size_t>(z + 1));
+    assert(x >= -dims_.frameX() && x < dims_.nx + dims_.frameX() && y >= -dims_.frameY() &&
+           y < dims_.ny + dims_.frameY() && z >= -dims_.frameZ() && z < dims_.nz + dims_.frameZ());
+    return base_ + static_cast<std::size_t>(x) +
+           sx_ * (static_cast<std::size_t>(y) + sy_ * static_cast<std::size_t>(z));
 }
 ```
 
@@ -163,7 +169,8 @@ s = (cfg_.grid == GridKind::Matrix) ? runWith<MatrixStorage>(outDir, timing)
                                      : runWith<VectorStorage>(outDir, timing);
 ```
 
-Po kroku bufory są zamieniane `swap()` — zamiana wskaźników, bez kopiowania danych (O(1)).
+W pełnym przebiegu po kroku bufory są zamieniane `swap()` — zamiana wskaźników, bez kopiowania danych (O(1));
+automat frontalny zapisuje zmiany wprost do `cur` po regułach całego kroku (krok 6).
 
 ### Krok 4. Teren: stożek albo mapa wysokości, wypełnianie zagłębień
 
@@ -178,7 +185,7 @@ punkt krawędzi — z tego korzysta reguła wypełniania zagłębień (krok 6).
 
 **Gdzie:** `engine/src/terrain/TerrainGenerator.cpp` — `TerrainGenerator::cone()` (61–84), `smoothNoise()`,
 `fillDepressions()` (86–161, kolejka priorytetowa); `engine/src/terrain/HeightmapLoader.cpp`, `loadCsv()` (37–83);
-wywołanie: `Simulation::buildTerrain()` (85–93) i `LavaCA::applyTerrain()` (`engine/src/ca/LavaCA.hpp`, 67–77).
+wywołanie: `Simulation::buildTerrain()` (86–94) i `LavaCA::applyTerrain()` (`engine/src/ca/LavaCA.hpp`, 119–129).
 
 ```cpp
 for (int y = 0; y < d.ny; ++y) {
@@ -204,8 +211,8 @@ w MSVC i GCC, a wyniki mają być identyczne na obu kompilatorach. Kratery dosta
 i temperaturę erupcji.
 
 **Gdzie:** `engine/src/terrain/VentPlacer.cpp` — `placeVents()` (11–57), `placeAt()` (59–79, lista kolumn), `placeSeeds()` (81–100);
-`Simulation::buildVents()` (`Simulation.cpp`, 95–103) wybiera wariant;
-`LavaCA::placeSeeds()` (`LavaCA.hpp`, 81–93); `uniformBelow()` w `core/Rng.hpp`.
+`Simulation::buildVents()` (`Simulation.cpp`, 96–104) wybiera wariant;
+`LavaCA::placeSeeds()` (`LavaCA.hpp`, 133–145); `uniformBelow()` w `core/Rng.hpp`.
 
 ```cpp
 std::mt19937_64 gen(splitmix64(seed ^ kSaltVents));
@@ -248,12 +255,24 @@ i temperatury); koniec — brak powietrza.
 pentagonalne 5/17 (Moore bez jednej „strony” — 4/6 wariantów), losowe heksagonalne 6 (Moore bez dwóch
 przeciwległych narożników, 2 warianty, tylko 2D). Wariant dla komórki w danym kroku wybiera `hashRand`.
 
+**Automat frontalny (domyślny, `ca.sweep = front`, etap 8).** Te same reguły, ale tylko dla komórek, które w danym
+kroku **mogą się zmienić**: komórek lawy i komórek powietrza, do których jakiś sąsiad-lawa (classic: nowe ziarno) może
+wpłynąć. Struktura: dla każdej warstwy osi pionowej (z; w przekroju 2D — y) listy `src` (lawa; classic — ziarna
+z poprzedniego kroku), `cand` (kandydaci bez powtórzeń — znaczniki `mark_`), `nextSrc`, `changes`. Krok:
+`frontDescent()` (D(n) dla lawy) → `frontCandidates()` (komórki powietrza w zasięgu sumy przesunięć wszystkich wariantów
+sąsiedztwa) → `frontRules()` (te same funkcje reguł, czytają tylko `cur`, piszą listy warstwy) → `frontApply()` (zmiany do
+`cur`, kopie w ramce periodycznej `Boundary::syncCell()`). Wynik i historia liczników są **bitowo identyczne** z pełnym
+przebiegiem (`ca.sweep = full`, wersja referencyjna; testy `engine/tests/test_front.cpp`) — szczegóły i pomiary:
+[etap-8-optymalizacja-sekwencyjna.md](etap-8-optymalizacja-sekwencyjna.md), punkt 3.4.
+
 **Gdzie:** pełny opis reguł z uzasadnieniem każdej zmiany — `engine/src/ca/CaRules.hpp` (początek pliku);
-kod — `engine/src/ca/LavaCA.hpp`: `step()` (96–108), `stepLava()` (327–331), `computeDescent()` (304–317),
-`updateLava()` (360–414), `gatherLavaCandidates()` (246–298), `tryPonding()` (225–243), `hasSupport()` (172–181),
-`dropDepth()` (186–196), `updateClassic()` (417–456), `finishStep()` (459–475); głosowanie `CandidateVote`
-(`CaRules.hpp`, 114–170); ramka `Boundary::apply()` (`engine/src/core/Boundary.hpp`, 42–84);
-sąsiedztwa `engine/src/core/Neighborhood.cpp` (konstruktor, 55–119).
+kod — `engine/src/ca/LavaCA.hpp`: `step()` (148–162), `stepLava()` (428–432), `stepFront()` (443–454),
+`initFront()` (461–481), `frontDescent()` (485–496), `frontCandidates()` (520–551), `frontRules()` (557–643),
+`frontApply()` (647–662), `computeDescent()` (404–418), `updateLava()` (704–759), `gatherLavaCandidates()` (344–398),
+`tryPonding()` (322–340), `hasSupport()` (269–278), `dropDepth()` (283–293), `updateClassic()` (762–801),
+`finishStep()` (804–822); głosowanie `CandidateVote` (`CaRules.hpp`, 127–183); ramka `Boundary::apply()`
+(`engine/src/core/Boundary.hpp`, 47–94), `Boundary::syncCell()` (96–132); sąsiedztwa `engine/src/core/Neighborhood.cpp`
+(konstruktor, 55–119).
 
 ```cpp
 // LavaCA::stepLava — jeden krok: ramka -> D(n) -> reguły (cur -> next) -> zamiana buforów
@@ -265,14 +284,30 @@ VOLCANO_NOINLINE void stepLava() {
 ```
 
 ```cpp
-// LavaCA::updateLava — fragment dla komórki powietrza
+// LavaCA::stepFront — automat frontalny (domyślny): tylko komórki, które mogą się zmienić
+VOLCANO_NOINLINE void stepFront() {
+    if (!frontReady_) {
+        initFront();                    // ramka i listy przy pierwszym kroku
+    }
+    if (p_.mode == CaMode::Lava) {
+        frontDescent();                 // D(n) tylko dla lawy
+    }
+    frontCandidates();
+    const StepCounts c = frontRules();  // reguły czytają cur_, piszą listy warstwy
+    frontApply();                       // zmiany do cur_ + kopie w ramce periodycznej
+    finishStep(c);
+}
+```
+
+```cpp
+// LavaCA::updateLava — fragment dla komórki powietrza (pozycja p, sąsiedzi przez przesunięcia liniowe)
 if (type == CellType::Air) {
-    gatherLavaCandidates(x, y, z, t, idx, vote);
+    gatherLavaCandidates(x, y, z, p, prefix, idx, vote);
     if (!vote.empty()) {
         const int w = vote.winner(p_.seed, t, idx);          // najczęstszy flowId, remis -> hashRand
         const float temp = vote.maxTemp(w);
         if (temp >= p_.solidusTemp) {
-            next_.setCell(x, y, z, CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp});
+            next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp});
             ...
 ```
 
@@ -296,7 +331,8 @@ dają bitowo ten sam wynik (sprawdzają to testy i `--benchmark`), GCC i MSVC da
 wersji równoległej wynik będzie ten sam dla 1, 2, 4… wątków i procesów. „Sole” rozdzielają strumienie różnych decyzji.
 
 **Gdzie:** `engine/src/core/Rng.hpp` — `splitmix64()`, `hashRand()` (46–52), sole `kSalt*`; użycie m.in.
-`CandidateVote::winner()` (`CaRules.hpp`, 139–160), `Neighborhood::variantFor()` (`Neighborhood.hpp`).
+`CandidateVote::winner()` (`CaRules.hpp`, 152–173), `Neighborhood::variantFor()` i `variantFromPrefix()`
+(`Neighborhood.hpp`; stała część hasha liczona raz na krok — `hashPrefix()`/`hashIndex()` w `Rng.hpp`, 66–71, etap 8).
 
 ```cpp
 inline std::uint64_t hashRand(std::uint64_t seed, std::uint64_t step, std::uint64_t globalIndex,
@@ -334,31 +370,39 @@ Po zaakceptowanej zmianie komórki przy ścianie periodycznej odświeżamy jej k
 **Statystyki** (co `statsEvery` MCS, poza czasem `mcSim`): liczba ziaren = spójne składowe komórek o tej samej
 orientacji (union-find; spójność von Neumanna dla MC z VN, Moore'a dla pozostałych), średnia wielkość ziarna,
 energia całkowita, współczynnik akceptacji → `mc_stats.csv`; w `stats.json` także efekt mobilności (`byMobility`).
+Od etapu 8: etykiety ziaren dla komórek wnętrza przez przesunięcia liniowe (bez zawijania współrzędnych), energia
+całkowita z par sąsiadów „do przodu” — te same wartości, ok. 2× szybciej.
 
-**Gdzie:** opis reguł — `engine/src/mc/McRules.hpp`; `engine/src/mc/PottsMC.cpp`: `initialize()` (81–109),
-`fillFrame()` (111–159), `syncFrame()` (161–192), **`sweep()` (194–253)**, `measure()` (255–273);
-`unlikeNeighbors()` w `PottsMC.hpp` (121–129); etap: `engine/src/app/McStage.cpp`, `McStage::run()` (91–313),
-`McStage::save()` (315–336); mobilność `engine/src/mc/CoolingMobility.cpp`, `fromCooling()` (37–63);
-ziarna `engine/src/mc/Grains.cpp`, `Grains::label()` (44–107); samo MC z pliku — `Simulation::runMcFrom()` (257–324).
+**Gdzie:** opis reguł — `engine/src/mc/McRules.hpp`; `engine/src/mc/PottsMC.cpp`: `initialize()` (84–112),
+`fillFrame()` (114–165), `syncFrame()` (167–198), **`sweepTrials()` (201–279; pętla prób)**, `sweep()` (281–292),
+`measure()` (294–312), `totalEnergy()` (348–383); `unlikeNeighbors()` (125–137) i `unlikeBeforeAfter()` (142–155,
+energia przed i po zmianie w jednym przejściu, bez skoku warunkowego — etap 8) w `PottsMC.hpp`; etap:
+`engine/src/app/McStage.cpp`, `McStage::run()` (91–313), `McStage::save()` (315–336); mobilność
+`engine/src/mc/CoolingMobility.cpp`, `fromCooling()` (37–63); ziarna `engine/src/mc/Grains.cpp`, `Grains::label()`
+(33–150); samo MC z pliku — `Simulation::runMcFrom()` (263–330).
 
 ```cpp
+const std::uint64_t prefix = hashPrefix(p_.seed, t);       // stała część hashRand(seed, krok) — raz na MCS
 for (std::uint64_t a = 0; a < n; ++a) {                    // 1 MCS = N_domena prób
+    const std::uint64_t h = hashIndex(prefix, a);          // = wspólna część hashRand(seed, t, a, ·)
     // Krok 1: losowa selekcja elementu (ze zwracaniem)
-    const std::size_t k = hashRand(p_.seed, t, a, kSaltMcPick) % n;
-    const std::size_t i = domainFrame_[k];
-    if (useMobility && hashUniform(p_.seed, t, a, kSaltMcMobility) >= mobility_[i]) continue;
-    // Krok 2: energia przed zmianą
-    const double energyBefore = p_.J * unlikeNeighbors(i, current, offsets);
-    // Krok 3: nowa orientacja z 1..Q, różna od obecnej
-    std::int32_t proposed = 1 + hashRand(p_.seed, t, a, kSaltMcOrient) % otherStates;
+    const std::size_t i = domainFrame[hashSalt(h, kSaltMcPick) % n];
+    if constexpr (kMobility) { if (toUniform(hashSalt(h, kSaltMcMobility)) >= mobility_[i]) continue; }
+    const std::int32_t current = spin[i];
+    // Krok 3: nowa orientacja z 1..Q, różna od obecnej (nie zależy od energii — liczona przed krokiem 2)
+    std::int32_t proposed = 1 + hashSalt(h, kSaltMcOrient) % otherStates;
     if (proposed >= current) ++proposed;
-    // Krok 4: ΔE; Krok 5: Metropolis
-    const double deltaE = p_.J * unlikeNeighbors(i, proposed, offsets) - energyBefore;
+    // Kroki 2 i 4: energia przed i po zmianie w jednym przejściu po sąsiadach, bez skoku warunkowego
+    unlikeBeforeAfter(spin + i, current, proposed, offsets, count, unlikeBefore, unlikeAfter);
+    const double deltaE = p_.J * unlikeAfter - p_.J * unlikeBefore;
+    // Krok 5: Metropolis
     bool accept = deltaE <= 0.0;
-    if (!accept && p_.kT > 0.0) accept = hashUniform(...) < std::exp(-deltaE / p_.kT);
+    if (!accept && p_.kT > 0.0) accept = toUniform(hashSalt(h, kSaltMcAccept)) < std::exp(-deltaE / p_.kT);
 ```
 
-(Fragment uproszczony — pełna wersja z komentarzami w `PottsMC.cpp`.)
+(Fragment uproszczony — pełna wersja z komentarzami w `PottsMC.cpp`, `sweepTrials()`. Liczby losowe są te same co
+`hashRand(seed, t, a, sól)` przed etapem 8 — wynik bitowo identyczny; szablon `sweepTrials<kMobility, kRandomNb>`
+wybiera wariant pętli raz na MCS.)
 
 ### Krok 9. Zapis wyników i pomiar czasu
 
@@ -375,7 +419,8 @@ for (std::uint64_t a = 0; a < n; ++a) {                    // 1 MCS = N_domena p
 Każdy etap mierzy `Timer` (`std::chrono::steady_clock`) — zegar czytany na początku i końcu etapu, **nigdy
 w gorącej pętli** (stoper w pętli spowalniał krok lawy o ~10%, etap 3).
 
-**Gdzie:** `engine/src/io/ResultWriter.cpp` — `writeTxt()` (36–79), `writeBin()` (81–97), `writeCrystal*()`,
+**Gdzie:** `engine/src/io/ResultWriter.cpp` — `writeTxt()` (126–153; bufor dopisywany wskaźnikiem, temperatura przez
+`formatTemp()` (105–124) zamiast `printf` — etap 8), `writeBin()` (155–171), `writeCrystal*()`,
 `writeMcStatsCsv()`; `engine/src/io/TimingReport.cpp` — `toJson()` (133–151), `recordMemory()` (97–131);
 `engine/src/core/Timer.hpp`; schemat pomiaru w `Simulation::runWith()`: każdy etap to `t.reset(); …; timing.add("nazwa", t.elapsedMs());`.
 
@@ -553,6 +598,11 @@ Główne wnioski:
 5. **Model pamięci z kodu przewiduje szczyt procesu z dokładnością 0–4%:** ~40 B/komórkę (CA 3D), 91 B (CA 2D —
    ramka w nieużywanej osi), ~42 B (MC 3D); 1000³ wymagałoby ~40 GB → argument za MPI (planowany dalszy rozwój).
 
+**Etap 8** zrealizował większość tej listy (automat frontalny, MC bez skoku warunkowego, ramka tylko w używanych osiach,
+przesunięcia liniowe, tańsze statystyki MC, szybszy zapis txt): `etna_real` ×0,005, CA classic ×0,06–0,14, MC ×0,50–0,70,
+pamięć CA 2D 91 → 28–36 B/komórkę, wyniki bitowo te same. Narzędzia: `bench/ab.py` (test A/B), `bench/compare_results.py`
+(zgodność bitowa configów), `bench/plot_etap8.py` — opis w [etap-8-optymalizacja-sekwencyjna.md](etap-8-optymalizacja-sekwencyjna.md).
+
 ## 7. Kluczowe momenty kodu — ściąga
 
 | Co chcę pokazać / wyjaśnić | Plik i funkcja |
@@ -567,14 +617,17 @@ Główne wnioski:
 | mapa wysokości z pliku | `engine/src/terrain/HeightmapLoader.cpp`, `loadCsv()`; GUI: `gui/heightmap.py` |
 | rozmieszczenie kraterów (Fisher–Yates) | `engine/src/terrain/VentPlacer.cpp`, `placeVents()` |
 | krok automatu, podwójny bufor, warunek stopu | `engine/src/ca/LavaCA.hpp`, `stepLava()`, `finishStep()` |
+| automat frontalny (domyślny `ca.sweep = front`) | `LavaCA.hpp`, `stepFront()`, `frontCandidates()`, `frontRules()`, `frontApply()`; warunki zmiany komórki — `CaRules.hpp` |
+| sąsiad przez przesunięcie liniowe | `engine/src/core/Storage.hpp`, `linear()`, `shifted()`, `nextX()`; `LavaCA::nbSteps_` |
 | reguła rozlewania lawy (kierunek największego spadku) | `LavaCA.hpp`, `gatherLavaCandidates()`, `computeDescent()`, `descent()` |
 | wypełnianie krateru (ponding) | `LavaCA.hpp`, `tryPonding()`; opis w `CaRules.hpp` |
 | głosowanie o `flowId` (najczęstszy sąsiad) | `engine/src/ca/CaRules.hpp`, `CandidateVote::winner()` |
-| kroki 1–5 MC (Metropolis) | `engine/src/mc/PottsMC.cpp`, `PottsMC::sweep()` |
-| energia granicy ziaren | `engine/src/mc/PottsMC.hpp`, `unlikeNeighbors()` |
+| kroki 1–5 MC (Metropolis) | `engine/src/mc/PottsMC.cpp`, `PottsMC::sweepTrials()` (wywołuje `sweep()`) |
+| energia granicy ziaren | `engine/src/mc/PottsMC.hpp`, `unlikeNeighbors()`, `unlikeBeforeAfter()` (przed i po zmianie naraz) |
 | mobilność ze stygnięcia | `engine/src/mc/CoolingMobility.cpp`, `fromCooling()` |
 | liczenie ziaren (union-find) | `engine/src/mc/Grains.cpp`, `Grains::label()` |
-| zapis bin / txt | `engine/src/io/ResultWriter.cpp`, `writeBin()`, `writeTxt()` |
+| zapis bin / txt | `engine/src/io/ResultWriter.cpp`, `writeBin()`, `writeTxt()`, `formatTemp()` |
+| test A/B i zgodność bitowa programów (etap 8) | `bench/ab.py`, `bench/compare_results.py`; wyniki `bench/results/ab/` |
 | pomiar czasu i pamięci | `engine/src/app/Simulation.cpp`, `runWith()`; `engine/src/io/TimingReport.cpp` |
 | porównanie vector / macierz | `engine/src/app/Benchmark.cpp`, `Benchmark::runCase()` |
 | MC na wyniku CA z pliku | `engine/src/app/Simulation.cpp`, `runMcFrom()`; `engine/src/io/ResultReader.cpp` |

@@ -1,8 +1,13 @@
 // Testy zapisu/odczytu wyników i raportu czasów.
 #include "doctest.h"
 
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <limits>
 
 #include "io/ResultReader.hpp"
 #include "io/ResultWriter.hpp"
@@ -164,6 +169,120 @@ TEST_CASE("ResultWriter/Reader: mapa kryształów MC (txt i bin)") {
     std::getline(csv, row1);
     CHECK(head == "mcs,grains,meanGrainSize,energy,acceptRate");
     CHECK(row1.rfind("10,7,3.5000,", 0) == 0);
+}
+
+namespace {
+
+// Zapis ca_result.txt / mc_result.txt sprzed etapu 8 (k7): strumień w trybie tekstowym, snprintf("%.1f") —
+// odniesienie, z którym nowy zapis ma się zgadzać bajt w bajt (także końce wierszy CRLF na Windows).
+void writeTxtReference(const std::filesystem::path& path, const Microstructure& m) {
+    std::ofstream out(path);
+    out << m.dims.nx << ' ' << m.dims.ny << ' ' << m.dims.nz << "\nx y z type flowId temp\n";
+    std::size_t i = 0;
+    char t[64];
+    for (int z = 0; z < m.dims.nz; ++z) {
+        for (int y = 0; y < m.dims.ny; ++y) {
+            for (int x = 0; x < m.dims.nx; ++x, ++i) {
+                std::snprintf(t, sizeof(t), "%.1f", static_cast<double>(m.temp[i]));
+                out << x << ' ' << y << ' ' << z << ' ' << static_cast<int>(m.type[i]) << ' ' << m.flowId[i] << ' '
+                    << t << '\n';
+            }
+        }
+    }
+}
+
+void writeCrystalTxtReference(const std::filesystem::path& path, const CrystalMap& m) {
+    std::ofstream out(path);
+    out << m.dims.nx << ' ' << m.dims.ny << ' ' << m.dims.nz << "\nx y z crystal\n";
+    std::size_t i = 0;
+    for (int z = 0; z < m.dims.nz; ++z) {
+        for (int y = 0; y < m.dims.ny; ++y) {
+            for (int x = 0; x < m.dims.nx; ++x, ++i) {
+                out << x << ' ' << y << ' ' << z << ' ' << m.crystal[i] << '\n';
+            }
+        }
+    }
+}
+
+std::string fileBytes(const std::filesystem::path& path) {
+    std::ifstream in(path, std::ios::binary);
+    return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+}
+
+// Ten sam tekst co printf("%.1f", (double)v) na tej platformie?
+bool sameAsPrintf(float v) {
+    char ref[64];
+    char got[ResultWriter::kTempChars];
+    const int n = std::snprintf(ref, sizeof(ref), "%.1f", static_cast<double>(v));
+    const std::size_t m = ResultWriter::formatTemp(got, v);
+    return std::string(ref, static_cast<std::size_t>(n)) == std::string(got, m);
+}
+
+}  // namespace
+
+TEST_CASE("ResultWriter::formatTemp: te same znaki co printf(\"%.1f\") (etap 8, k7)") {
+    // Remisy (x,x5 dokładnie w binarnym: .25, .75 — printf zaokrągla do parzystej), wartości ujemne zaokrąglane
+    // do zera („-0.0”), −0,0, typowe temperatury lawy, duże wartości i wartości obsługiwane przez snprintf.
+    const float special[] = {0.0f,     -0.0f,     0.04f,      -0.04f,    0.05f,      -0.05f,   0.15f,
+                             0.25f,    0.35f,     0.75f,      1.25f,     2.25f,      -0.25f,   -1.75f,
+                             799.95f,  1199.75f,  1200.0f,    1.0e7f,    123456.75f, 16777215.0f,
+                             3.0e7f,   9.9e13f,   1.0e14f,    3.4e38f,   -3.4e38f,   1.0e-30f, -1.0e-30f};
+    for (const float v : special) {
+        CAPTURE(v);
+        CHECK(sameAsPrintf(v));
+    }
+    CHECK(sameAsPrintf(std::numeric_limits<float>::infinity()));
+    CHECK(sameAsPrintf(-std::numeric_limits<float>::infinity()));
+    CHECK(sameAsPrintf(std::numeric_limits<float>::quiet_NaN()));
+    CHECK(sameAsPrintf(std::numeric_limits<float>::denorm_min()));
+
+    // Siatki wartości z remisami i bez + losowe wzorce bitów (wszystkie rzędy wielkości do ~10^13).
+    int bad = 0;
+    for (int k = -40000; k <= 40000; ++k) {
+        bad += sameAsPrintf(static_cast<float>(k) * 0.01f) ? 0 : 1;
+        bad += sameAsPrintf(static_cast<float>(k) * 0.25f) ? 0 : 1;
+        bad += sameAsPrintf(static_cast<float>(k) / 8.0f) ? 0 : 1;
+        bad += sameAsPrintf(static_cast<float>(k) * 0.05f + 1000.0f) ? 0 : 1;
+    }
+    std::uint32_t r = 12345u;
+    for (int k = 0; k < 200000; ++k) {
+        r = r * 1664525u + 1013904223u;  // LCG — deterministycznie
+        float v;
+        std::memcpy(&v, &r, sizeof(v));
+        if (std::isfinite(v) && std::fabs(v) < 1.0e13f) {
+            bad += sameAsPrintf(v) ? 0 : 1;
+        }
+    }
+    CHECK(bad == 0);
+}
+
+TEST_CASE("ResultWriter: ca_result.txt i mc_result.txt bajt w bajt jak zapis sprzed etapu 8 (k7)") {
+    const auto dir = tempDir("io_txt_bytes");
+    // Ponad 1 MB tekstu (kilka zapisów bufora), różne długości liczb, temperatury z remisami i ujemne.
+    Microstructure m;
+    m.resize(Dims{123, 45, 11});
+    for (std::size_t i = 0; i < m.type.size(); ++i) {
+        m.type[i] = static_cast<CellType>(i % 4);
+        m.flowId[i] = static_cast<std::int32_t>(i % 3 == 0 ? i * 7919 : i % 13) - (i % 17 == 0 ? 5 : 0);
+        m.temp[i] = static_cast<float>(i % 4801) * 0.25f - 0.75f * static_cast<float>(i % 7) +
+                    (i % 29 == 0 ? 0.05f : 0.0f);
+    }
+    ResultWriter::writeTxt((dir / "ca_result.txt").string(), m);
+    writeTxtReference(dir / "ca_ref.txt", m);
+    const std::string got = fileBytes(dir / "ca_result.txt");
+    CHECK(got.size() > (1u << 20));
+    CHECK(got == fileBytes(dir / "ca_ref.txt"));
+
+    CrystalMap c;
+    c.dims = Dims{97, 61, 23};
+    for (std::size_t i = 0; i < c.dims.cells(); ++i) {
+        c.crystal.push_back(static_cast<std::int32_t>(i % 5 == 0 ? 0 : (i * 2654435761u) % 100000));
+    }
+    ResultWriter::writeCrystalTxt((dir / "mc_result.txt").string(), c);
+    writeCrystalTxtReference(dir / "mc_ref.txt", c);
+    const std::string gotMc = fileBytes(dir / "mc_result.txt");
+    CHECK(gotMc.size() > (1u << 20));
+    CHECK(gotMc == fileBytes(dir / "mc_ref.txt"));
 }
 
 TEST_CASE("TimingReport: sekcje sumują się, JSON zawiera czasy i informacje") {

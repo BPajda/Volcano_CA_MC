@@ -8,6 +8,7 @@
 #   cmake --preset gcc-o2-noinline && cmake --build --preset gcc-o2-noinline -j
 # Z Windows (Git Bash):
 #   wsl -e bash -lc "bash bench/profile_gcc.sh"      (z katalogu projektu — WSL startuje w bieżącym katalogu)
+#   wsl -e bash -lc "ETAP8=1 bash bench/profile_gcc.sh"   (etap 8: krótki profil po optymalizacjach — niżej)
 #
 # Warianty (jak w poleceniu etapu):
 #   ca_lava_test3d   — CA lava 3D (configs/test_3d.json), 5 przebiegów zsumowanych (gprof -s),
@@ -43,8 +44,24 @@ CASES=(
   "mc_full_3d|--config configs/mc_full_3d.json --set output.format=none --set mc.mcs=300|1"
 )
 
+# ETAP8=1 — krótki profil gorących miejsc po optymalizacjach etapu 8 (automat frontalny, MC po k1/k5):
+# tylko gprof z buildem gcc-profile-noinline (podział czasu między funkcje), bez grafu i bez callgrind,
+# pliki bench/profiles/etap8_gprof_*_flat.txt. Automat frontalny liczy krok w milisekundach, więc krótkie
+# przypadki są powtarzane 20 razy (gprof próbkuje co 10 ms).
+PREFIX=""
+if [ "${ETAP8:-0}" = "1" ]; then
+  PREFIX="etap8_"
+  CASES=(
+    "ca_lava_etna_real|--config configs/etna_real.json --set output.format=none|20"
+    "ca_lava_test3d|--config configs/test_3d.json --set output.format=none|20"
+    "ca_classic_100c|--config configs/classic_ref.json --set output.format=none|20"
+    "mc_full_3d|--config configs/mc_full_3d.json --set output.format=none --set mc.mcs=300|1"
+  )
+fi
+
 # SKIP_GPROF=1 — tylko callgrind (np. po wcześniejszym przebiegu gprof).
 GPROF_BUILDS="gcc-profile gcc-profile-noinline"
+[ "${ETAP8:-0}" = "1" ] && GPROF_BUILDS="gcc-profile-noinline"
 [ "${SKIP_GPROF:-0}" = "1" ] && GPROF_BUILDS=""
 for build in $GPROF_BUILDS; do
   exe="$ROOT/build-$build/bin/engine"
@@ -67,14 +84,20 @@ for build in $GPROF_BUILDS; do
       echo "# gprof (profil płaski), build $build, wariant $name ($args), przebiegów: $reps"
       echo "# $(date -Iseconds), $(g++ --version | head -1)"
       gprof -b -p "$exe" "${sums[@]}"
-    } > "$OUT/gprof_${build#gcc-}_${name}_flat.txt"
-    {
-      echo "# gprof (graf wywołań), build $build, wariant $name ($args), przebiegów: $reps"
-      gprof -b -q "$exe" "${sums[@]}"
-    } > "$OUT/gprof_${build#gcc-}_${name}_graph.txt"
+    } > "$OUT/${PREFIX}gprof_${build#gcc-}_${name}_flat.txt"
+    if [ -z "$PREFIX" ]; then
+      {
+        echo "# gprof (graf wywołań), build $build, wariant $name ($args), przebiegów: $reps"
+        gprof -b -q "$exe" "${sums[@]}"
+      } > "$OUT/gprof_${build#gcc-}_${name}_graph.txt"
+    fi
     echo "gprof $build $name: OK"
   done
 done
+if [ -n "$PREFIX" ]; then
+  echo "Raporty w $OUT/${PREFIX}gprof_*"
+  exit 0
+fi
 
 # --- callgrind (liczba wykonanych instrukcji Ir; --dump-instr=no zgodnie z poleceniem) ---
 CG_CASES=(
