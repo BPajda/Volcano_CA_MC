@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <utility>
 
@@ -17,6 +18,9 @@
 #include "core/Storage.hpp"
 #include "io/ResultReader.hpp"
 #include "io/ResultWriter.hpp"
+#include "parallel/Affinity.hpp"
+#include "parallel/Omp.hpp"
+#include "parallel/ThreadStats.hpp"
 #include "terrain/HeightmapLoader.hpp"
 
 namespace volcano {
@@ -61,6 +65,45 @@ void runCaWithProgress(LavaCA<Storage>& ca, ProgressReporter& progress, int maxS
         reportCa(progress, ca, maxSteps, false);
     }
     reportCa(progress, ca, maxSteps, true);
+}
+
+// Równoległość w stats.json (etap 9): faktyczna liczba wątków, harmonogram, przypięcie.
+nlohmann::ordered_json parallelJson(const Config& c) {
+    const ParallelSettings par = c.parallelSettings();
+    nlohmann::ordered_json j;
+    j["threads"] = par.threads;
+    j["schedule"] = nameOf(par.schedule);
+    j["chunk"] = par.chunk;
+    j["affinity"] = nameOf(c.parallel.affinity);
+    return j;
+}
+
+// Uruchomienie równoległości przed obliczeniami (etap 9): liczba wątków OpenMP i przypięcie wątków do rdzeni P
+// (parallel.affinity = pcores) — raz na proces. Opis (wątki, harmonogram, procesory) trafia do times.json.
+void setupParallel(const Config& c, TimingReport& timing, std::vector<std::string>& warnings) {
+    const ParallelSettings par = c.parallelSettings();
+    timing.setInfo("threads", par.threads);
+    timing.setInfo("schedule", nameOf(par.schedule));
+    timing.setInfo("chunk", par.chunk);
+    timing.setInfo("affinity", nameOf(c.parallel.affinity));
+    timing.setInfo("openmp", openmpVersion());
+    if (par.threads > 1) {
+        omp_set_num_threads(par.threads);
+    }
+    if (c.parallel.affinity != Affinity::PCores) {
+        return;
+    }
+    const CpuPlan plan = CpuAffinity::performanceCores();
+    const std::vector<int> cpus = CpuAffinity::pinThreads(plan, par.threads);
+    timing.setInfo("cpus", cpus);
+    timing.setInfo("affinityMethod", plan.method);
+    if (cpus.empty()) {
+        warnings.push_back("nie udało się przypiąć wątków do rdzeni P (" + plan.method +
+                           ") — o rdzeniach decyduje system");
+    } else if (static_cast<std::size_t>(par.threads) > plan.cpus.size()) {
+        warnings.push_back("parallel.threads = " + std::to_string(par.threads) + " > liczba rdzeni P (" +
+                           std::to_string(plan.cpus.size()) + ") — część rdzeni dostaje po kilka wątków");
+    }
 }
 
 }  // namespace
@@ -112,6 +155,16 @@ RunSummary Simulation::runWith(const std::string& outDir, TimingReport& timing) 
     const Neighborhood nb(cfg_.neighborhood, cfg_.space);
     const Boundary bc(cfg_.boundary, cfg_.ca.mode);
     LavaCA<Storage> ca(cfg_.space, caParams(cfg_), nb, bc);
+    // Etap 9: wątki OpenMP (warstwy z dzielone między wątki); --thread-stats — czas pracy wątków w fazach kroku
+    // (tylko w wielu wątkach — jeden wątek liczy bez regionów równoległych).
+    ParallelSettings par = cfg_.parallelSettings();
+    std::unique_ptr<ThreadStats> threadStats;
+    if (timing.threadStatsEnabled() && par.parallel()) {
+        threadStats = std::make_unique<ThreadStats>(par.threads,
+                                                    LavaCA<Storage>::threadPhases(cfg_.ca.frontSweep, cfg_.ca.mode));
+        par.stats = threadStats.get();
+    }
+    ca.setParallel(par);
     timing.add("allocate", t.elapsedMs());
     // Model pamięci (etap 3): oba bufory z ramką i tablice pomocnicze automatu.
     MemoryModel& mem = timing.memory();
@@ -183,6 +236,9 @@ RunSummary Simulation::runWith(const std::string& outDir, TimingReport& timing) 
         // Listy automatu frontalnego (etap 8): pojemność po przebiegu = największy rozmiar w trakcie.
         mem.allocate("caFront", ca.frontBytes());
     }
+    if (threadStats) {
+        timing.addThreadStats("ca", threadStats->toJson());
+    }
     if (timing.detailEnabled()) {
         const CaPhaseTimes& ph = ca.phaseTimes();
         timing.addDetail("caFrame", ph.frame);
@@ -242,7 +298,13 @@ RunSummary Simulation::run(const std::string& outDir, TimingReport& timing) {
                                              : runWith<VectorStorage>(outDir, timing);
     }
 
+    // Statystyki CA (przegląd całej siatki: objętość i zasięg lawy każdego krateru) — osobna sekcja caStats (etap 9).
+    Timer tStats;
     nlohmann::ordered_json stats = s.caRan ? buildStats(cfg_, s) : nlohmann::ordered_json::object();
+    if (s.caRan) {
+        timing.add("caStats", tStats.elapsedMs());
+    }
+    stats["parallel"] = parallelJson(cfg_);
     if (cfg_.mc.enabled) {
         // Wynik CA jest w pamięci z pełnymi danymi o stygnięciu (solidStep, arrivalStep).
         s.mc = McStage::run(cfg_, s.caRan ? &s.result : nullptr, CoolingData::Full, timing, progress_, outDir);
@@ -321,6 +383,7 @@ McSummary Simulation::runMcFrom(const Config& cfgIn, const std::string& caFolder
                        {"coolingData", cooling == CoolingData::Full        ? "solidStep+arrivalStep"
                                        : cooling == CoolingData::SolidOnly ? "solidStep"
                                                                            : "brak"}};
+    stats["parallel"] = parallelJson(cfg);
     stats["mc"] = s.stats;
     Timer tf;
     ResultWriter::writeJson((out / "stats.json").string(), stats);
@@ -334,27 +397,68 @@ nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary&
     const Microstructure& m = s.result;
     const std::size_t flows = s.vents.size();
 
-    // Zliczenie komórek każdego „ziarna” i zasięgu (maks. odległość pozioma od krateru).
-    std::vector<std::uint64_t> lava(flows + 1, 0);
-    std::vector<std::uint64_t> basalt(flows + 1, 0);
-    std::vector<double> reach(flows + 1, 0.0);
-    std::size_t i = 0;
-    for (int z = 0; z < m.dims.nz; ++z) {
-        for (int y = 0; y < m.dims.ny; ++y) {
+    // Zliczenie komórek każdego „ziarna” i zasięgu (maks. odległość pozioma od krateru) w wierszach [r0, r1) siatki.
+    struct FlowSums {
+        std::vector<std::uint64_t> lava;
+        std::vector<std::uint64_t> basalt;
+        std::vector<double> reach;
+    };
+    // Wskaźniki pobrane przed pętlą: MSVC nie przeładowuje ich wtedy przy każdym zapisie licznika.
+    const auto scanRows = [&](std::ptrdiff_t r0, std::ptrdiff_t r1, FlowSums& out) {
+        const CellType* const type = m.type.data();
+        const std::int32_t* const flowId = m.flowId.data();
+        std::uint64_t* const lv = out.lava.data();
+        std::uint64_t* const bs = out.basalt.data();
+        double* const rc = out.reach.data();
+        for (std::ptrdiff_t r = r0; r < r1; ++r) {
+            const int y = static_cast<int>(r % m.dims.ny);
+            std::size_t i = static_cast<std::size_t>(r) * static_cast<std::size_t>(m.dims.nx);
             for (int x = 0; x < m.dims.nx; ++x, ++i) {
-                const CellType t = m.type[i];
-                const std::int32_t f = m.flowId[i];
+                const CellType t = type[i];
+                const std::int32_t f = flowId[i];
                 if ((t != CellType::Lava && t != CellType::Basalt) || f <= 0 ||
                     static_cast<std::size_t>(f) > flows) {
                     continue;
                 }
                 const std::size_t fi = static_cast<std::size_t>(f);
-                (t == CellType::Lava ? lava : basalt)[fi] += 1;
+                (t == CellType::Lava ? lv : bs)[fi] += 1;
                 const Vent& v = s.vents[fi - 1];
-                reach[fi] = std::max(reach[fi], std::hypot(double(x - v.x), double(y - v.y)));
+                rc[fi] = std::max(rc[fi], std::hypot(double(x - v.x), double(y - v.y)));
             }
         }
+    };
+    const auto empty = [&]() {
+        return FlowSums{std::vector<std::uint64_t>(flows + 1, 0), std::vector<std::uint64_t>(flows + 1, 0),
+                        std::vector<double>(flows + 1, 0.0)};
+    };
+    const std::ptrdiff_t rows = static_cast<std::ptrdiff_t>(m.dims.ny) * m.dims.nz;
+    FlowSums sum = empty();
+    const int threads = c.parallelSettings().threads;
+    if (threads > 1 && flows <= 100000) {
+        // Etap 9: wiersze siatki dzielone między wątki, każdy wątek ma własne sumy; łączenie: liczby całkowite
+        // dodawane, zasięg — maksimum (oba nie zależą od kolejności, więc stats.json jest bitowo ten sam).
+        std::vector<FlowSums> part(static_cast<std::size_t>(threads));
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(threads)
+#endif
+        {
+            FlowSums& mine = part[static_cast<std::size_t>(omp_get_thread_num())];
+            mine = empty();
+            ompFor(rows, Schedule::Static, 0, [&](std::ptrdiff_t r) { scanRows(r, r + 1, mine); });
+        }
+        for (const FlowSums& t : part) {
+            for (std::size_t f = 0; f <= flows; ++f) {
+                sum.lava[f] += t.lava[f];
+                sum.basalt[f] += t.basalt[f];
+                sum.reach[f] = std::max(sum.reach[f], t.reach[f]);
+            }
+        }
+    } else {
+        scanRows(0, rows, sum);
     }
+    const std::vector<std::uint64_t>& lava = sum.lava;
+    const std::vector<std::uint64_t>& basalt = sum.basalt;
+    const std::vector<double>& reach = sum.reach;
 
     ojson j;
     j["mode"] = nameOf(c.ca.mode);
@@ -413,13 +517,16 @@ int Simulation::runFromCli(const CliOptions& opt, const Timer& sinceStart) {
     const ProcessMemory startMemory = ProcessInfo::memory();
     TimingReport timing;
     timing.enableDetail(opt.timingDetail);
+    timing.enableThreadStats(opt.threadStats);
     // --progress: linie „PROGRESS etap i/n” na stdout dla GUI (bez flagi raport jest wyłączony).
     ProgressReporter progress = opt.progress ? ProgressReporter(std::cout) : ProgressReporter();
 
-    // Wczytanie i walidacja configu (+ nadpisania z --set / --grid).
+    // Wczytanie i walidacja configu (+ nadpisania z --set / --grid / --threads).
     Timer t;
     Config cfg = Config::load(opt.configPath, opt.overrides);
     timing.add("readConfig", t.elapsedMs());
+    // Etap 9: liczba wątków i przypięcie do rdzeni P — raz, przed obliczeniami.
+    setupParallel(cfg, timing, cfg.warnings);
     for (const std::string& w : cfg.warnings) {
         std::cerr << "Ostrzeżenie: " << w << '\n';
     }

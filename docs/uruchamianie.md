@@ -77,6 +77,18 @@ Jeśli `cmake` nie jest w `PATH` (PowerShell — operator `&` przed ścieżką w
 `cmake --build --preset msvc-debug`, testy `ctest --preset msvc-debug` (Debug jest kilka razy wolniejszy;
 służy do wyłapywania błędów — asercje sprawdzają dostęp poza ramką). Pierwsze budowanie trwa 1–2 min.
 
+**OpenMP (etap 9)** jest włączone domyślnie (opcja CMake `VOLCANO_OPENMP=ON`; MSVC — `/openmp`, OpenMP 2.0; GCC —
+libgomp). Build bez OpenMP — w osobnym katalogu:
+
+```powershell
+cmake -S . -B build-noomp -G "Visual Studio 17 2022" -A x64 -DVOLCANO_OPENMP=OFF
+cmake --build build-noomp --config Release --parallel 4
+```
+
+(GCC: `cmake -S . -B build-gcc-noomp -DCMAKE_BUILD_TYPE=Release -DVOLCANO_OPENMP=OFF && cmake --build build-gcc-noomp -j 4`).
+To ten sam program w jednym wątku: `--threads` wypisuje wtedy ostrzeżenie „program zbudowano bez OpenMP”. Cel
+`omp_overhead` (mikrotest narzutu OpenMP, punkt 7.2) buduje się razem z silnikiem, gdy OpenMP jest włączone.
+
 ### 2.4 GCC w WSL
 
 Z **PowerShell**, `cmd` albo Git Bash — **z katalogu projektu** (`wsl` startuje w bieżącym katalogu Windows,
@@ -105,14 +117,16 @@ GCC: `ctest --preset gcc-release` / `gcc-debug` (w WSL, jak w 2.4). Poprawny wyn
 ```
 100% tests passed, 0 tests failed out of 12
 ...
-100 passed in 12.10s
+102 passed in 11.44s
 ```
 
-`ctest` to 12 testów: `unit_tests` (92 przypadki doctest, ~300 tys. asercji — sąsiedztwa, brzegi, zgodność
+`ctest` to 12 testów: `unit_tests` (119 przypadków doctest, ~315 tys. asercji — sąsiedztwa, brzegi, zgodność
 vector/macierz, reguły lawy, MC, config, zapis/odczyt, `--batch`, etap 6: kratery z listy `vents.positions`,
-odtwarzanie erupcji = stan automatu w każdym kroku, migawki CA i MC) i 11 testów dymnych programu (pomoc,
+odtwarzanie erupcji = stan automatu w każdym kroku, migawki CA i MC; etap 8: automat frontalny = pełny przebieg;
+etap 9: wyniki CA i szachownicy MC bitowo te same dla 1, 2, 3, 4 i 8 wątków i każdego harmonogramu, kolory
+szachownicy) i 11 testów dymnych programu (pomoc,
 symulacja 2D, błędny config, MC, `--mc-from`, `--print-defaults`, `--validate`, `--progress`, `--batch`).
-`pytest` (100 testów) obejmuje też `tools\fetch_dem.py` (bez internetu — sztuczne kafelki) i odtwarzanie erupcji
+`pytest` (102 testy) obejmuje też `tools\fetch_dem.py` (bez internetu — sztuczne kafelki) i odtwarzanie erupcji
 (migawki silnika, endpointy, ta sama reguła w JS przez `node`, jeśli jest zainstalowany).
 Jeśli `pytest` pisze „skipped” — silnik nie jest zbudowany (testy z silnikiem są wtedy pomijane).
 
@@ -130,6 +144,9 @@ Jeśli `pytest` pisze „skipped” — silnik nie jest zbudowany (testy z silni
 .\build\Release\engine.exe --validate --set space.nx=-5
 .\build\Release\engine.exe --print-defaults
 .\build\Release\engine.exe --benchmark --quick
+.\build\Release\engine.exe --config configs\test_3d.json --out results\test_3d_8w --threads 8 --set parallel.affinity=pcores
+.\build\Release\engine.exe --config configs\test_3d.json --out results\test_3d_full_8w --threads 8 --set ca.sweep=full --set parallel.schedule=guided --thread-stats
+.\build\Release\engine.exe --config configs\mc_full_2d.json --out results\mc_szachownica --threads 4 --set mc.update=checkerboard
 ```
 
 | Polecenie | Co robi |
@@ -143,6 +160,10 @@ Jeśli `pytest` pisze „skipped” — silnik nie jest zbudowany (testy z silni
 | `--print-defaults` | pełny domyślny config (wszystkie dozwolone klucze) |
 | `--benchmark [--quick] [--repeats N]` | vector vs macierz: czasy i zgodność wyników (`--quick` bez przypadków ≥ 1 mln komórek, ~10 s; wyniki w `results\benchmark\`) |
 | `--timing-detail`, `--progress` | czasy faz wewnątrz CA/MC w `times.json`; linie postępu (dla GUI) |
+| `--threads N` | liczba wątków OpenMP (skrót `--set parallel.threads=N`; domyślnie 1 — jak przed etapem 9; 0 = wszystkie); wynik CA bitowo ten sam dla każdej liczby wątków |
+| `--set parallel.affinity=pcores` | jeden wątek na rdzeń fizyczny wydajny (P) — do pomiarów; `parallel.schedule`, `parallel.chunk` — harmonogram pętli |
+| `--thread-stats` | czas pracy każdego wątku w fazach kroku i nierównomierność obciążenia → `times.json`, sekcja `threadStats` |
+| `--set mc.update=checkerboard` | MC w trybie szachownicy (liczy się w wątkach; wynik ten sam dla każdej liczby wątków, statystycznie równoważny wariantowi naiwnemu `random`) |
 
 Kody wyjścia: 0 OK, 1 błąd configu, 2 błąd argumentów, 3 inny błąd, 4 niezgodne wyniki benchmarku,
 5 seria z błędem. Czasy (MSVC Release, wolny komputer): `test_2d` ~0,15 s, `test_3d` ~2 s, `heightmap_kaldera` ~3 s,
@@ -291,6 +312,11 @@ Stan zadań i kolejki: `results\gui\jobs.json` (przeżywa restart). Jedno GUI na
 5. **Porównanie** → seria jest wybrana → wykres „czas symulacji vs liczba komórek”, log–log, 2D i 3D obok siebie →
    **Eksport PNG**, **Eksport CSV**; zmień *Y* na „koszt jednostkowy” — ns na komórkę i krok (CA) i ns na próbę (MC).
 
+Szablon **„OpenMP: liczba wątków”** (etap 9) liczy lawę `test_3d` (pełny przebieg) i MC szachownicę przy 1, 2, 4, 6
+i 8 wątkach; wykres porównania: czas vs wątki. Zadanie wielowątkowe GUI uruchamia z wysokim priorytetem i **nie**
+przypina go do jednego procesora nawet przy włączonym przypinaniu (wątki rozkłada silnik na rdzenie P —
+`parallel.affinity = pcores` w szablonie); dalej 1 worker. Log zadania: „wątki OpenMP: N — priorytet wysoki”.
+
 To samo automatycznie (Chromium sterowany skryptem, te same kliknięcia; wynik do `docs\img\ca_vs_mc.png`,
 `docs\data\ca_vs_mc.csv` i `docs\data\ca_vs_mc_meta.json` z obciążeniem tła):
 
@@ -374,6 +400,36 @@ python bench\plot_etap8.py                                             # docs\im
 - `run_profile.py --cases` — tylko wybrane warianty planu (lista: `--dry-run` z tymi samymi `--groups`); profil gorących
   miejsc po etapie 8: `wsl -e bash -lc "ETAP8=1 bash bench/profile_gcc.sh"` (po zbudowaniu presetu `gcc-profile-noinline`).
 - Opis metodyki i wyników: `docs\etap-8-optymalizacja-sekwencyjna.md`.
+
+### 7.2 Skalowanie OpenMP (etap 9)
+
+```powershell
+python bench\scaling.py --list                                          # przypadki, harmonogramy, liczby powtórzeń
+python bench\scaling.py --cases lava_etna_real --threads 1,2 --reps 1 --min-reps 1 --name skalowanie_test --out results\skalowanie_test
+python bench\scaling.py --cases lava_duza_3d_front --name skalowanie_lawa --out results\skalowanie_test
+python bench\scaling.py --schedules --cases lava_etna_real,lava_duza_3d_front --name harmonogramy_test --out results\skalowanie_test
+python bench\scaling.py --wsl --cases lava_etna_real --threads 1,2 --reps 1 --min-reps 1 --name skalowanie_gcc_test --out results\skalowanie_test
+python bench\scaling.py --from-raw results\skalowanie_test\skalowanie_test_raw.csv,results\skalowanie_test\skalowanie_lawa_raw.csv --name skalowanie_razem --out results\skalowanie_test
+python bench\plot_etap9.py                                              # docs\img\etap9_*.png z bench\results\omp\
+python bench\mc_validation.py --from-csv bench\results\omp\mc_walidacja.csv   # tabela i wykres walidacji szachownicy bez pomiaru
+.\build\Release\omp_overhead.exe --pin                                  # mikrotest: region, bariera, krok z harmonogramami [µs]
+```
+
+- `scaling.py` liczy przypadki dla p ∈ {1, 2, 4, 6, 8} wątków (`--threads`) **naprzemiennie**, przypięte do rdzeni P
+  (`parallel.affinity = pcores`), z wysokim priorytetem, ≥ 5 powtórzeń (`--reps`, `--min-reps`). Po każdym powtórzeniu
+  porównuje wyniki wszystkich p bitowo z p = 1. Wynik: `<nazwa>.md` (mediana [min–max], S(p), E(p), część szeregowa
+  f z prawa Amdahla), `.csv`, `_raw.csv`, `_threads.json` (czas pracy wątków z `--thread-stats`; `--no-stats` pomija).
+  Domyślny folder to `bench\results\omp\` — tam są wyniki etapu 9, więc próby kieruj do `results\`.
+- `--schedules` — te same przypadki przy 8 wątkach (`--sched-threads`) i 6 harmonogramach (`static`, `static,1`,
+  `dynamic`, `dynamic,4`, `guided`, `guided,4`). `--wsl` — program GCC w WSL (domyślnie `build-gcc-release/bin/engine`;
+  wątki wiąże libgomp). `--from-raw` scala pomiar podzielony na części.
+- **Do pomiarów:** zamknięte inne programy (przy 8 wątkach na 8 rdzeniach P każdy program w tle opóźnia wszystkie wątki),
+  zasilanie sieciowe. Pełny zestaw trwa ~30 min — dziel go na części ≤ 10 min (`--cases`) i scalaj `--from-raw`.
+- `mc_validation.py` bez `--from-csv` liczy walidację od nowa (12 ziaren generatora, ~1 min) i **nadpisuje**
+  `bench\results\omp\mc_walidacja.*` oraz `docs\img\etap9_mc_walidacja.png`.
+- `omp_overhead` (GCC: `build-gcc-release/bin/omp_overhead`) — koszt regionu, bariery i kroku „3 fazy po 64 warstwy”
+  dla każdego harmonogramu; `--pin` przypina wątki jak `pcores`, `--reps N`.
+- Opis metodyki i wyników: `docs\etap-9-openmp.md`.
 
 ## 8. Szybki przegląd możliwości (demo, ≈ 6–8 min)
 
@@ -512,6 +568,10 @@ są pomijane (komentarze, np. `"_opis"`), dozwolone są też komentarze `//`.
 | `mc.mobilityFromCooling`, `mc.mobilityMin` | mobilność z czasu w stanie płynnym (tylko `basalt`), m ∈ [mobilityMin, 1] |
 | `mc.statsEvery` | co ile MCS liczyć statystyki (`mc_stats.csv`; zawsze też MCS 0 i ostatni) |
 | `mc.snapshotsEvery` | migawki kryształów `mc_snapshots/mcs_<k>.bin` co N MCS (0 = wyłączone; czas poza `mcSim`) — odtwarzanie wzrostu ziaren w GUI |
+| `mc.update` | `random` (domyślnie) — wariant naiwny: N prób w losowych komórkach (sekwencyjny); `checkerboard` — szachownica: kolory bez sąsiadów tego samego koloru, w MCS każda komórka raz, liczona w wątkach (etap 9; wynik ten sam dla każdej liczby wątków, statystycznie równoważny `random`) |
+| `parallel.threads` | liczba wątków OpenMP (domyślnie 1 — kod jak przed etapem 9; 0 = `omp_get_max_threads()`); `--threads N` nadpisuje |
+| `parallel.schedule`, `parallel.chunk` | harmonogram pętli po warstwach: `static` / `dynamic` / `guided`; porcja (0 = domyślna OpenMP). Najlepsze wg pomiarów: front lawy `static` z porcją 1, pełny przebieg `dynamic` / `guided`, classic 2D `static` |
+| `parallel.affinity` | `none` (domyślnie — o rdzeniach decyduje system) / `pcores` (jeden wątek na rdzeń fizyczny wydajny P; do pomiarów) |
 | `output.format` | `txt`, `bin`, `both` lub `none`; `snapshotsEvery` — migawki `snapshots/step_<k>.bin` (stan 0, co N kroków, ostatni; czas poza `caSim`) |
 
 Gotowe konfiguracje (`configs/`):
@@ -545,7 +605,7 @@ Gotowe konfiguracje (`configs/`):
 | `mc_result.txt` | linia 1: `nx ny nz`, linia 2: `x y z crystal`, potem wszystkie komórki (`crystal` = orientacja 1..Q, 0 poza domeną MC) |
 | `mc_result.bin` | `"VMC1"`, `int32 nx, ny, nz`, `int32 crystal[N]` (przy `output.format` = `bin`/`both`) |
 | `mc_stats.csv` | `mcs,grains,meanGrainSize,energy,acceptRate` co `mc.statsEvery` MCS |
-| `times.json` | czasy [ms]: `readConfig, allocate, terrain, vents, caSim, save` (+ `mcInit, mcSim, mcStats, mcSave`; przy `--mc-from` `readInput`), `total` + `steps, cells, grid, neighborhood, boundary, mode, cpu, compiler, build` (+ `mcs, domainCells, Q, mcDomain, mcMobility`). W trybie `mc.domain = full` sekcji CA nie ma (`mode = mc_full`). Profil (etap 3): `files` — rozmiar [B] i czas zapisu [ms] każdego pliku; `memory` — pamięć procesu na starcie, na końcu i szczytowa (`peakRssBytes`: Windows `PeakWorkingSetSize`, Linux `ru_maxrss`; `peakPrivateBytes`: Windows `PeakPagefileUsage`) oraz `model` — teoretyczne zapotrzebowanie z tablic × `sizeof` (szczyt, bajty na komórkę, skład szczytu); `detail` — tylko z `--timing-detail` |
+| `times.json` | czasy [ms]: `readConfig, allocate, terrain, vents, caSim, caStats, save` (+ `mcInit, mcSim, mcStats, mcSave`; przy `--mc-from` `readInput`), `total` + `steps, cells, grid, neighborhood, boundary, mode, cpu, compiler, build` (+ `mcs, domainCells, Q, mcDomain, mcMobility`). Etap 9: `threads, schedule, chunk, affinity`, `cpus` (procesory logiczne kolejnych wątków przy `affinity = pcores`), `openmp` (wersja; 0 = build bez OpenMP); z `--thread-stats` — `threadStats` (czas pracy każdego wątku w fazach kroku, `imbalance` = Σ maks / Σ średnia). W trybie `mc.domain = full` sekcji CA nie ma (`mode = mc_full`). Profil (etap 3): `files` — rozmiar [B] i czas zapisu [ms] każdego pliku; `memory` — pamięć procesu na starcie, na końcu i szczytowa (`peakRssBytes`: Windows `PeakWorkingSetSize`, Linux `ru_maxrss`; `peakPrivateBytes`: Windows `PeakPagefileUsage`) oraz `model` — teoretyczne zapotrzebowanie z tablic × `sizeof` (szczyt, bajty na komórkę, skład szczytu); `detail` — tylko z `--timing-detail` |
 | `stats.json` | objętość lawy na krater, zasięg (odległość pozioma od krateru), liczba komórek LAVA i zmienionych w każdym kroku; sekcja `mc`: ziarna i średnia wielkość na początku/końcu, energia, efekt mobilności (`byMobility`) |
 
 Typy komórek: 0 powietrze, 1 skała, 2 lawa (w `classic`: ziarno), 3 bazalt.

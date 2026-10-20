@@ -5,13 +5,15 @@ kolejność, pauza, anulowanie serii, ponowienie, wiele workerów, trwałość s
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import time
 from pathlib import Path
 
 import pytest
 
 from gui import series as S
-from gui.jobs import JobError, JobManager
+from gui.jobs import HIGH_PRIORITY, JobError, JobManager, launch_mode
 
 from .conftest import ROOT, preset
 
@@ -278,12 +280,41 @@ def test_pinning_to_cpu(settings):
         jm.shutdown()
 
 
+def test_launch_mode_threads():
+    # 1 wątek: przypięcie i wysoki priorytet razem (pomiar jak w etapie 3); bez przypinania — priorytet normalny.
+    assert launch_mode(True, 1) == (True, HIGH_PRIORITY)
+    assert launch_mode(False, 1) == (False, 0)
+    # Wiele wątków (etap 9): zawsze wysoki priorytet, nigdy przypięcie całego procesu do jednego procesora.
+    assert launch_mode(True, 8) == (False, HIGH_PRIORITY)
+    assert launch_mode(False, 2) == (False, HIGH_PRIORITY)
+    # threads = 0 (wszystkie procesory logiczne): bez przypięcia, priorytet normalny.
+    assert launch_mode(True, 0) == (False, 0)
+    if sys.platform == "win32":
+        assert HIGH_PRIORITY == subprocess.HIGH_PRIORITY_CLASS
+
+
+def test_multithreaded_job_not_pinned_to_one_cpu(settings):
+    jm = JobManager(settings, workers=1)
+    try:
+        jm.set_pin(True, [0])   # przypinanie włączone — zadanie wielowątkowe i tak nie trafia na jeden procesor
+        job = jm.wait(jm.create(preset("test_2d", **{"ca.maxSteps": 30, "parallel.threads": 2}), "watki").id, 60)
+        assert job.status == "done" and job.pinnedCpu is None
+        log = jm.read_log(job.id)
+        assert "wątki OpenMP: 2" in log and "bez przypięcia" in log and "przypięto" not in log
+        if sys.platform == "win32":
+            assert "priorytet wysoki" in log
+        times = json.loads((settings.root / job.outDir / "times.json").read_text(encoding="utf-8"))
+        assert times["threads"] == 2
+    finally:
+        jm.shutdown()
+
+
 # ---------------------------------------------------------------- przez HTTP
 
 
 def test_api_series_queue_and_compare(client, settings):
     t = {x["id"]: x for x in client.get("/api/series/templates").json()}
-    assert set(t) == {"ca_vs_mc", "seeds", "neighborhood", "lava_vents"} and t["ca_vs_mc"]["jobs"] == 16
+    assert set(t) == {"ca_vs_mc", "seeds", "neighborhood", "lava_vents", "openmp_threads"} and t["ca_vs_mc"]["jobs"] == 16
     pv = client.post("/api/series/preview", json={"spec": {"name": "ca_vs_mc", "base": t["ca_vs_mc"]["base"],
                                                            "axes": t["ca_vs_mc"]["axes"]}}).json()
     assert pv["count"] == 16 and pv["jobs"][0]["config"]["grid"] == "vector"  # config scalony z domyślnymi

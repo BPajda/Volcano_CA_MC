@@ -58,6 +58,11 @@ public:
     bool detailEnabled() const { return detail_; }
     void addDetail(const std::string& name, double ms);
 
+    // Czas pracy wątków (--thread-stats, etap 9): etapy (ca, mc) dopisują swoją sekcję do "threadStats".
+    void enableThreadStats(bool on) { threadStats_ = on; }
+    bool threadStatsEnabled() const { return threadStats_; }
+    void addThreadStats(const std::string& stage, nlohmann::ordered_json stats);
+
     // times.json: {"unit": "ms", <sekcje>..., <informacje>...}
     nlohmann::ordered_json toJson() const;
 
@@ -83,6 +88,7 @@ private:
     std::vector<FileRecord> files_;
     bool detail_ = false;
     std::vector<std::pair<std::string, double>> details_;
+    bool threadStats_ = false;
 };
 
 }  // namespace volcano

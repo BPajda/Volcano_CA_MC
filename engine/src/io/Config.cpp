@@ -168,8 +168,9 @@ ojson Config::defaultsJson() {
                    "ponding": true, "sweep": "front" },
       "mc":      { "enabled": false, "domain": "basalt", "Q": 50, "mcs": 100, "J": 1.0, "kT": 0.0,
                    "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10,
-                   "snapshotsEvery": 0 },
-      "output":  { "format": "txt", "snapshotsEvery": 0 }
+                   "snapshotsEvery": 0, "update": "random" },
+      "output":  { "format": "txt", "snapshotsEvery": 0 },
+      "parallel": { "threads": 1, "schedule": "static", "chunk": 0, "affinity": "none" }
     })");
 }
 
@@ -306,6 +307,7 @@ Config Config::fromJson(const ojson& j) {
     c.mc.mobilityMin = getNumber(j, "mc.mobilityMin", 0.0, 1.0);
     c.mc.statsEvery = getInt(j, "mc.statsEvery", 1, 1000000000);
     c.mc.snapshotsEvery = getInt(j, "mc.snapshotsEvery", 0, 1000000000);
+    c.mc.checkerboard = getEnum<bool>(j, "mc.update", {{"random", false}, {"checkerboard", true}});
     const bool runsCa = !c.mc.fullOnly();  // czy w ogóle będzie teren i automat
 
     // --- automat ---
@@ -403,12 +405,38 @@ Config Config::fromJson(const ojson& j) {
                                              {"none", OutputFormat::None}});
     c.output.snapshotsEvery = getInt(j, "output.snapshotsEvery", 0, 65535);
 
+    // --- równoległość (etap 9) ---
+    c.parallel.threads = getInt(j, "parallel.threads", 0, 256);
+    c.parallel.schedule = getEnum<Schedule>(j, "parallel.schedule",
+                                            {{"static", Schedule::Static},
+                                             {"dynamic", Schedule::Dynamic},
+                                             {"guided", Schedule::Guided}});
+    c.parallel.chunk = getInt(j, "parallel.chunk", 0, 1000000);
+    c.parallel.affinity =
+        getEnum<Affinity>(j, "parallel.affinity", {{"none", Affinity::None}, {"pcores", Affinity::PCores}});
+    if (!openmpBuilt() && c.parallel.threads != 1) {
+        c.warnings.push_back("program zbudowano bez OpenMP (VOLCANO_OPENMP=OFF) — parallel.threads = " +
+                             std::to_string(c.parallel.threads) + " jest ignorowane, obliczenia w jednym wątku");
+    }
+    if (c.mc.enabled && !c.mc.checkerboard && c.parallel.threads != 1) {
+        c.warnings.push_back("mc.update = \"random\" jest z natury sekwencyjne (każda próba widzi wynik poprzednich) — "
+                             "pętla MC idzie w jednym wątku; równoległe MC: mc.update = \"checkerboard\"");
+    }
+
     c.effective = j;
     return c;
 }
 
 std::vector<std::pair<int, int>> Config::ventColumns() const {
     return getColumns(effective, "vents.positions", space);
+}
+
+ParallelSettings Config::parallelSettings() const {
+    ParallelSettings p;
+    p.threads = !openmpBuilt() ? 1 : (parallel.threads == 0 ? omp_get_max_threads() : parallel.threads);
+    p.schedule = parallel.schedule;
+    p.chunk = parallel.chunk;
+    return p;
 }
 
 const char* nameOf(GridKind g) { return g == GridKind::Matrix ? "matrix" : "vector"; }

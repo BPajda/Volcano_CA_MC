@@ -14,6 +14,12 @@
 // Klasa nie zależy od CA ani od plików: dostaje maskę domeny (i opcjonalnie mobilność)
 // w kolejności globalIndex, więc działa tak samo dla wyniku CA w pamięci, wyniku z pliku
 // i dla całej przestrzeni (tryb full).
+//
+// Szachownica (mc.update = checkerboard, etap 9; opis reguł w McRules.hpp): komórki domeny podzielone na kolory tak,
+// że żadne dwie komórki jednego koloru nie są sąsiadami w żadnym wariancie sąsiedztwa; MCS = kolory po kolei, w kolorze
+// każda komórka domeny dokładnie raz, losowość z hashRand(seed, MCS, globalIndex, sól). Próba komórki czyta tylko
+// sąsiadów (innych kolorów — w tej fazie niezmiennych), więc kolejność prób w kolorze nie ma znaczenia: komórki koloru
+// dzielone są między wątki po warstwach (z, w płaszczyźnie x–y — y), a wynik jest ten sam dla każdej liczby wątków.
 
 #include <cstddef>
 #include <cstdint>
@@ -25,6 +31,7 @@
 #include "core/Types.hpp"
 #include "mc/Grains.hpp"
 #include "mc/McRules.hpp"
+#include "parallel/Omp.hpp"
 
 namespace volcano {
 
@@ -51,8 +58,16 @@ public:
     // Mobilność komórek w kolejności globalIndex, wartości z [0, 1]; pusty wektor = wyłączona.
     void setMobility(const std::vector<float>& mobility);
 
+    // Tryb szachownicy (mc.update = checkerboard, etap 9) — przed initialize().
+    void setCheckerboard(bool on) { checkerboard_ = on; }
+    bool checkerboard() const { return checkerboard_; }
+    // Ustawienia równoległości (etap 9): szachownica, energia i mapa kryształów w wielu wątkach; tryb random —
+    // pętla prób zawsze w jednym wątku (każda próba widzi wynik poprzednich).
+    void setParallel(const ParallelSettings& par) { par_ = par; }
+
     // Inicjalizacja: każda komórka domeny dostaje orientację 1 + hashRand(seed, 0, idx, kSaltMcInit) mod Q
     // (poza domeną 0), powstaje lista komórek domeny, ramka jest wypełniana wg warunków brzegowych.
+    // Szachownica: lista komórek domeny ułożona kolor po kolorze, w kolorze warstwa po warstwie (globalIndex rosnąco).
     void initialize();
 
     // --- symulacja ---
@@ -100,6 +115,19 @@ public:
 
     // Mapa kryształów (bez ramki): orientacja w domenie, 0 poza nią.
     CrystalMap crystals() const;
+
+    // --- szachownica (etap 9) ---
+
+    // Liczba kolorów (po initialize w trybie checkerboard; 0 w trybie random).
+    int colorCount() const { return colors_; }
+    // Kolor komórki (x, y, z) wnętrza: von Neumann przy parzystych osiach periodycznych — parzystość x + y + z
+    // (2 kolory); inaczej (Moore, pentagonal, hexagonal albo nieparzysta oś periodyczna) — iloczyn klas osi
+    // (parzystość współrzędnej, a w osi periodycznej o nieparzystej długości ostatnia warstwa jako trzecia klasa):
+    // 4 kolory w 2D, 8 w 3D (do 27 z nieparzystymi osiami periodycznymi). Kolory numerowane 0..colorCount()-1.
+    int colorOf(int x, int y, int z) const;
+    // Zakres listy komórek domeny dla koloru c (begin, end) — testy.
+    std::size_t colorBegin(int c) const { return colorLayerStart_[static_cast<std::size_t>(c * layers_)]; }
+    std::size_t colorEnd(int c) const { return colorLayerStart_[static_cast<std::size_t>((c + 1) * layers_)]; }
 
 private:
     static constexpr std::uint8_t kInDomain = 1;
@@ -159,6 +187,24 @@ private:
     template <bool kMobility, bool kRandomNb>
     std::uint64_t sweepTrials();
 
+    // Liczniki prób szachownicy (sumy wątku, potem redukcja).
+    struct TrialCounts {
+        std::uint64_t attempts = 0;
+        std::uint64_t accepted = 0;
+        std::uint64_t uphill = 0;
+    };
+    // MCS szachownicy: kolory po kolei, w wielu wątkach komórki koloru dzielone po warstwach (bariera po kolorze).
+    template <bool kMobility, bool kRandomNb>
+    std::uint64_t sweepColors();
+    // Próby komórek listy domeny [b, e) jednego koloru w kroku MCS o stałej części hasha prefix.
+    template <bool kMobility, bool kRandomNb>
+    void colorTrials(std::uint64_t prefix, std::size_t b, std::size_t e, TrialCounts& out);
+    // Lista komórek domeny w kolejności szachownicy i granice kolorów / warstw (colorLayerStart_).
+    void buildColors();
+    // Klasa współrzędnej c w osi a (kolory iloczynowe): parzystość, w osi periodycznej o nieparzystej długości
+    // ostatnia warstwa — klasa 2.
+    int axisClass(int c, int a) const;
+
     // Wypełnia całą ramkę: oś periodyczna — kopia przeciwległej warstwy, inaczej poza domeną.
     void fillFrame();
     // Odświeża kopie komórki i (leżącej przy ścianie periodycznej) w ramce.
@@ -182,6 +228,14 @@ private:
     std::uint64_t attempts_ = 0;
     std::uint64_t accepted_ = 0;
     std::uint64_t uphill_ = 0;
+    // --- szachownica i wątki (etap 9) ---
+    bool checkerboard_ = false;
+    bool parityColors_ = false;                 // 2 kolory (parzystość x + y + z) zamiast kolorów iloczynowych
+    int colors_ = 0;                            // liczba kolorów (0 — tryb random)
+    int layers_ = 1;                            // warstwy (z, w płaszczyźnie x–y — y): jednostka podziału na wątki
+    int colorIndex_[27] = {};                   // kolor iloczynowy cx + 3·cy + 9·cz -> numer koloru 0..colors_-1
+    std::vector<std::size_t> colorLayerStart_;  // początek (kolor c, warstwa k) w liście domeny: [c·layers_ + k]
+    ParallelSettings par_;
 };
 
 }  // namespace volcano

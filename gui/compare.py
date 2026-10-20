@@ -37,6 +37,8 @@ COLUMNS: list[dict] = [
     {"key": "neighborhood", "label": "sąsiedztwo", "kind": "cat"},
     {"key": "boundary", "label": "brzeg", "kind": "cat"},
     {"key": "seeds", "label": "zarodki / kratery", "kind": "num"},
+    {"key": "threads", "label": "wątki OpenMP", "kind": "num"},
+    {"key": "schedule", "label": "harmonogram OpenMP", "kind": "cat"},
     {"key": "steps", "label": "kroki CA", "kind": "num"},
     {"key": "mcs", "label": "kroki MC (MCS)", "kind": "num"},
     {"key": "domainCells", "label": "komórki domeny MC", "kind": "num"},
@@ -115,6 +117,8 @@ def result_row(folder: Path) -> dict:
         seeds=get_path(cfg, "vents.count") if mode in ("lava", "classic") else None,
         steps=steps, mcs=mcs, domainCells=domain, caSim=ca_sim, mcSim=mc_sim,
         save=_num(times, "save"), mcSave=_num(times, "mcSave"), total=_num(times, "total"),
+        # etap 9: faktyczna liczba wątków i harmonogram (wyniki sprzed etapu 9 — 1 wątek, bez harmonogramu)
+        threads=_num(times, "threads") or 1, schedule=times.get("schedule"),
     )
     row["simMs"] = {"CA": ca_sim, "MC": mc_sim}.get(algorithm, (ca_sim or 0) + (mc_sim or 0))
     if ca_sim is not None and cells and steps:

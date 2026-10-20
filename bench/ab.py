@@ -54,9 +54,14 @@ if os.name != "nt":
 ROOT = Path(__file__).resolve().parent.parent
 CONFIGS = ROOT / "configs"
 IS_WINDOWS = os.name == "nt"
-SECTIONS = ["readConfig", "allocate", "terrain", "vents", "caSim", "save", "mcInit", "mcSim", "mcStats", "mcSave",
+SECTIONS = ["readConfig", "allocate", "terrain", "vents", "caSim", "caStats", "save", "mcInit", "mcSim", "mcStats",
+            "mcSave",
             "total"]
 SKIP_FILES = {"times.json", "config_used.json"}  # czas przebiegu; config zawiera nowe klucze nowszego programu
+# Klucze stats.json opisujące sposób liczenia, nie wynik (etap 9): liczba wątków, harmonogram, przypięcie (sekcja
+# "parallel") i wariant MC (mc.update — pole dopisane w etapie 9). Pomijane przy porównaniu z programem sprzed etapu 9
+# i między liczbami wątków; różne warianty MC (random / checkerboard) różnią się i tak całą resztą wyników.
+RUN_KEYS = ("parallel", "update")
 
 
 # ---------------------------------------------------------------------------
@@ -214,7 +219,9 @@ def strip_times(obj, ignore: tuple[str, ...] = ()):
 def compare_dirs(ref: Path, other: Path, eol: bool = False, ignore_keys: tuple[str, ...] = ()) -> list[str]:
     """Różnice folderu wyników other względem ref (pusta lista = bitowo zgodne).
     eol=True: pliki tekstowe porównywane bez różnicy CRLF/LF (MSVC na Windows zapisuje txt/csv w trybie tekstowym,
-    GCC na Linuksie — LF); ignore_keys: klucze JSON pomijane w stats.json (np. ścieżka folderu wejściowego)."""
+    GCC na Linuksie — LF); ignore_keys: klucze JSON pomijane w stats.json (np. ścieżka folderu wejściowego) — zawsze
+    także RUN_KEYS (opis liczenia: wątki, harmonogram, wariant MC)."""
+    ignore_keys = tuple(ignore_keys) + RUN_KEYS
     diffs = []
     files_ref = {p.relative_to(ref) for p in ref.rglob("*") if p.is_file() and p.name not in SKIP_FILES}
     files_oth = {p.relative_to(other) for p in other.rglob("*") if p.is_file() and p.name not in SKIP_FILES}

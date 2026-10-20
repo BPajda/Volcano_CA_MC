@@ -18,6 +18,9 @@ const ENUMS = {
   'ca.sweep': [['front', 'front — automat frontalny'], ['full', 'full — pełny przebieg']],
   'mc.domain': [['basalt', 'basalt — zastygła lawa z wyniku CA'], ['full', 'full — cała przestrzeń (bez CA)']],
   'output.format': [['txt', 'txt'], ['bin', 'bin (13 B/komórkę, szybki zapis)'], ['both', 'txt + bin'], ['none', 'bez zapisu mikrostruktury']],
+  'mc.update': [['random', 'random — losowe komórki po kolei (wariant naiwny)'], ['checkerboard', 'checkerboard — szachownica (równolegle)']],
+  'parallel.schedule': [['static', 'static — równe pasy warstw'], ['dynamic', 'dynamic — porcje na żądanie'], ['guided', 'guided — malejące porcje']],
+  'parallel.affinity': [['none', 'none — o rdzeniach decyduje system'], ['pcores', 'pcores — jeden wątek na rdzeń P']],
 };
 
 // Grupy formularza (kolejność i podpisy jak w configu). keys — ścieżki z kropkami.
@@ -32,8 +35,10 @@ export const GROUPS = [
   { id: 'ca', title: 'Automat komórkowy (CA)', keys: ['ca.mode', 'ca.maxSteps', 'ca.coolingAmbient', 'ca.coolingLateral',
     'ca.coolingFall', 'ca.solidusTemp', 'ca.ponding', 'ca.sweep'] },
   { id: 'mc', title: 'Monte Carlo (krystalizacja, model Pottsa)', keys: ['mc.enabled', 'mc.domain', 'mc.Q', 'mc.mcs', 'mc.J',
-    'mc.kT', 'mc.mobilityFromCooling', 'mc.mobilityMin', 'mc.statsEvery', 'mc.snapshotsEvery'] },
+    'mc.kT', 'mc.mobilityFromCooling', 'mc.mobilityMin', 'mc.statsEvery', 'mc.snapshotsEvery', 'mc.update'] },
   { id: 'output', title: 'Wyjście', keys: ['output.format', 'output.snapshotsEvery'] },
+  { id: 'parallel', title: 'Równoległość (OpenMP)', keys: ['parallel.threads', 'parallel.schedule', 'parallel.chunk', 'parallel.affinity'],
+    note: 'Wynik nie zależy od liczby wątków ani harmonogramu (poza mc.update: random i checkerboard to różne procesy losowe). Pomiary: rdzenie P, najwyżej 8 wątków.' },
 ];
 
 // Opis pól: label, unit, hint, int (liczba całkowita), min, step.
@@ -77,6 +82,11 @@ const SCHEMA = {
   'mc.statsEvery': { label: 'Statystyki co', unit: 'MCS', int: true, min: 1, hint: 'wiersze mc_stats.csv (czas poza mcSim)' },
   'mc.snapshotsEvery': { label: 'Migawki kryształów co', unit: 'MCS', int: true, min: 0,
     hint: '0 = wyłączone; mc_snapshots/mcs_*.bin — odtwarzanie wzrostu ziaren w podglądzie (czas poza mcSim)' },
+  'mc.update': { label: 'Kolejność prób MC', hint: 'random — wariant naiwny, zawsze 1 wątek; checkerboard — kolory komórek niebędących sąsiadami, równolegle (inny proces losowy, statystycznie zgodny)' },
+  'parallel.threads': { label: 'Liczba wątków', int: true, min: 0, hint: '1 = jeden wątek (jak przed etapem 9); 0 = wszystkie wątki OpenMP; pomiary: 1–8 (rdzenie P)' },
+  'parallel.schedule': { label: 'Harmonogram', hint: 'podział warstw (pasów z) między wątki; lawa (front): static z porcją 1, pełny przebieg: guided' },
+  'parallel.chunk': { label: 'Porcja harmonogramu', unit: 'warstw', int: true, min: 0, hint: '0 = domyślna OpenMP (static: równe bloki, dynamic/guided: 1)' },
+  'parallel.affinity': { label: 'Przypinanie wątków', hint: 'pcores — wątek i na i-tym rdzeniu wydajnym (P), bez drugiego wątku SMT' },
   'output.format': { label: 'Format mikrostruktury', hint: 'bin czyta się w GUI szybciej; txt — czytelny tekst x y z type flowId temp' },
   'output.snapshotsEvery': { label: 'Migawki co', unit: 'kroków', int: true, min: 0, hint: '0 = wyłączone; pliki snapshots/step_*.bin' },
 };

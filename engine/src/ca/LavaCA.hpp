@@ -27,9 +27,23 @@
 //           warstwy k wyznaczają tylko listy warstw k-1..k+1, reguły warstwy czytają tylko cur_
 //           i piszą tylko listy tej warstwy — pod zrównoleglenie po warstwach (etap 9).
 // OPTYMALIZACJA: automat frontalny zamiast pełnego przebiegu (99,99% przeszukań w lawie nic nie znajdowało).
+//
+// Wersja równoległa (OpenMP, etap 9; parallel.threads > 1) — podział przestrzeni na WARSTWY (oś z, w płaszczyźnie x–y
+// oś y): iteracja pętli równoległej = jedna warstwa (pas jednej wartości z), harmonogram z configu dzieli warstwy
+// między wątki (static bez porcji = równe ciągłe pasy warstw). Jeden region równoległy na krok, fazy rozdzielone barierami:
+//   front — [D(n) lawy] | kandydaci + reguły warstwy (w jednej iteracji: kandydaci warstwy k powstają z src warstw
+//           k-1..k+1, które w tej fazie się nie zmieniają) | zmiany do cur_ + kopie w ramce + nowe src;
+//   full  — ramka (ściany osi po kolei) | [D(n)] | reguły: cur_ -> next_ dla wierszy warstwy.
+// Każda faza pisze tylko elementy swojej warstwy (listy, znaczniki mark_, D(n) komórek lawy warstwy, komórki next_/cur_
+// warstwy i ich kopie w ramce), a czyta stan z początku kroku albo wynik poprzedniej fazy (po barierze). Liczniki przez
+// reduction. Wynik (siatka, liczba kroków, historia liczników, a nawet kolejność elementów list) jest więc bitowo ten
+// sam dla każdej liczby wątków i każdego harmonogramu — warstwa jest zawsze liczona w całości przez jeden wątek tą samą
+// funkcją. Przy 1 wątku kroki idą pętlami bez regionów OpenMP (jak w etapie 8).
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "ca/CaRules.hpp"
@@ -39,6 +53,8 @@
 #include "core/Storage.hpp"
 #include "core/Timer.hpp"
 #include "core/Types.hpp"
+#include "parallel/Omp.hpp"
+#include "parallel/ThreadStats.hpp"
 #include "terrain/TerrainGenerator.hpp"
 #include "terrain/VentPlacer.hpp"
 
@@ -96,10 +112,11 @@ public:
         for (const Offset& o : sideOffsets_) {
             side_.push_back(NbStep{o, cur_.linear(o)});
         }
-        // Automat frontalny: oś warstw, przesunięcia wszystkich wariantów pogrupowane wg przesunięcia
-        // w osi warstw (-1, 0, 1) i znaczniki „komórka jest już na liście kandydatów”.
+        // Oś warstw (podział na wątki, etap 9; listy automatu frontalnego): z, a w płaszczyźnie x–y (nz = 1) — y.
+        layerZ_ = dims.nz > 1;
+        // Automat frontalny: przesunięcia wszystkich wariantów pogrupowane wg przesunięcia w osi warstw (-1, 0, 1)
+        // i znaczniki „komórka jest już na liście kandydatów”.
         if (front_) {
-            layerZ_ = dims.nz > 1;
             layerPeriodic_ = layerZ_ ? bc_.periodicZ() : bc_.periodicY();
             std::vector<Offset> all;
             for (int v = 0; v < nb_.variantCount(); ++v) {
@@ -114,15 +131,41 @@ public:
         }
     }
 
+    // Ustawienia równoległości (etap 9) — przed applyTerrain / placeSeeds. Domyślnie 1 wątek (kod jak w etapie 8).
+    void setParallel(const ParallelSettings& par) { par_ = par; }
+    const ParallelSettings& parallelSettings() const { return par_; }
+
+    // Nazwy faz kroku w statystykach wątków (--thread-stats) — w kolejności numerów faz używanych w regionach.
+    static std::vector<std::string> threadPhases(bool front, CaMode mode) {
+        if (front) {
+            return mode == CaMode::Lava ? std::vector<std::string>{"descent", "rules", "apply"}
+                                        : std::vector<std::string>{"rules", "apply"};
+        }
+        return mode == CaMode::Lava ? std::vector<std::string>{"frame", "descent", "rules"}
+                                    : std::vector<std::string>{"frame", "rules"};
+    }
+
     // Teren: ROCK w kolumnie (x, y) dla z < h(x, y). Tylko tryb lava.
-    // Liczy też poziomy przelewu niecek (reguła wypełniania zagłębień).
+    // Liczy też poziomy przelewu niecek (reguła wypełniania zagłębień) — priority-flood jest sekwencyjny;
+    // kolumny skały wpisują wątki (wiersz y = iteracja, każda kolumna pisze tylko swoje komórki).
     void applyTerrain(const Heightmap& hm) {
-        for (int y = 0; y < dims_.ny; ++y) {
+        const auto row = [&](std::ptrdiff_t yi) {
+            const int y = static_cast<int>(yi);
             for (int x = 0; x < dims_.nx; ++x) {
                 const int h = std::min(hm.at(x, y), dims_.nz);
                 for (int z = 0; z < h; ++z) {
                     cur_.setType(x, y, z, CellType::Rock);
                 }
+            }
+        };
+        if (par_.parallel()) {
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(par_.threads)
+#endif
+            ompFor(dims_.ny, Schedule::Static, 0, row);
+        } else {
+            for (int y = 0; y < dims_.ny; ++y) {
+                row(y);
             }
         }
         spill_ = TerrainGenerator::fillDepressions(hm, bc_.periodicX(), bc_.periodicY());
@@ -182,8 +225,8 @@ public:
     // Bieżący stan (bufor cur).
     const Storage& state() const { return cur_; }
 
-    // Wynik w postaci płaskiej mikrostruktury (bez ramki).
-    Microstructure result() const { return toMicrostructure(cur_); }
+    // Wynik w postaci płaskiej mikrostruktury (bez ramki); kopia wierszami dzielonymi między wątki (etap 9).
+    Microstructure result() const { return toMicrostructure(cur_, par_.threads); }
 
     // --- profil (etap 3) ---
 
@@ -397,14 +440,41 @@ private:
         }
     }
 
+    // Liczba warstw (oś z, w płaszczyźnie x–y oś y) — iteracje pętli równoległych.
+    int layerCount() const { return layerZ_ ? dims_.nz : dims_.ny; }
+
+    // Wiersze siatki warstw [k0, k1): z ∈ [z0, z1), y ∈ [y0, y1). Wiersze idą w kolejności pamięci, więc globalIndex
+    // rośnie o 1 wzdłuż x i o nx między kolejnymi wierszami.
+    struct RowRange {
+        int z0;
+        int z1;
+        int y0;
+        int y1;
+    };
+    RowRange rowsOf(int k0, int k1) const { return layerZ_ ? RowRange{k0, k1, 0, dims_.ny} : RowRange{0, 1, k0, k1}; }
+
+    // Stała część kroku: numer kroku t, czy trwa erupcja, znacznik solidStep / arrivalStep (uint16 — stąd
+    // ca.maxSteps <= 65535) i stała część hasha hashPrefix(seed, t).
+    struct StepCtx {
+        std::uint64_t t;
+        bool erupting;
+        std::uint16_t stamp;
+        std::uint64_t prefix;
+    };
+    StepCtx stepContext() const {
+        const std::uint64_t t = static_cast<std::uint64_t>(steps_);
+        return StepCtx{t, steps_ < p_.eruptionSteps, static_cast<std::uint16_t>(std::min(steps_, 65535)),
+                       hashPrefix(p_.seed, t)};
+    }
+
     // Przed krokiem: największy spadek D(n) dla każdej komórki lawy leżącej na gruncie
-    // (-1 dla pozostałych). Osobny przebieg, bo D(n) jest potrzebne wielu sąsiadom n —
-    // bez tego liczylibyśmy je kilkanaście razy na krok. Czyta tylko cur_, więc w wersji równoległej
-    // ten przebieg też da się zrównoleglić.
-    VOLCANO_NOINLINE void computeDescent() {
-        std::size_t i = 0;
-        for (int z = 0; z < dims_.nz; ++z) {
-            for (int y = 0; y < dims_.ny; ++y) {
+    // (-1 dla pozostałych) — warstwy [k0, k1). Osobny przebieg, bo D(n) jest potrzebne wielu sąsiadom n —
+    // bez tego liczylibyśmy je kilkanaście razy na krok. Czyta tylko cur_, pisze D(n) komórek swoich warstw.
+    VOLCANO_NOINLINE void computeDescent(int k0, int k1) {
+        const RowRange r = rowsOf(k0, k1);
+        std::size_t i = static_cast<std::size_t>(globalIndex(dims_, 0, r.y0, r.z0));
+        for (int z = r.z0; z < r.z1; ++z) {
+            for (int y = r.y0; y < r.y1; ++y) {
                 Pos p = cur_.pos(0, y, z);
                 for (int x = 0; x < dims_.nx; ++x, ++i, p = Storage::nextX(p)) {
                     std::int8_t d = -1;
@@ -424,67 +494,277 @@ private:
         std::uint64_t changed = 0;  // komórki zmienione w kroku
     };
 
-    // Krok trybu lava: ramka -> D(n) -> reguły -> zamiana buforów.
+    // Krok trybu lava (pełny przebieg): ramka -> D(n) -> reguły -> zamiana buforów.
     VOLCANO_NOINLINE void stepLava() {
+        if (par_.parallel()) {
+            finishStep(fullStepParallel(nullptr));
+            return;
+        }
         bc_.apply(cur_);
-        computeDescent();
-        finishStep(updateLava());
+        computeDescent(0, layerCount());
+        CandidateVote vote;
+        StepCounts c;
+        updateLava(stepContext(), 0, layerCount(), vote, c);
+        finishStep(c);
     }
 
     // Krok trybu classic (rozrost ziaren bez grawitacji i temperatury): ramka -> reguły -> zamiana.
     VOLCANO_NOINLINE void stepClassic() {
+        if (par_.parallel()) {
+            finishStep(fullStepParallel(nullptr));
+            return;
+        }
         bc_.apply(cur_);
-        finishStep(updateClassic());
+        CandidateVote vote;
+        StepCounts c;
+        updateClassic(stepContext(), 0, layerCount(), vote, c);
+        finishStep(c);
+    }
+
+    // Pełny przebieg w wielu wątkach (etap 9): jeden region równoległy na krok — ramka (ściany każdej osi między
+    // wątkami, bariera po osi), D(n) warstw (bariera — reguły czytają D(n) sąsiadów z innych warstw), reguły warstw
+    // cur_ -> next_ (każda warstwa pisze tylko swoje komórki next_). lap != nullptr — czasy faz (--timing-detail).
+    VOLCANO_NOINLINE StepCounts fullStepParallel(LapTimer* lap) {
+        const StepCtx ctx = stepContext();
+        const std::ptrdiff_t nl = layerCount();
+        const bool lavaMode = p_.mode == CaMode::Lava;
+        const Schedule sched = par_.schedule;
+        const int chunk = par_.chunk;
+        ThreadStats* const ts = par_.stats;
+        const double wall0 = ts != nullptr ? omp_get_wtime() : 0.0;
+        std::uint64_t active = 0;
+        std::uint64_t air = 0;
+        std::uint64_t changed = 0;
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(par_.threads) reduction(+ : active, air, changed)
+#endif
+        {
+            const int tid = omp_get_thread_num();
+            PhaseClock clock(ts, tid);
+            if (ts != nullptr) {
+                ts->noteCpu(tid);
+            }
+            int ph = 0;
+            clock.begin();
+            bc_.applyWith(cur_, [&](std::ptrdiff_t n, const auto& body) {
+                ompFor(n, Schedule::Static, 0, body);
+                ompBarrier();
+            });
+            clock.end(ph++);
+            if (tid == 0 && lap != nullptr) {
+                lap->lap(phases_.frame);
+            }
+            if (lavaMode) {
+                clock.begin();
+                ompFor(nl, sched, chunk, [&](std::ptrdiff_t k) {
+                    computeDescent(static_cast<int>(k), static_cast<int>(k) + 1);
+                });
+                clock.end(ph++);
+                ompBarrier();
+                if (tid == 0 && lap != nullptr) {
+                    lap->lap(phases_.descent);
+                }
+            }
+            CandidateVote vote;
+            StepCounts local;
+            clock.begin();
+            ompFor(nl, sched, chunk, [&](std::ptrdiff_t k) {
+                if (lavaMode) {
+                    updateLava(ctx, static_cast<int>(k), static_cast<int>(k) + 1, vote, local);
+                } else {
+                    updateClassic(ctx, static_cast<int>(k), static_cast<int>(k) + 1, vote, local);
+                }
+            });
+            clock.end(ph);
+            active += local.active;
+            air += local.air;
+            changed += local.changed;
+        }
+        if (lap != nullptr) {
+            lap->lap(phases_.rules);
+        }
+        if (ts != nullptr) {
+            ts->addWall(omp_get_wtime() - wall0);
+            ts->endStep();
+        }
+        return StepCounts{active, air, changed};
     }
 
     // ===================== automat frontalny (ca.sweep = front, etap 8) =====================
 
-    // Krok automatu frontalnego: D(n) dla lawy -> kandydaci -> reguły (czytają cur_) -> zmiany do cur_.
+    // Sumy reguł automatu frontalnego w kroku (w wersji równoległej — redukcja po wątkach).
+    struct RuleSums {
+        std::uint64_t stay = 0;     // lawa, która pozostała lawą
+        std::uint64_t changed = 0;  // komórki zmienione
+        std::uint64_t born = 0;     // nowe komórki lawy / ziarna
+    };
+
+    // Krok automatu frontalnego: D(n) dla lawy -> kandydaci i reguły (czytają cur_) -> zmiany do cur_.
     VOLCANO_NOINLINE void stepFront() {
         if (!frontReady_) {
             initFront();
         }
-        if (p_.mode == CaMode::Lava) {
-            frontDescent();
-        }
-        frontCandidates();
-        const StepCounts c = frontRules();
-        frontApply();
-        finishStep(c);
+        finishStep(par_.parallel() ? frontStepParallel(nullptr) : frontStepSequential(nullptr));
     }
 
-    // Warstwa komórki (oś z, a w płaszczyźnie x–y oś y).
-    int layerOf(const Coord& c) const { return layerZ_ ? c.z : c.y; }
-
     // Przed pierwszym krokiem: ramka (raz — dalej Boundary::syncCell), listy lawy / ziaren z całej siatki
-    // i sumy komórek LAVA i AIR (komórki spoza frontu wnoszą do liczników stałe wartości).
+    // i sumy komórek LAVA i AIR (komórki spoza frontu wnoszą do liczników stałe wartości). Warstwy przeglądane
+    // niezależnie — w wielu wątkach każda warstwa buduje tylko swoją listę src.
     VOLCANO_NOINLINE void initFront() {
         bc_.apply(cur_);
-        layers_.assign(static_cast<std::size_t>(layerZ_ ? dims_.nz : dims_.ny), FrontLayer{});
-        lavaTotal_ = 0;
-        airTotal_ = 0;
-        for (int z = 0; z < dims_.nz; ++z) {
-            for (int y = 0; y < dims_.ny; ++y) {
+        layers_.assign(static_cast<std::size_t>(layerCount()), FrontLayer{});
+        std::uint64_t lava = 0;
+        std::uint64_t air = 0;
+        if (par_.parallel()) {
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(par_.threads) reduction(+ : lava, air)
+#endif
+            ompFor(layerCount(), Schedule::Static, 0,
+                   [&](std::ptrdiff_t k) { scanLayer(static_cast<int>(k), lava, air); });
+        } else {
+            for (int k = 0; k < layerCount(); ++k) {
+                scanLayer(k, lava, air);
+            }
+        }
+        lavaTotal_ = lava;
+        airTotal_ = air;
+        frontReady_ = true;
+    }
+
+    // Lista src warstwy k (komórki LAVA w kolejności pamięci) i liczba komórek LAVA / AIR warstwy (dodawane do lavaOut,
+    // airOut). Liczniki lokalne: przez referencję MSVC zapisywał je do pamięci w każdej iteracji (A/B: 3× wolniej).
+    void scanLayer(int k, std::uint64_t& lavaOut, std::uint64_t& airOut) {
+        FrontLayer& l = layers_[static_cast<std::size_t>(k)];
+        const RowRange r = rowsOf(k, k + 1);
+        std::uint64_t lava = 0;
+        std::uint64_t air = 0;
+        for (int z = r.z0; z < r.z1; ++z) {
+            for (int y = r.y0; y < r.y1; ++y) {
                 for (int x = 0; x < dims_.nx; ++x) {
                     const CellType t = cur_.type(x, y, z);
                     if (t == CellType::Lava) {
-                        const Coord c{x, y, z};
-                        layers_[static_cast<std::size_t>(layerOf(c))].src.push_back(c);
-                        ++lavaTotal_;
+                        l.src.push_back(Coord{x, y, z});
+                        ++lava;
                     } else if (t == CellType::Air) {
-                        ++airTotal_;
+                        ++air;
                     }
                 }
             }
         }
-        frontReady_ = true;
+        lavaOut += lava;
+        airOut += air;
     }
 
-    // D(n) tylko dla komórek lawy (descent_ jest czytane wyłącznie dla źródła, które jest lawą — wartości
-    // dla pozostałych komórek nie są używane, więc nie trzeba ich zerować co krok jak w computeDescent).
-    VOLCANO_NOINLINE void frontDescent() {
-        for (const FrontLayer& l : layers_) {
-            for (const Coord& c : l.src) {
+    // Krok frontalny w jednym wątku (jak w etapie 8; kandydaci i reguły warstwy w jednej pętli — kandydaci warstwy k
+    // zależą tylko od src warstw k-1..k+1, których reguły nie zmieniają). lap != nullptr — czasy faz.
+    VOLCANO_NOINLINE StepCounts frontStepSequential(LapTimer* lap) {
+        const StepCtx ctx = stepContext();
+        const int nl = static_cast<int>(layers_.size());
+        const bool periodic = bc_.periodicX() || bc_.periodicY() || bc_.periodicZ();
+        if (p_.mode == CaMode::Lava) {
+            frontDescent(0, nl);
+            if (lap != nullptr) {
+                lap->lap(phases_.descent);
+            }
+        }
+        RuleSums sums;
+        CandidateVote vote;
+        frontCandidatesRules(0, nl, ctx, vote, sums);
+        if (lap != nullptr) {
+            lap->lap(phases_.rules);
+        }
+        return frontCounts(sums, frontApply(0, nl, periodic));
+    }
+
+    // Krok frontalny w wielu wątkach (etap 9): jeden region na krok, warstwy dzielone między wątki wg harmonogramu.
+    //   faza 1 (lava): D(n) komórek lawy warstwy — bariera, bo reguły czytają D(n) źródeł z sąsiednich warstw;
+    //   faza 2: kandydaci warstwy (z src warstw k-1..k+1 — w tej fazie niezmienne) i reguły warstwy (czytają cur_,
+    //           piszą listy i znaczniki tylko swojej warstwy) — bariera, bo faza 3 zmienia cur_;
+    //   faza 3: zmiany warstwy do cur_ (+ kopie w ramce periodycznej — różne komórki ramki dla różnych komórek)
+    //           i nowe src warstwy.
+    // Liczniki przez reduction. lap != nullptr — czasy faz mierzone przez wątek 0 po barierach (--timing-detail).
+    VOLCANO_NOINLINE StepCounts frontStepParallel(LapTimer* lap) {
+        const StepCtx ctx = stepContext();
+        const std::ptrdiff_t nl = static_cast<std::ptrdiff_t>(layers_.size());
+        const bool lavaMode = p_.mode == CaMode::Lava;
+        const bool periodic = bc_.periodicX() || bc_.periodicY() || bc_.periodicZ();
+        const Schedule sched = par_.schedule;
+        const int chunk = par_.chunk;
+        ThreadStats* const ts = par_.stats;
+        const double wall0 = ts != nullptr ? omp_get_wtime() : 0.0;
+        std::uint64_t stay = 0;
+        std::uint64_t changed = 0;
+        std::uint64_t born = 0;
+        std::uint64_t lava = 0;
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(par_.threads) reduction(+ : stay, changed, born, lava)
+#endif
+        {
+            const int tid = omp_get_thread_num();
+            PhaseClock clock(ts, tid);
+            if (ts != nullptr) {
+                ts->noteCpu(tid);
+            }
+            int ph = 0;
+            if (lavaMode) {
+                clock.begin();
+                ompFor(nl, sched, chunk, [&](std::ptrdiff_t k) {
+                    frontDescent(static_cast<int>(k), static_cast<int>(k) + 1);
+                });
+                clock.end(ph++);
+                ompBarrier();
+                if (tid == 0 && lap != nullptr) {
+                    lap->lap(phases_.descent);
+                }
+            }
+            RuleSums sums;
+            CandidateVote vote;
+            clock.begin();
+            ompFor(nl, sched, chunk, [&](std::ptrdiff_t k) {
+                frontCandidatesRules(static_cast<int>(k), static_cast<int>(k) + 1, ctx, vote, sums);
+            });
+            clock.end(ph++);
+            stay += sums.stay;
+            changed += sums.changed;
+            born += sums.born;
+            ompBarrier();
+            if (tid == 0 && lap != nullptr) {
+                lap->lap(phases_.rules);
+            }
+            clock.begin();
+            ompFor(nl, sched, chunk, [&](std::ptrdiff_t k) {
+                lava += frontApply(static_cast<int>(k), static_cast<int>(k) + 1, periodic);
+            });
+            clock.end(ph);
+        }
+        if (ts != nullptr) {
+            ts->addWall(omp_get_wtime() - wall0);
+            ts->endStep();
+        }
+        RuleSums sums;
+        sums.stay = stay;
+        sums.changed = changed;
+        sums.born = born;
+        return frontCounts(sums, lava);
+    }
+
+    // Liczniki kroku jak w pełnym przebiegu (lava — lawa po kroku; classic — wszystkie ziarna; AIR — wolne komórki)
+    // i nowe sumy komórek LAVA / AIR (lava = łączna długość nowych list src).
+    StepCounts frontCounts(const RuleSums& s, std::uint64_t lava) {
+        const bool lavaMode = p_.mode == CaMode::Lava;
+        const StepCounts c{lavaMode ? s.stay + s.born : lavaTotal_ + s.born, airTotal_ - s.born, s.changed};
+        lavaTotal_ = lavaMode ? lava : lavaTotal_ + s.born;
+        airTotal_ -= s.born;
+        return c;
+    }
+
+    // D(n) tylko dla komórek lawy warstw [k0, k1) (descent_ jest czytane wyłącznie dla źródła, które jest lawą —
+    // wartości dla pozostałych komórek nie są używane, więc nie trzeba ich zerować co krok jak w computeDescent).
+    // Funkcje frontu dostają zakres warstw: 1 wątek — wszystkie warstwy jednym wywołaniem (pętla po warstwach w środku,
+    // jak w etapie 8 — wywołanie na każdą warstwę dawało w 2D ~5% narzutu), wiele wątków — po jednej warstwie.
+    void frontDescent(int k0, int k1) {
+        for (int k = k0; k < k1; ++k) {
+            for (const Coord& c : layers_[static_cast<std::size_t>(k)].src) {
                 const Pos p = cur_.pos(c.x, c.y, c.z);
                 std::int8_t d = -1;
                 if (hasSupport(c.x, c.y, c.z)) {
@@ -512,142 +792,147 @@ private:
                fix(z, dims_.nz, bc_.periodicZ());
     }
 
-    // Kandydaci: komórki AIR c, dla których jakieś src L leży w sąsiedztwie c (L = c + o dla przesunięcia
+    // Kandydaci warstwy k: komórki AIR c, dla których jakieś src L leży w sąsiedztwie c (L = c + o dla przesunięcia
     // o z dowolnego wariantu, więc c = L - o). Kandydaci warstwy k pochodzą tylko z src warstw k-1..k+1
     // (grupa przesunięć rev_[d] daje warstwę k z warstwy k + d) — warstwa pisze tylko własną listę
-    // i własne znaczniki, co pozwoli liczyć warstwy równolegle. Classic: lista cand zostaje z poprzedniego
+    // i własne znaczniki, więc warstwy można liczyć równolegle. Classic: lista cand zostaje z poprzedniego
     // kroku (kandydaci, którzy się nie zmienili — sąsiedztwo losowe); znaczniki pilnują braku powtórzeń.
-    VOLCANO_NOINLINE void frontCandidates() {
-        const int nl = static_cast<int>(layers_.size());
-        for (int k = 0; k < nl; ++k) {
-            FrontLayer& dst = layers_[static_cast<std::size_t>(k)];
-            for (int d = -1; d <= 1; ++d) {
-                int s = k + d;
-                if (s < 0 || s >= nl) {
-                    if (!layerPeriodic_) {
+    void frontCandidatesLayer(int k, int nl) {
+        FrontLayer& dst = layers_[static_cast<std::size_t>(k)];
+        for (int d = -1; d <= 1; ++d) {
+            int s = k + d;
+            if (s < 0 || s >= nl) {
+                if (!layerPeriodic_) {
+                    continue;
+                }
+                s = wrap(s, nl);
+            }
+            const std::vector<Offset>& group = rev_[d + 1];
+            for (const Coord& l : layers_[static_cast<std::size_t>(s)].src) {
+                for (const Offset& o : group) {
+                    int x = l.x - o.dx;
+                    int y = l.y - o.dy;
+                    int z = l.z - o.dz;
+                    if (!insideWrapped(x, y, z)) {
                         continue;
                     }
-                    s = wrap(s, nl);
-                }
-                const std::vector<Offset>& group = rev_[d + 1];
-                for (const Coord& l : layers_[static_cast<std::size_t>(s)].src) {
-                    for (const Offset& o : group) {
-                        int x = l.x - o.dx;
-                        int y = l.y - o.dy;
-                        int z = l.z - o.dz;
-                        if (!insideWrapped(x, y, z)) {
-                            continue;
-                        }
-                        std::uint8_t& m = mark_[static_cast<std::size_t>(globalIndex(dims_, x, y, z))];
-                        if (m != 0 || cur_.type(x, y, z) != CellType::Air) {
-                            continue;
-                        }
-                        m = 1;
-                        dst.cand.push_back(Coord{x, y, z});
+                    std::uint8_t& m = mark_[static_cast<std::size_t>(globalIndex(dims_, x, y, z))];
+                    if (m != 0 || cur_.type(x, y, z) != CellType::Air) {
+                        continue;
                     }
+                    m = 1;
+                    dst.cand.push_back(Coord{x, y, z});
                 }
             }
         }
     }
 
-    // Reguły dla komórek frontu (te same co w updateLava / updateClassic): czytają tylko cur_, piszą listy
-    // zmian i nowe src każdej warstwy. Zwraca liczniki kroku identyczne z pełnym przebiegiem.
-    // W pętli po warstwach zmieniają się tylko listy i znaczniki tej warstwy oraz lokalne sumy (stay, changed,
-    // born) — w wersji równoległej warstwy dzielone między wątki, sumy przez redukcję.
-    VOLCANO_NOINLINE StepCounts frontRules() {
-        const std::uint64_t t = static_cast<std::uint64_t>(steps_);
-        const bool erupting = steps_ < p_.eruptionSteps;
-        const std::uint16_t stamp = static_cast<std::uint16_t>(std::min(steps_, 65535));
-        const std::uint64_t prefix = hashPrefix(p_.seed, t);
-        const bool lavaMode = p_.mode == CaMode::Lava;
-        std::uint64_t stay = 0;  // lawa, która pozostała lawą
+    // Kandydaci i reguły warstw [k0, k1): dla każdej warstwy najpierw jej kandydaci (frontCandidatesLayer), potem
+    // reguły (frontRulesLayer) — czytają tylko cur_, piszą listy zmian i nowe src warstwy oraz znaczniki jej komórek;
+    // sumy dodawane do sumsOut (w wersji równoległej — sumy wątku, potem redukcja).
+    void frontCandidatesRules(int k0, int k1, const StepCtx ctx, CandidateVote& vote, RuleSums& sumsOut) {
+        const int nl = static_cast<int>(layers_.size());
+        for (int k = k0; k < k1; ++k) {
+            frontCandidatesLayer(k, nl);
+            const RuleSums r = frontRulesLayer(k, ctx, vote);
+            sumsOut.stay += r.stay;
+            sumsOut.changed += r.changed;
+            sumsOut.born += r.born;
+        }
+    }
+
+    // Reguły warstwy k (te same co w updateLava / updateClassic). Liczniki — zmienne lokalne zwracane przez wartość:
+    // przez referencję MSVC zapisywał je do pamięci przy każdej zmianie (push_back mógłby je zmienić) i krok przy
+    // 1 wątku był o 4–5% wolniejszy.
+    RuleSums frontRulesLayer(int k, const StepCtx& ctx, CandidateVote& vote) {
+        std::uint64_t stay = 0;     // lawa, która pozostała lawą
         std::uint64_t changed = 0;
-        std::uint64_t born = 0;  // nowe komórki lawy / ziarna
-        CandidateVote vote;
-        for (FrontLayer& l : layers_) {
-            l.changes.clear();
-            l.nextSrc.clear();
-            if (lavaMode) {
-                // Komórki lawy: krater w trakcie erupcji ma eruptTemp, reszta stygnie; poniżej solidusa — bazalt.
-                for (const Coord& c : l.src) {
-                    CellState s = cur_.cell(cur_.pos(c.x, c.y, c.z));
-                    const float before = s.temp;
-                    if (erupting && isVent(s.flowId, c.x, c.y, c.z)) {
-                        s.temp = p_.eruptTemp;
-                    } else {
-                        s.temp -= p_.coolingAmbient;
-                    }
-                    if (s.temp < p_.solidusTemp) {
-                        s.type = CellType::Basalt;
-                        s.solidStep = stamp;
+        std::uint64_t born = 0;     // nowe komórki lawy / ziarna
+        FrontLayer& l = layers_[static_cast<std::size_t>(k)];
+        l.changes.clear();
+        l.nextSrc.clear();
+        if (p_.mode == CaMode::Lava) {
+            // Komórki lawy: krater w trakcie erupcji ma eruptTemp, reszta stygnie; poniżej solidusa — bazalt.
+            for (const Coord& c : l.src) {
+                CellState s = cur_.cell(cur_.pos(c.x, c.y, c.z));
+                const float before = s.temp;
+                if (ctx.erupting && isVent(s.flowId, c.x, c.y, c.z)) {
+                    s.temp = p_.eruptTemp;
+                } else {
+                    s.temp -= p_.coolingAmbient;
+                }
+                if (s.temp < p_.solidusTemp) {
+                    s.type = CellType::Basalt;
+                    s.solidStep = ctx.stamp;
+                    ++changed;
+                    l.changes.push_back(Change{c, s});
+                } else {
+                    ++stay;
+                    l.nextSrc.push_back(c);
+                    if (s.temp != before) {
                         ++changed;
                         l.changes.push_back(Change{c, s});
-                    } else {
-                        ++stay;
-                        l.nextSrc.push_back(c);
-                        if (s.temp != before) {
-                            ++changed;
-                            l.changes.push_back(Change{c, s});
-                        }
                     }
                 }
-                // Komórki AIR obok lawy: kandydaci, głosowanie, temperatura >= solidus -> lawa.
-                for (const Coord& c : l.cand) {
-                    const std::uint64_t idx = globalIndex(dims_, c.x, c.y, c.z);
-                    mark_[static_cast<std::size_t>(idx)] = 0;
-                    gatherLavaCandidates(c.x, c.y, c.z, cur_.pos(c.x, c.y, c.z), prefix, idx, vote);
-                    if (!vote.empty()) {
-                        const int w = vote.winner(p_.seed, t, idx);
-                        const float temp = vote.maxTemp(w);
-                        if (temp >= p_.solidusTemp) {
-                            l.changes.push_back(Change{c, CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp}});
-                            l.nextSrc.push_back(c);
-                            ++born;
-                            ++changed;
-                        }
-                    }
-                }
-                l.cand.clear();
-            } else {
-                // Classic: AIR z sąsiadem-ziarnem dostaje najczęstszy flowId; bez zmiany zostaje kandydatem.
-                std::size_t keep = 0;
-                for (std::size_t i = 0; i < l.cand.size(); ++i) {
-                    const Coord c = l.cand[i];
-                    const std::uint64_t idx = globalIndex(dims_, c.x, c.y, c.z);
-                    const Pos p = cur_.pos(c.x, c.y, c.z);
-                    vote.clear();
-                    for (const NbStep& st : stepsFor(prefix, idx)) {
-                        const Pos n = Storage::shifted(p, st.o, st.lin);
-                        if (cur_.type(n) == CellType::Lava) {
-                            vote.add(cur_.flowId(n), 0.0f);
-                        }
-                    }
-                    if (!vote.empty()) {
-                        const int w = vote.winner(p_.seed, t, idx);
-                        l.changes.push_back(Change{c, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, stamp}});
+            }
+            // Komórki AIR obok lawy: kandydaci, głosowanie, temperatura >= solidus -> lawa.
+            for (const Coord& c : l.cand) {
+                const std::uint64_t idx = globalIndex(dims_, c.x, c.y, c.z);
+                mark_[static_cast<std::size_t>(idx)] = 0;
+                gatherLavaCandidates(c.x, c.y, c.z, cur_.pos(c.x, c.y, c.z), ctx.prefix, idx, vote);
+                if (!vote.empty()) {
+                    const int w = vote.winner(p_.seed, ctx.t, idx);
+                    const float temp = vote.maxTemp(w);
+                    if (temp >= p_.solidusTemp) {
+                        l.changes.push_back(
+                            Change{c, CellState{CellType::Lava, vote.flowId(w), temp, 0, ctx.stamp}});
                         l.nextSrc.push_back(c);
-                        mark_[static_cast<std::size_t>(idx)] = 0;
                         ++born;
                         ++changed;
-                    } else {
-                        l.cand[keep++] = c;
                     }
                 }
-                l.cand.resize(keep);
             }
+            l.cand.clear();
+        } else {
+            // Classic: AIR z sąsiadem-ziarnem dostaje najczęstszy flowId; bez zmiany zostaje kandydatem.
+            std::size_t keep = 0;
+            for (std::size_t i = 0; i < l.cand.size(); ++i) {
+                const Coord c = l.cand[i];
+                const std::uint64_t idx = globalIndex(dims_, c.x, c.y, c.z);
+                const Pos p = cur_.pos(c.x, c.y, c.z);
+                vote.clear();
+                for (const NbStep& st : stepsFor(ctx.prefix, idx)) {
+                    const Pos n = Storage::shifted(p, st.o, st.lin);
+                    if (cur_.type(n) == CellType::Lava) {
+                        vote.add(cur_.flowId(n), 0.0f);
+                    }
+                }
+                if (!vote.empty()) {
+                    const int w = vote.winner(p_.seed, ctx.t, idx);
+                    l.changes.push_back(Change{c, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, ctx.stamp}});
+                    l.nextSrc.push_back(c);
+                    mark_[static_cast<std::size_t>(idx)] = 0;
+                    ++born;
+                    ++changed;
+                } else {
+                    l.cand[keep++] = c;
+                }
+            }
+            l.cand.resize(keep);
         }
-        // Liczniki jak w pełnym przebiegu: lava — lawa po kroku; classic — wszystkie ziarna; AIR — wolne komórki.
-        born_ = born;  // dla frontApply (sumy komórek LAVA / AIR)
-        const std::uint64_t active = lavaMode ? stay + born : lavaTotal_ + born;
-        return StepCounts{active, airTotal_ - born, changed};
+        RuleSums out;
+        out.stay = stay;
+        out.changed = changed;
+        out.born = born;
+        return out;
     }
 
-    // Zmiany kroku do cur_ (po regułach wszystkich warstw), kopie zmienionych komórek w ramce periodycznej,
-    // nowe listy src i sumy komórek LAVA / AIR.
-    VOLCANO_NOINLINE void frontApply() {
-        const bool periodic = bc_.periodicX() || bc_.periodicY() || bc_.periodicZ();
+    // Zmiany warstw [k0, k1) do cur_ (po regułach wszystkich warstw), kopie zmienionych komórek w ramce periodycznej
+    // i nowe listy src. Zwraca łączną liczbę komórek nowych src.
+    std::uint64_t frontApply(int k0, int k1, bool periodic) {
         std::uint64_t lava = 0;
-        for (FrontLayer& l : layers_) {
+        for (int k = k0; k < k1; ++k) {
+            FrontLayer& l = layers_[static_cast<std::size_t>(k)];
             for (const Change& ch : l.changes) {
                 cur_.setCell(cur_.pos(ch.c.x, ch.c.y, ch.c.z), ch.s);
                 if (periodic) {
@@ -657,13 +942,13 @@ private:
             l.src.swap(l.nextSrc);
             lava += l.src.size();
         }
-        lavaTotal_ = (p_.mode == CaMode::Lava) ? lava : lavaTotal_ + born_;
-        airTotal_ -= born_;
+        return lava;
     }
 
     // Ten sam krok z pomiarem czasu faz (--timing-detail). Osobna ścieżka: stoper wewnątrz
     // stepLava zmieniał kod generowany przez MSVC dla głównej pętli (krok lawy wolniejszy
     // o ~10% — test A/B w profilu z etapu 3), a zwykły przebieg ma zostać punktem odniesienia.
+    // W wielu wątkach fazy mierzy wątek 0 po barierach.
     VOLCANO_NOINLINE void stepTimed() {
         LapTimer phase(true);
         if (front_) {
@@ -673,58 +958,50 @@ private:
                 initFront();
             }
             phase.lap(phases_.frame);
-            if (p_.mode == CaMode::Lava) {
-                frontDescent();
-                phase.lap(phases_.descent);
-            }
-            frontCandidates();
-            const StepCounts c = frontRules();
-            phase.lap(phases_.rules);
-            frontApply();
+            const StepCounts c = par_.parallel() ? frontStepParallel(&phase) : frontStepSequential(&phase);
             finishStep(c);
             phase.lap(phases_.finish);
             return;
         }
-        bc_.apply(cur_);
-        phase.lap(phases_.frame);
         StepCounts counts;
-        if (p_.mode == CaMode::Lava) {
-            computeDescent();
-            phase.lap(phases_.descent);
-            counts = updateLava();
+        if (par_.parallel()) {
+            counts = fullStepParallel(&phase);
         } else {
-            counts = updateClassic();
+            bc_.apply(cur_);
+            phase.lap(phases_.frame);
+            CandidateVote vote;
+            if (p_.mode == CaMode::Lava) {
+                computeDescent(0, layerCount());
+                phase.lap(phases_.descent);
+                updateLava(stepContext(), 0, layerCount(), vote, counts);
+            } else {
+                updateClassic(stepContext(), 0, layerCount(), vote, counts);
+            }
+            phase.lap(phases_.rules);
         }
-        phase.lap(phases_.rules);
         finishStep(counts);
         phase.lap(phases_.finish);
     }
 
-    // Reguły lawy dla wszystkich komórek: czyta cur_, pisze next_, zlicza lawę i zmiany.
-    VOLCANO_NOINLINE StepCounts updateLava() {
-        const std::uint64_t t = static_cast<std::uint64_t>(steps_);
-        const bool erupting = steps_ < p_.eruptionSteps;
-        // Znacznik kroku dla solidStep i arrivalStep (uint16 — stąd ca.maxSteps <= 65535).
-        const std::uint16_t stamp = static_cast<std::uint16_t>(std::min(steps_, 65535));
+    // Reguły lawy dla komórek warstw [k0, k1): czyta cur_, pisze next_, dodaje do c liczbę lawy, AIR i zmian.
+    VOLCANO_NOINLINE void updateLava(const StepCtx ctx, int k0, int k1, CandidateVote& vote, StepCounts& counts) {
         std::uint64_t lava = 0;
         std::uint64_t air = 0;
         std::uint64_t changed = 0;
-        std::uint64_t idx = 0;  // globalIndex(x, y, z) — pętle idą w kolejności pamięci
-        const std::uint64_t prefix = hashPrefix(p_.seed, t);
-        CandidateVote vote;
-
-        for (int z = 0; z < dims_.nz; ++z) {
-            for (int y = 0; y < dims_.ny; ++y) {
+        const RowRange r = rowsOf(k0, k1);
+        std::uint64_t idx = globalIndex(dims_, 0, r.y0, r.z0);  // pętle idą w kolejności pamięci
+        for (int z = r.z0; z < r.z1; ++z) {
+            for (int y = r.y0; y < r.y1; ++y) {
                 Pos p = cur_.pos(0, y, z);  // pozycja (x, y, z) w obu buforach
                 for (int x = 0; x < dims_.nx; ++x, ++idx, p = Storage::nextX(p)) {
                     const CellType type = cur_.type(p);
                     if (type == CellType::Air) {
-                        gatherLavaCandidates(x, y, z, p, prefix, idx, vote);
+                        gatherLavaCandidates(x, y, z, p, ctx.prefix, idx, vote);
                         if (!vote.empty()) {
-                            const int w = vote.winner(p_.seed, t, idx);
+                            const int w = vote.winner(p_.seed, ctx.t, idx);
                             const float temp = vote.maxTemp(w);
                             if (temp >= p_.solidusTemp) {
-                                next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), temp, 0, stamp});
+                                next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), temp, 0, ctx.stamp});
                                 ++lava;
                                 ++changed;
                                 continue;
@@ -735,14 +1012,14 @@ private:
                     } else if (type == CellType::Lava) {
                         CellState c = cur_.cell(p);
                         const float before = c.temp;
-                        if (erupting && isVent(c.flowId, x, y, z)) {
+                        if (ctx.erupting && isVent(c.flowId, x, y, z)) {
                             c.temp = p_.eruptTemp;  // krater zasilany z komina
                         } else {
                             c.temp -= p_.coolingAmbient;
                         }
                         if (c.temp < p_.solidusTemp) {
                             c.type = CellType::Basalt;
-                            c.solidStep = stamp;
+                            c.solidStep = ctx.stamp;
                             ++changed;
                         } else {
                             ++lava;
@@ -755,36 +1032,34 @@ private:
                 }
             }
         }
-        return StepCounts{lava, air, changed};
+        counts.active += lava;
+        counts.air += air;
+        counts.changed += changed;
     }
 
-    // Reguły rozrostu klasycznego dla wszystkich komórek: czyta cur_, pisze next_.
-    VOLCANO_NOINLINE StepCounts updateClassic() {
-        const std::uint64_t t = static_cast<std::uint64_t>(steps_);
-        const std::uint16_t stamp = static_cast<std::uint16_t>(std::min(steps_, 65535));
+    // Reguły rozrostu klasycznego dla komórek warstw [k0, k1): czyta cur_, pisze next_.
+    VOLCANO_NOINLINE void updateClassic(const StepCtx ctx, int k0, int k1, CandidateVote& vote, StepCounts& counts) {
         std::uint64_t grains = 0;
         std::uint64_t air = 0;
         std::uint64_t changed = 0;
-        std::uint64_t idx = 0;
-        const std::uint64_t prefix = hashPrefix(p_.seed, t);
-        CandidateVote vote;
-
-        for (int z = 0; z < dims_.nz; ++z) {
-            for (int y = 0; y < dims_.ny; ++y) {
+        const RowRange r = rowsOf(k0, k1);
+        std::uint64_t idx = globalIndex(dims_, 0, r.y0, r.z0);
+        for (int z = r.z0; z < r.z1; ++z) {
+            for (int y = r.y0; y < r.y1; ++y) {
                 Pos p = cur_.pos(0, y, z);
                 for (int x = 0; x < dims_.nx; ++x, ++idx, p = Storage::nextX(p)) {
                     const CellType type = cur_.type(p);
                     if (type == CellType::Air) {
                         vote.clear();
-                        for (const NbStep& s : stepsFor(prefix, idx)) {
+                        for (const NbStep& s : stepsFor(ctx.prefix, idx)) {
                             const Pos n = Storage::shifted(p, s.o, s.lin);
                             if (cur_.type(n) == CellType::Lava) {
                                 vote.add(cur_.flowId(n), 0.0f);
                             }
                         }
                         if (!vote.empty()) {
-                            const int w = vote.winner(p_.seed, t, idx);
-                            next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, stamp});
+                            const int w = vote.winner(p_.seed, ctx.t, idx);
+                            next_.setCell(p, CellState{CellType::Lava, vote.flowId(w), 0.0f, 0, ctx.stamp});
                             ++grains;
                             ++changed;
                             continue;
@@ -797,7 +1072,9 @@ private:
                 }
             }
         }
-        return StepCounts{grains, air, changed};
+        counts.active += grains;
+        counts.air += air;
+        counts.changed += changed;
     }
 
     // Zamiana buforów (pełny przebieg; automat frontalny pisze od razu do cur_), zapis historii i warunek końca.
@@ -821,18 +1098,38 @@ private:
         }
     }
 
-    // Warunek końca przed pierwszym krokiem (np. classic bez wolnych komórek, maxSteps = 0).
-    void countInitialState() {
+    // Komórki LAVA i AIR warstw [k0, k1) (stan początkowy), dodawane do lavaOut, airOut (liczniki lokalne — jak
+    // scanLayer).
+    void countLayers(int k0, int k1, std::uint64_t& lavaOut, std::uint64_t& airOut) const {
+        const RowRange r = rowsOf(k0, k1);
         std::uint64_t lava = 0;
         std::uint64_t air = 0;
-        for (int z = 0; z < dims_.nz; ++z) {
-            for (int y = 0; y < dims_.ny; ++y) {
+        for (int z = r.z0; z < r.z1; ++z) {
+            for (int y = r.y0; y < r.y1; ++y) {
                 for (int x = 0; x < dims_.nx; ++x) {
                     const CellType t = cur_.type(x, y, z);
                     lava += (t == CellType::Lava) ? 1 : 0;
                     air += (t == CellType::Air) ? 1 : 0;
                 }
             }
+        }
+        lavaOut += lava;
+        airOut += air;
+    }
+
+    // Warunek końca przed pierwszym krokiem (np. classic bez wolnych komórek, maxSteps = 0).
+    void countInitialState() {
+        std::uint64_t lava = 0;
+        std::uint64_t air = 0;
+        if (par_.parallel()) {
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(par_.threads) reduction(+ : lava, air)
+#endif
+            ompFor(layerCount(), Schedule::Static, 0, [&](std::ptrdiff_t k) {
+                countLayers(static_cast<int>(k), static_cast<int>(k) + 1, lava, air);
+            });
+        } else {
+            countLayers(0, layerCount(), lava, air);
         }
         stop_ = StopReason::Running;
         if (p_.mode == CaMode::Lava && lava == 0) {
@@ -866,6 +1163,7 @@ private:
     std::vector<std::uint64_t> changedHistory_;
     bool phaseTiming_ = false;         // --timing-detail: mierzyć czasy faz kroku
     CaPhaseTimes phases_;
+    ParallelSettings par_;             // wątki, harmonogram, statystyki wątków (etap 9)
     // --- automat frontalny ---
     bool front_ = true;                // ca.sweep = front
     bool frontReady_ = false;          // listy zbudowane (pierwszy krok)
@@ -876,7 +1174,6 @@ private:
     std::vector<FrontLayer> layers_;   // listy frontu każdej warstwy
     std::uint64_t lavaTotal_ = 0;      // komórki LAVA (classic: ziarna) przed krokiem
     std::uint64_t airTotal_ = 0;       // komórki AIR przed krokiem
-    std::uint64_t born_ = 0;           // nowe komórki lawy / ziarna w bieżącym kroku
 };
 
 }  // namespace volcano

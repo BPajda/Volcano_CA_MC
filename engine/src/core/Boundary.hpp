@@ -11,6 +11,8 @@
 // u góry mapy, co przeczy grawitacji. W trybie classic (bez grawitacji) zawijamy
 // wszystkie osie, tak jak w klasycznym (referencyjnym) rozroście ziaren.
 
+#include <cstddef>
+
 #include "core/Profile.hpp"
 #include "core/Types.hpp"
 
@@ -31,6 +33,13 @@ public:
     template <class Storage>
     void apply(Storage& s) const;
 
+    // To samo wypełnienie z pętlą podaną przez wywołującego (etap 9): loop(n, body) ma wykonać body(i) dla i = 0..n-1
+    // i wrócić, gdy wszystkie iteracje są zrobione — w regionie równoległym ompFor + bariera (pętla po ścianach jednej
+    // osi dzielona między wątki). Iteracje jednej osi piszą różne komórki ramki, a kolejne osie czekają na poprzednie
+    // (ramka osi y i z obejmuje ramkę poprzednich osi), więc wynik jest ten sam co z apply().
+    template <class Storage, class Loop>
+    void applyWith(Storage& s, Loop&& loop) const;
+
     // Odświeża kopie komórki (x, y, z) wnętrza w ramce periodycznej po zmianie tej komórki — to samo, co dałoby
     // ponowne apply(), ale O(1): automat frontalny (etap 8) wypełnia ramkę raz, potem tylko zmienione komórki
     // przy ścianach periodycznych. Ramka absorbująca (VOID) się nie zmienia.
@@ -46,6 +55,15 @@ private:
 
 template <class Storage>
 VOLCANO_NOINLINE void Boundary::apply(Storage& s) const {
+    applyWith(s, [](std::ptrdiff_t n, const auto& body) {
+        for (std::ptrdiff_t i = 0; i < n; ++i) {
+            body(i);
+        }
+    });
+}
+
+template <class Storage, class Loop>
+void Boundary::applyWith(Storage& s, Loop&& loop) const {
     const int nx = s.nx();
     const int ny = s.ny();
     const int nz = s.nz();
@@ -55,41 +73,50 @@ VOLCANO_NOINLINE void Boundary::apply(Storage& s) const {
     const int fz = s.dims().frameZ();
     const CellState voidCell{CellType::Void, 0, 0.0f, 0, 0};
 
-    // Ściany x = -1 i x = nx (tylko wnętrze w y i z).
-    for (int z = 0; z < nz && fx; ++z) {
-        for (int y = 0; y < ny; ++y) {
-            if (periodic_[0]) {
-                s.setCell(-1, y, z, s.cell(nx - 1, y, z));
-                s.setCell(nx, y, z, s.cell(0, y, z));
-            } else {
-                s.setCell(-1, y, z, voidCell);
-                s.setCell(nx, y, z, voidCell);
+    // Ściany x = -1 i x = nx (tylko wnętrze w y i z) — iteracja = warstwa z.
+    if (fx) {
+        loop(nz, [&](std::ptrdiff_t zi) {
+            const int z = static_cast<int>(zi);
+            for (int y = 0; y < ny; ++y) {
+                if (periodic_[0]) {
+                    s.setCell(-1, y, z, s.cell(nx - 1, y, z));
+                    s.setCell(nx, y, z, s.cell(0, y, z));
+                } else {
+                    s.setCell(-1, y, z, voidCell);
+                    s.setCell(nx, y, z, voidCell);
+                }
             }
-        }
+        });
     }
-    // Ściany y = -1 i y = ny (x obejmuje już ramkę x).
-    for (int z = 0; z < nz && fy; ++z) {
-        for (int x = -fx; x < nx + fx; ++x) {
-            if (periodic_[1]) {
-                s.setCell(x, -1, z, s.cell(x, ny - 1, z));
-                s.setCell(x, ny, z, s.cell(x, 0, z));
-            } else {
-                s.setCell(x, -1, z, voidCell);
-                s.setCell(x, ny, z, voidCell);
+    // Ściany y = -1 i y = ny (x obejmuje już ramkę x) — iteracja = warstwa z.
+    if (fy) {
+        loop(nz, [&](std::ptrdiff_t zi) {
+            const int z = static_cast<int>(zi);
+            for (int x = -fx; x < nx + fx; ++x) {
+                if (periodic_[1]) {
+                    s.setCell(x, -1, z, s.cell(x, ny - 1, z));
+                    s.setCell(x, ny, z, s.cell(x, 0, z));
+                } else {
+                    s.setCell(x, -1, z, voidCell);
+                    s.setCell(x, ny, z, voidCell);
+                }
             }
-        }
+        });
     }
-    // Ściany z = -1 i z = nz (x i y obejmują ramkę).
-    for (int y = -fy; y < ny + fy && fz; ++y) {
-        for (int x = -fx; x < nx + fx; ++x) {
-            if (periodic_[2]) {
-                s.setCell(x, y, -1, s.cell(x, y, nz - 1));
-                s.setCell(x, y, nz, s.cell(x, y, 0));
-            } else {
-                s.setCell(x, y, -1, voidCell);
-                s.setCell(x, y, nz, voidCell);
+    // Ściany z = -1 i z = nz (x i y obejmują ramkę) — iteracja = wiersz y (od -fy).
+    if (fz) {
+        loop(ny + 2 * fy, [&](std::ptrdiff_t yi) {
+            const int y = static_cast<int>(yi) - fy;
+            for (int x = -fx; x < nx + fx; ++x) {
+                if (periodic_[2]) {
+                    s.setCell(x, y, -1, s.cell(x, y, nz - 1));
+                    s.setCell(x, y, nz, s.cell(x, y, 0));
+                } else {
+                    s.setCell(x, y, -1, voidCell);
+                    s.setCell(x, y, nz, voidCell);
+                }
             }
-        }
+        });
     }
 }
 

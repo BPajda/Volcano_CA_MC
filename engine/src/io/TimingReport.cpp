@@ -75,6 +75,13 @@ void TimingReport::addDetail(const std::string& name, double ms) {
     details_.emplace_back(name, ms);
 }
 
+void TimingReport::addThreadStats(const std::string& stage, nlohmann::ordered_json stats) {
+    if (!info_.contains("threadStats")) {
+        info_["threadStats"] = nlohmann::ordered_json::object();
+    }
+    info_["threadStats"][stage] = std::move(stats);
+}
+
 void TimingReport::addFile(const std::string& path, double ms) {
     for (FileRecord& f : files_) {
         if (f.path == path) {

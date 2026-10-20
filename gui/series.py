@@ -548,6 +548,29 @@ TEMPLATES: list[dict] = [
         ],
         "chart": {"x": "seeds", "y": "caSim", "series": "", "panel": "", "logX": False, "logY": False},
     },
+    {
+        "id": "openmp_threads", "name": "OpenMP: liczba wątków",
+        "description": "Etap 9: ten sam przypadek przy 1, 2, 4, 6 i 8 wątkach (rdzenie P, przypinanie pcores) — "
+                       "lawa test_3d w pełnym przebiegu (ca.sweep = full, harmonogram guided) i MC szachownica "
+                       "500² (100 MCS) — 10 zadań. Wynik każdego zadania jest ten sam dla każdej liczby wątków; czas "
+                       "maleje. Do pomiarów: 1 worker (zadania nie mogą liczyć się równocześnie). Dokładny pomiar "
+                       "przyspieszenia: bench/scaling.py (wysoki priorytet, powtórzenia).",
+        "basePreset": "test_3d", "measure": True,
+        "basePatch": {"ca": {"sweep": "full"}, "output": {"format": "bin"},
+                      "mc": {"Q": 50, "mcs": 100, "kT": 0.0, "update": "checkerboard", "mobilityFromCooling": False,
+                             "statsEvery": 50},
+                      "parallel": {"schedule": "guided", "chunk": 0, "affinity": "pcores"}},
+        "axes": [
+            {"name": "algorytm", "keys": ["mc.enabled", "mc.domain", "space.nx", "space.ny", "space.nz",
+                                          "boundary", "neighborhood"],
+             "points": [{"label": "CA_lawa_full", "values": [False, "basalt", 64, 64, 48, "absorbing", "moore"]},
+                        {"label": "MC_szachownica", "values": [True, "full", 500, 500, 1, "periodic", "von_neumann"]}]},
+            {"name": "wątki", "keys": ["parallel.threads"],
+             "points": [{"label": label, "values": [t]} for label, t in
+                        (("1_watek", 1), ("2_watki", 2), ("4_watki", 4), ("6_watkow", 6), ("8_watkow", 8))]},
+        ],
+        "chart": {"x": "threads", "y": "simMs", "series": "axis:algorytm", "panel": "", "logX": False, "logY": True},
+    },
 ]
 
 

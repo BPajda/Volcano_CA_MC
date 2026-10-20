@@ -1,0 +1,31 @@
+name,mode,case,group,variant,threads,schedule,chunk,rep,timestamp,readConfig,allocate,terrain,vents,caSim,caStats,save,mcInit,mcSim,mcStats,mcSave,total,procWall,threadsUsed,cpus,identical
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p1,1,dynamic,0,0,2026-10-20T05:06:24,0.637,,,,,,,74.092,5758.501,1072.031,3.88,6913.863,6933.381,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p2,2,dynamic,0,0,2026-10-20T05:06:28,0.619,,,,,,,74.846,2898.07,973.933,4.284,3956.431,3977.717,2,2 4,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p4,4,dynamic,0,0,2026-10-20T05:06:30,0.616,,,,,,,73.582,1562.914,925.173,5.841,2576.257,2596.29,4,2 4 6 8,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p6,6,dynamic,0,0,2026-10-20T05:06:32,0.592,,,,,,,74.723,1038.333,911.742,4.906,2036.287,2057.505,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p8,8,dynamic,0,0,2026-10-20T05:06:34,0.646,,,,,,,76.377,928.858,923.161,5.706,1940.638,1960.788,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz3,scaling,mc_random_3d_100,mc,p1,1,static,0,0,2026-10-20T05:06:55,10.454,,,,,,,36.569,19092.582,1072.568,12.826,20229.35,20245.494,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p8,8,dynamic,0,1,2026-10-20T05:06:57,0.622,,,,,,,75.706,916.291,912.258,5.084,1918.346,1945.756,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p6,6,dynamic,0,1,2026-10-20T05:06:59,0.597,,,,,,,76.857,1069.752,916.242,5.143,2073.399,2092.905,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p4,4,dynamic,0,1,2026-10-20T05:07:01,0.594,,,,,,,74.053,1495.035,921.82,4.973,2502.16,2522.245,4,2 4 6 8,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p2,2,dynamic,0,1,2026-10-20T05:07:05,0.607,,,,,,,74.833,3170.18,973.455,5.174,4230.565,4250.386,2,2 4,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p1,1,dynamic,0,1,2026-10-20T05:07:12,0.587,,,,,,,73.139,5742.207,1074.215,4.989,6899.268,6916.702,1,2,True
+skalowanie_msvc_cz3,scaling,mc_random_3d_100,mc,p1,1,static,0,1,2026-10-20T05:07:32,0.613,,,,,,,35.977,18859.719,1075.458,5.554,19981.755,20007.665,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p1,1,dynamic,0,2,2026-10-20T05:07:39,0.618,,,,,,,74.048,5743.446,1072.553,5.188,6900.298,6923.056,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p2,2,dynamic,0,2,2026-10-20T05:07:44,0.62,,,,,,,73.744,3154.978,997.67,5.574,4237.32,4257.018,2,2 4,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p4,4,dynamic,0,2,2026-10-20T05:07:46,0.603,,,,,,,76.354,1581.715,929.947,5.04,2598.433,2619.761,4,2 4 6 8,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p6,6,dynamic,0,2,2026-10-20T05:07:48,0.686,,,,,,,74.417,1039.193,920.052,5.148,2044.651,2064.806,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p8,8,dynamic,0,2,2026-10-20T05:07:50,0.608,,,,,,,73.866,952.403,919.111,5.29,1957.345,1986.94,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz3,scaling,mc_random_3d_100,mc,p1,1,static,0,2,2026-10-20T05:08:11,0.595,,,,,,,35.231,19576.047,1072.41,4.955,20693.438,20713.701,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p8,8,dynamic,0,3,2026-10-20T05:08:13,0.614,,,,,,,73.99,1039.173,931.245,5.175,2055.394,2075.852,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p6,6,dynamic,0,3,2026-10-20T05:08:15,0.598,,,,,,,73.852,1047.148,914.509,4.413,2045.614,2074.177,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p4,4,dynamic,0,3,2026-10-20T05:08:18,0.605,,,,,,,74.017,1498.398,928.111,5.074,2511.02,2529.973,4,2 4 6 8,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p2,2,dynamic,0,3,2026-10-20T05:08:22,0.642,,,,,,,73.6,2899.87,962.294,5.281,3946.264,3965.042,2,2 4,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p1,1,dynamic,0,3,2026-10-20T05:08:29,0.608,,,,,,,74.741,5746.915,1076.302,4.455,6907.246,6924.615,1,2,True
+skalowanie_msvc_cz3,scaling,mc_random_3d_100,mc,p1,1,static,0,3,2026-10-20T05:08:49,0.626,,,,,,,35.888,18844.96,1077.754,5.273,19968.797,19989.895,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p1,1,dynamic,0,4,2026-10-20T05:08:56,0.615,,,,,,,73.976,5741.599,1074.965,6.986,6902.474,6923.33,1,2,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p2,2,dynamic,0,4,2026-10-20T05:09:00,0.605,,,,,,,73.6,3093.229,981.799,5.154,4158.856,4175.408,2,2 4,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p4,4,dynamic,0,4,2026-10-20T05:09:02,0.627,,,,,,,75.194,1517.229,923.792,4.289,2525.945,2545.571,4,2 4 6 8,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p6,6,dynamic,0,4,2026-10-20T05:09:04,0.616,,,,,,,74.799,1036.631,912.839,13.949,2043.872,2072.062,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz3,scaling,mc_cb_3d_100,mc,p8,8,dynamic,0,4,2026-10-20T05:09:06,0.602,,,,,,,74.989,947.523,910.757,5.051,1944.426,1963.339,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz3,scaling,mc_random_3d_100,mc,p1,1,static,0,4,2026-10-20T05:09:26,0.615,,,,,,,36.391,18798.197,1074.749,7.116,19921.326,19941.117,1,2,True

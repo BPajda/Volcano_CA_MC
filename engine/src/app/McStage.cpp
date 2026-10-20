@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <sstream>
 
 #include "core/Boundary.hpp"
@@ -13,6 +14,7 @@
 #include "mc/CoolingMobility.hpp"
 #include "mc/Grains.hpp"
 #include "mc/PottsMC.hpp"
+#include "parallel/ThreadStats.hpp"
 
 namespace volcano {
 
@@ -108,6 +110,10 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
     p.J = cfg.mc.J;
     p.kT = cfg.mc.kT;
     PottsMC mc(dims, p, nb, bc);
+    // Etap 9: szachownica (mc.update = checkerboard) i wątki (szachownica, energia, mapa kryształów).
+    mc.setCheckerboard(cfg.mc.checkerboard);
+    ParallelSettings par = cfg.parallelSettings();
+    mc.setParallel(par);
     // Model pamięci (etap 3): tablice MC rejestrowane przy alokacji, zwalniane przy końcu etapu.
     MemoryModel& mem = timing.memory();
     mem.allocate("mcGrid", mc.bytes());
@@ -146,6 +152,18 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
     s.domainCells = mc.domainCells();
     if (s.domainCells == 0) {
         s.warnings.push_back(full ? "domena MC jest pusta" : "domena MC jest pusta — wynik CA nie zawiera bazaltu");
+    }
+    // --thread-stats: czas pracy wątków w każdym kolorze szachownicy (tylko szachownica w wielu wątkach — tryb random
+    // nie ma regionów równoległych w pętli MC).
+    std::unique_ptr<ThreadStats> threadStats;
+    if (timing.threadStatsEnabled() && par.parallel() && mc.checkerboard()) {
+        std::vector<std::string> phases;
+        for (int c = 0; c < mc.colorCount(); ++c) {
+            phases.push_back("c" + std::to_string(c));
+        }
+        threadStats = std::make_unique<ThreadStats>(par.threads, phases);
+        par.stats = threadStats.get();
+        mc.setParallel(par);
     }
     timing.add("mcInit", t.elapsedMs());
 
@@ -234,6 +252,9 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
         mem.allocate("mcLabelsEnd", endLabels.bytes());
     }
     timing.add("mcSim", simMs);
+    if (threadStats) {
+        timing.addThreadStats("mc", threadStats->toJson());
+    }
     if (snapEvery > 0) {
         timing.add("mcSnapshots", snapMs);
         timing.addFile(snapDir.string(), snapMs);
@@ -260,6 +281,10 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
     j["mcs"] = cfg.mc.mcs;
     j["J"] = cfg.mc.J;
     j["kT"] = cfg.mc.kT;
+    j["update"] = mcUpdateName(cfg.mc.checkerboard);  // etap 9: random albo checkerboard
+    if (mc.checkerboard()) {
+        j["colors"] = mc.colorCount();
+    }
     j["neighborhood"] = Neighborhood::name(cfg.neighborhood);
     j["boundary"] = Boundary::name(cfg.boundary);
     j["grainConnectivity"] = mc.mooreConnectivity() ? "moore" : "von_neumann";
@@ -340,7 +365,11 @@ std::string McStage::describe(const McSummary& s) {
     std::ostringstream os;
     os << "Monte Carlo    domena " << nameOf(s.domain) << ": " << s.domainCells << " komórek, Q " << s.Q << ", "
        << s.mcs << " MCS, J " << j["J"].get<double>() << ", kT " << j["kT"].get<double>() << ", mobilność "
-       << (s.mobilityUsed ? "ze stygnięcia" : "wyłączona") << '\n';
+       << (s.mobilityUsed ? "ze stygnięcia" : "wyłączona");
+    if (j.contains("colors")) {
+        os << ", szachownica (kolorów: " << j["colors"].get<int>() << ")";
+    }
+    os << '\n';
     os << "Ziarna (MC)    " << j["grainsStart"].get<std::uint64_t>() << " -> " << j["grainsEnd"].get<std::uint64_t>()
        << ", średnia wielkość " << fixed(j["meanGrainSizeStart"].get<double>(), 2) << " -> "
        << fixed(j["meanGrainSizeEnd"].get<double>(), 2) << " komórek, energia " << fixed(j["energyStart"].get<double>(), 0)

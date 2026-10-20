@@ -22,10 +22,10 @@ import { $, $$, downloadBlob, esc, notice } from './util.js';
 const Y_KEYS = ['simMs', 'caSim', 'mcSim', 'total', 'save', 'mcSave', 'nsPerUnit', 'nsPerCellStep', 'nsPerTrial', 'steps',
   'mcs', 'peakRssMiB', 'modelMiB', 'bytesPerCell', 'outputMiB', 'totalLavaVolume', 'maxReach', 'grains', 'mcGrainsEnd',
   'mcMeanGrainSizeEnd'];
-const X_KEYS = ['cells', 'nx', 'seeds', 'steps', 'mcs', 'domainCells', 'neighborhood', 'algorithm', 'dim', 'mode'];
+const X_KEYS = ['cells', 'nx', 'seeds', 'steps', 'mcs', 'domainCells', 'threads', 'neighborhood', 'algorithm', 'dim', 'mode', 'schedule'];
 const GROUP_KEYS = ['algorithm', 'dim', 'neighborhood', 'mode', 'boundary'];
 const COL_SETS = {
-  times: ['status', 'algorithm', 'dim', 'cells', 'steps', 'mcs', 'caSim', 'mcSim', 'simMs', 'nsPerUnit', 'total'],
+  times: ['status', 'algorithm', 'dim', 'cells', 'threads', 'steps', 'mcs', 'caSim', 'mcSim', 'simMs', 'nsPerUnit', 'total'],
   resources: ['status', 'algorithm', 'cells', 'peakRssMiB', 'modelMiB', 'bytesPerCell', 'outputMiB', 'save', 'mcSave', 'total'],
   stats: ['status', 'mode', 'neighborhood', 'seeds', 'steps', 'mcs', 'grains', 'totalLavaVolume', 'maxReach', 'mcGrainsEnd',
     'mcMeanGrainSizeEnd'],

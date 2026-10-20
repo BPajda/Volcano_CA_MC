@@ -280,10 +280,32 @@ private:
 // ---------------------------------------------------------------------------
 
 // Kopiuje wnętrze siatki do płaskiej mikrostruktury (do zapisu, statystyk, porównań).
+// threads > 1 (etap 9): wiersze siatki (y, z) dzielone między wątki — każdy wiersz pisze własny fragment tablic.
 template <class Storage>
-VOLCANO_NOINLINE Microstructure toMicrostructure(const Storage& s) {
+VOLCANO_NOINLINE Microstructure toMicrostructure(const Storage& s, int threads = 1) {
     Microstructure m;
     m.resize(s.dims());
+    if (threads > 1) {
+        const int nx = s.nx();
+        const int ny = s.ny();
+        const std::ptrdiff_t rows = static_cast<std::ptrdiff_t>(ny) * s.nz();
+#ifdef _OPENMP
+#  pragma omp parallel for schedule(static) num_threads(threads)
+#endif
+        for (std::ptrdiff_t r = 0; r < rows; ++r) {
+            const int y = static_cast<int>(r % ny);
+            const int z = static_cast<int>(r / ny);
+            std::size_t i = static_cast<std::size_t>(r) * static_cast<std::size_t>(nx);
+            for (int x = 0; x < nx; ++x, ++i) {
+                m.type[i] = s.type(x, y, z);
+                m.flowId[i] = s.flowId(x, y, z);
+                m.temp[i] = s.temp(x, y, z);
+                m.solidStep[i] = s.solidStep(x, y, z);
+                m.arrivalStep[i] = s.arrivalStep(x, y, z);
+            }
+        }
+        return m;
+    }
     std::size_t i = 0;
     for (int z = 0; z < s.nz(); ++z) {
         for (int y = 0; y < s.ny(); ++y) {

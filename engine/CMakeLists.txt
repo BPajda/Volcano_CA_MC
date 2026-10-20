@@ -9,6 +9,31 @@
 #   czasy z takiego buildu nie są miarodajne.
 set(VOLCANO_OPT_FLAG "" CACHE STRING "Poziom optymalizacji Release (puste = /O2 lub -O3)")
 option(VOLCANO_PROFILE_NOINLINE "Kluczowe funkcje bez inline (tylko do profilowania)" OFF)
+
+# ---- OpenMP (etap 9) ----
+# VOLCANO_OPENMP — wątki OpenMP w CA i MC (parallel.threads w configu). OFF albo kompilator bez OpenMP: ten sam kod
+#   w jednym wątku (zastępcze omp_* w src/parallel/Omp.hpp, dyrektywy w #ifdef _OPENMP).
+# VOLCANO_MSVC_OPENMP_LLVM — MSVC: /openmp:llvm (OpenMP 3.1+, biblioteka libomp140) zamiast domyślnego /openmp
+#   (OpenMP 2.0, vcomp140 z pakietu redystrybucyjnego). Tylko do porównań: w Visual Studio 17.8 libomp140 jest
+#   w katalogu debug_nonredist, a w mikroteście (bench/micro/omp_overhead.cpp) narzut regionu był ~20× większy
+#   (docs/etap-9-openmp.md, punkt 1). Kod jest zgodny z OpenMP 2.0, więc buduje się w obu wariantach.
+option(VOLCANO_OPENMP "Wątki OpenMP (etap 9)" ON)
+option(VOLCANO_MSVC_OPENMP_LLVM "MSVC: /openmp:llvm zamiast /openmp (tylko porównanie)" OFF)
+set(VOLCANO_OMP_TARGET "")
+if(VOLCANO_OPENMP)
+    if(MSVC AND VOLCANO_MSVC_OPENMP_LLVM)
+        add_library(volcano_openmp INTERFACE)
+        target_compile_options(volcano_openmp INTERFACE /openmp:llvm)
+        set(VOLCANO_OMP_TARGET volcano_openmp)
+    else()
+        find_package(OpenMP COMPONENTS CXX)
+        if(OpenMP_CXX_FOUND)
+            set(VOLCANO_OMP_TARGET OpenMP::OpenMP_CXX)
+        else()
+            message(WARNING "VOLCANO_OPENMP=ON, ale kompilator nie ma OpenMP — build jednowątkowy")
+        endif()
+    endif()
+endif()
 if(VOLCANO_OPT_FLAG)
     set(VOLCANO_RELEASE_OPT ${VOLCANO_OPT_FLAG})
 elseif(MSVC)
@@ -58,11 +83,16 @@ add_library(volcano_engine STATIC
     src/app/Cli.cpp
     src/app/ConfigCheck.cpp
     src/app/Batch.cpp
+    src/parallel/Affinity.cpp
+    src/parallel/ThreadStats.cpp
 )
 target_include_directories(volcano_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # Nagłówki zewnętrzne jako SYSTEM — ich ostrzeżenia nie zaśmiecają wyniku /W4.
 target_include_directories(volcano_engine SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 target_link_libraries(volcano_engine PUBLIC volcano_options)
+if(VOLCANO_OMP_TARGET)
+    target_link_libraries(volcano_engine PUBLIC ${VOLCANO_OMP_TARGET})
+endif()
 if(WIN32)
     # advapi32: odczyt nazwy procesora z rejestru (TimingReport);
     # psapi: GetProcessMemoryInfo — szczytowa pamięć procesu (ProcessInfo).
@@ -78,6 +108,12 @@ add_executable(mc_kernels ${PROJECT_SOURCE_DIR}/bench/micro/mc_kernels.cpp)
 target_link_libraries(mc_kernels PRIVATE volcano_options)
 target_include_directories(mc_kernels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# ---- mikrotest narzutu OpenMP (etap 9): region, bariera, harmonogramy, trwałość wątków puli ----
+if(VOLCANO_OMP_TARGET)
+    add_executable(omp_overhead ${PROJECT_SOURCE_DIR}/bench/micro/omp_overhead.cpp)
+    target_link_libraries(omp_overhead PRIVATE volcano_engine)
+endif()
+
 # ---- testy jednostkowe (doctest) ----
 add_executable(engine_tests
     tests/test_main.cpp
@@ -90,6 +126,7 @@ add_executable(engine_tests
     tests/test_terrain.cpp
     tests/test_ca.cpp
     tests/test_front.cpp
+    tests/test_parallel.cpp
     tests/test_io.cpp
     tests/test_mc.cpp
     tests/test_profile.cpp

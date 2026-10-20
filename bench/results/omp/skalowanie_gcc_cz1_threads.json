@@ -1,0 +1,893 @@
+{
+ "lava_etna_real|p2": {
+  "threads": 2,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 63.198,
+  "stats": {
+   "ca": {
+    "threads": 2,
+    "steps": 284,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      3.834,
+      3.762
+     ],
+     "rules": [
+      35.033,
+      51.654
+     ],
+     "apply": [
+      1.638,
+      1.489
+     ]
+    },
+    "threadWorkMs": [
+     40.506,
+     56.904
+    ],
+    "stepMaxMs": 58.49,
+    "stepMeanMs": 48.705,
+    "stepMinMs": 38.92,
+    "imbalance": 1.201,
+    "phaseImbalance": {
+     "descent": 1.074,
+     "rules": 1.222,
+     "apply": 1.09
+    },
+    "wallMs": 59.661,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      2
+     ]
+    ]
+   }
+  }
+ },
+ "lava_etna_real|p4": {
+  "threads": 4,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 24.442,
+  "stats": {
+   "ca": {
+    "threads": 4,
+    "steps": 284,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      1.919,
+      1.834,
+      1.851,
+      1.91
+     ],
+     "rules": [
+      16.066,
+      16.378,
+      15.639,
+      16.472
+     ],
+     "apply": [
+      0.953,
+      0.913,
+      0.905,
+      0.985
+     ]
+    },
+    "threadWorkMs": [
+     18.939,
+     19.125,
+     18.395,
+     19.367
+    ],
+    "stepMaxMs": 20.975,
+    "stepMeanMs": 18.956,
+    "stepMinMs": 17.536,
+    "imbalance": 1.106,
+    "phaseImbalance": {
+     "descent": 1.214,
+     "rules": 1.104,
+     "apply": 1.235
+    },
+    "wallMs": 22.406,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ]
+    ]
+   }
+  }
+ },
+ "lava_etna_real|p6": {
+  "threads": 6,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 19.25,
+  "stats": {
+   "ca": {
+    "threads": 6,
+    "steps": 284,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      1.182,
+      1.105,
+      1.382,
+      1.394,
+      1.218,
+      1.201
+     ],
+     "rules": [
+      10.473,
+      10.64,
+      12.708,
+      12.685,
+      10.281,
+      10.317
+     ],
+     "apply": [
+      0.66,
+      0.641,
+      0.734,
+      0.734,
+      0.698,
+      0.674
+     ]
+    },
+    "threadWorkMs": [
+     12.314,
+     12.386,
+     14.824,
+     14.813,
+     12.197,
+     12.192
+    ],
+    "stepMaxMs": 15.996,
+    "stepMeanMs": 13.121,
+    "stepMinMs": 11.166,
+    "imbalance": 1.219,
+    "phaseImbalance": {
+     "descent": 1.263,
+     "rules": 1.233,
+     "apply": 1.288
+    },
+    "wallMs": 17.676,
+    "cpus": [
+     [
+      1
+     ],
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      0
+     ],
+     [
+      3
+     ]
+    ]
+   }
+  }
+ },
+ "lava_etna_real|p8": {
+  "threads": 8,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 27.757,
+  "stats": {
+   "ca": {
+    "threads": 8,
+    "steps": 284,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      0.97,
+      1.27,
+      1.031,
+      0.974,
+      0.952,
+      3.235,
+      0.847,
+      1.132
+     ],
+     "rules": [
+      7.49,
+      9.856,
+      8.942,
+      7.991,
+      7.916,
+      7.756,
+      6.818,
+      13.148
+     ],
+     "apply": [
+      0.583,
+      0.532,
+      0.531,
+      0.507,
+      0.496,
+      0.42,
+      0.469,
+      0.474
+     ]
+    },
+    "threadWorkMs": [
+     9.043,
+     11.658,
+     10.504,
+     9.472,
+     9.364,
+     11.411,
+     8.135,
+     14.754
+    ],
+    "stepMaxMs": 21.363,
+    "stepMeanMs": 10.543,
+    "stepMinMs": 7.707,
+    "imbalance": 2.026,
+    "phaseImbalance": {
+     "descent": 3.187,
+     "rules": 1.935,
+     "apply": 1.578
+    },
+    "wallMs": 26.37,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      5
+     ],
+     [
+      6
+     ],
+     [
+      7
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_front|p2": {
+  "threads": 2,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 347.341,
+  "stats": {
+   "ca": {
+    "threads": 2,
+    "steps": 260,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      37.875,
+      38.489
+     ],
+     "rules": [
+      289.76,
+      290.528
+     ],
+     "apply": [
+      9.492,
+      9.126
+     ]
+    },
+    "threadWorkMs": [
+     337.127,
+     338.143
+    ],
+    "stepMaxMs": 342.306,
+    "stepMeanMs": 337.635,
+    "stepMinMs": 332.964,
+    "imbalance": 1.014,
+    "phaseImbalance": {
+     "descent": 1.033,
+     "rules": 1.016,
+     "apply": 1.065
+    },
+    "wallMs": 345.227,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      2
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_front|p4": {
+  "threads": 4,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 191.26,
+  "stats": {
+   "ca": {
+    "threads": 4,
+    "steps": 260,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      18.539,
+      19.589,
+      19.503,
+      18.95
+     ],
+     "rules": [
+      141.165,
+      152.486,
+      143.646,
+      140.704
+     ],
+     "apply": [
+      4.319,
+      4.55,
+      4.288,
+      3.974
+     ]
+    },
+    "threadWorkMs": [
+     164.024,
+     176.625,
+     167.437,
+     163.628
+    ],
+    "stepMaxMs": 187.691,
+    "stepMeanMs": 167.929,
+    "stepMinMs": 156.897,
+    "imbalance": 1.118,
+    "phaseImbalance": {
+     "descent": 1.092,
+     "rules": 1.126,
+     "apply": 1.185
+    },
+    "wallMs": 189.927,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_front|p6": {
+  "threads": 6,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 159.239,
+  "stats": {
+   "ca": {
+    "threads": 6,
+    "steps": 260,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      12.159,
+      13.825,
+      17.049,
+      13.163,
+      12.42,
+      11.848
+     ],
+     "rules": [
+      87.1,
+      97.812,
+      99.217,
+      94.767,
+      116.419,
+      85.199
+     ],
+     "apply": [
+      3.014,
+      3.008,
+      2.967,
+      2.761,
+      2.646,
+      2.611
+     ]
+    },
+    "threadWorkMs": [
+     102.273,
+     114.645,
+     119.233,
+     110.692,
+     131.485,
+     99.658
+    ],
+    "stepMaxMs": 154.2,
+    "stepMeanMs": 112.998,
+    "stepMinMs": 96.027,
+    "imbalance": 1.365,
+    "phaseImbalance": {
+     "descent": 1.38,
+     "rules": 1.377,
+     "apply": 1.283
+    },
+    "wallMs": 158.085,
+    "cpus": [
+     [
+      1
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      0
+     ],
+     [
+      2
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_front|p8": {
+  "threads": 8,
+  "schedule": "static",
+  "chunk": 1,
+  "phaseMs": 130.773,
+  "stats": {
+   "ca": {
+    "threads": 8,
+    "steps": 260,
+    "phases": [
+     "descent",
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "descent": [
+      8.267,
+      10.007,
+      10.468,
+      10.788,
+      11.952,
+      9.398,
+      10.812,
+      8.507
+     ],
+     "rules": [
+      64.313,
+      70.682,
+      76.402,
+      77.847,
+      88.656,
+      69.249,
+      78.714,
+      60.346
+     ],
+     "apply": [
+      2.305,
+      2.392,
+      2.47,
+      2.339,
+      2.787,
+      2.222,
+      2.408,
+      1.975
+     ]
+    },
+    "threadWorkMs": [
+     74.886,
+     83.081,
+     89.34,
+     90.974,
+     103.395,
+     80.869,
+     91.935,
+     70.828
+    ],
+    "stepMaxMs": 116.267,
+    "stepMeanMs": 85.663,
+    "stepMinMs": 67.888,
+    "imbalance": 1.357,
+    "phaseImbalance": {
+     "descent": 1.356,
+     "rules": 1.368,
+     "apply": 1.45
+    },
+    "wallMs": 129.257,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      5
+     ],
+     [
+      6
+     ],
+     [
+      7
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_full|p2": {
+  "threads": 2,
+  "schedule": "guided",
+  "chunk": 0,
+  "phaseMs": 6168.238,
+  "stats": {
+   "ca": {
+    "threads": 2,
+    "steps": 260,
+    "phases": [
+     "frame",
+     "descent",
+     "rules"
+    ],
+    "workMs": {
+     "frame": [
+      68.568,
+      68.751
+     ],
+     "descent": [
+      274.081,
+      261.752
+     ],
+     "rules": [
+      5758.166,
+      5750.155
+     ]
+    },
+    "threadWorkMs": [
+     6100.815,
+     6080.658
+    ],
+    "stepMaxMs": 6149.824,
+    "stepMeanMs": 6090.737,
+    "stepMinMs": 6031.65,
+    "imbalance": 1.01,
+    "phaseImbalance": {
+     "frame": 1.002,
+     "descent": 1.106,
+     "rules": 1.008
+    },
+    "wallMs": 6167.916,
+    "cpus": [
+     [
+      0,
+      1
+     ],
+     [
+      2,
+      3
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_full|p4": {
+  "threads": 4,
+  "schedule": "guided",
+  "chunk": 0,
+  "phaseMs": 3234.478,
+  "stats": {
+   "ca": {
+    "threads": 4,
+    "steps": 260,
+    "phases": [
+     "frame",
+     "descent",
+     "rules"
+    ],
+    "workMs": {
+     "frame": [
+      39.863,
+      40.037,
+      39.959,
+      39.942
+     ],
+     "descent": [
+      135.111,
+      133.833,
+      133.373,
+      135.248
+     ],
+     "rules": [
+      2919.586,
+      2911.762,
+      2914.671,
+      2903.944
+     ]
+    },
+    "threadWorkMs": [
+     3094.56,
+     3085.632,
+     3088.003,
+     3079.134
+    ],
+    "stepMaxMs": 3210.562,
+    "stepMeanMs": 3086.832,
+    "stepMinMs": 2995.657,
+    "imbalance": 1.04,
+    "phaseImbalance": {
+     "frame": 1.006,
+     "descent": 1.116,
+     "rules": 1.043
+    },
+    "wallMs": 3233.953,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      6,
+      7
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_full|p6": {
+  "threads": 6,
+  "schedule": "guided",
+  "chunk": 0,
+  "phaseMs": 2278.818,
+  "stats": {
+   "ca": {
+    "threads": 6,
+    "steps": 260,
+    "phases": [
+     "frame",
+     "descent",
+     "rules"
+    ],
+    "workMs": {
+     "frame": [
+      29.754,
+      29.877,
+      29.728,
+      29.887,
+      29.81,
+      29.844
+     ],
+     "descent": [
+      90.519,
+      94.568,
+      98.214,
+      89.27,
+      93.928,
+      90.13
+     ],
+     "rules": [
+      1969.851,
+      1951.08,
+      1949.589,
+      1939.035,
+      1968.97,
+      1948.402
+     ]
+    },
+    "threadWorkMs": [
+     2090.124,
+     2075.526,
+     2077.531,
+     2058.192,
+     2092.708,
+     2068.375
+    ],
+    "stepMaxMs": 2253.131,
+    "stepMeanMs": 2077.076,
+    "stepMinMs": 1966.458,
+    "imbalance": 1.085,
+    "phaseImbalance": {
+     "frame": 1.008,
+     "descent": 1.313,
+     "rules": 1.084
+    },
+    "wallMs": 2278.563,
+    "cpus": [
+     [
+      1
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      0
+     ],
+     [
+      2
+     ]
+    ]
+   }
+  }
+ },
+ "lava_duza_3d_full|p8": {
+  "threads": 8,
+  "schedule": "guided",
+  "chunk": 0,
+  "phaseMs": 1892.934,
+  "stats": {
+   "ca": {
+    "threads": 8,
+    "steps": 260,
+    "phases": [
+     "frame",
+     "descent",
+     "rules"
+    ],
+    "workMs": {
+     "frame": [
+      35.588,
+      35.678,
+      35.643,
+      35.64,
+      35.545,
+      36.076,
+      35.557,
+      35.624
+     ],
+     "descent": [
+      79.846,
+      85.621,
+      74.185,
+      76.876,
+      69.775,
+      74.517,
+      72.036,
+      72.879
+     ],
+     "rules": [
+      1510.48,
+      1532.244,
+      1498.739,
+      1533.523,
+      1513.203,
+      1528.092,
+      1524.61,
+      1504.954
+     ]
+    },
+    "threadWorkMs": [
+     1625.914,
+     1653.543,
+     1608.567,
+     1646.039,
+     1618.522,
+     1638.685,
+     1632.202,
+     1613.456
+    ],
+    "stepMaxMs": 1860.176,
+    "stepMeanMs": 1629.616,
+    "stepMinMs": 1497.348,
+    "imbalance": 1.141,
+    "phaseImbalance": {
+     "frame": 1.02,
+     "descent": 1.673,
+     "rules": 1.13
+    },
+    "wallMs": 1892.633,
+    "cpus": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      5
+     ],
+     [
+      6
+     ],
+     [
+      7
+     ]
+    ]
+   }
+  }
+ }
+}

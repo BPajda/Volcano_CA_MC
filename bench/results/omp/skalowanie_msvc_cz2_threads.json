@@ -1,0 +1,782 @@
+{
+ "classic_2000x2000_s400_vn|p2": {
+  "threads": 2,
+  "schedule": "static",
+  "chunk": 0,
+  "phaseMs": 282.111,
+  "stats": {
+   "ca": {
+    "threads": 2,
+    "steps": 199,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      164.033,
+      162.618
+     ],
+     "apply": [
+      110.754,
+      107.748
+     ]
+    },
+    "threadWorkMs": [
+     274.787,
+     270.367
+    ],
+    "stepMaxMs": 276.915,
+    "stepMeanMs": 272.577,
+    "stepMinMs": 268.239,
+    "imbalance": 1.016,
+    "phaseImbalance": {
+     "rules": 1.018,
+     "apply": 1.019
+    },
+    "wallMs": 278.962,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ]
+    ]
+   }
+  }
+ },
+ "classic_2000x2000_s400_vn|p4": {
+  "threads": 4,
+  "schedule": "static",
+  "chunk": 0,
+  "phaseMs": 134.872,
+  "stats": {
+   "ca": {
+    "threads": 4,
+    "steps": 199,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      73.441,
+      72.044,
+      72.203,
+      70.769
+     ],
+     "apply": [
+      47.99,
+      46.824,
+      45.145,
+      47.564
+     ]
+    },
+    "threadWorkMs": [
+     121.431,
+     118.868,
+     117.348,
+     118.333
+    ],
+    "stepMaxMs": 131.111,
+    "stepMeanMs": 118.995,
+    "stepMinMs": 105.577,
+    "imbalance": 1.102,
+    "phaseImbalance": {
+     "rules": 1.108,
+     "apply": 1.109
+    },
+    "wallMs": 133.067,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ]
+    ]
+   }
+  }
+ },
+ "classic_2000x2000_s400_vn|p6": {
+  "threads": 6,
+  "schedule": "static",
+  "chunk": 0,
+  "phaseMs": 93.11,
+  "stats": {
+   "ca": {
+    "threads": 6,
+    "steps": 199,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      46.846,
+      45.56,
+      45.367,
+      46.442,
+      45.023,
+      45.08
+     ],
+     "apply": [
+      31.698,
+      29.596,
+      29.582,
+      28.976,
+      29.801,
+      30.102
+     ]
+    },
+    "threadWorkMs": [
+     78.544,
+     75.156,
+     74.949,
+     75.417,
+     74.824,
+     75.182
+    ],
+    "stepMaxMs": 88.81,
+    "stepMeanMs": 75.679,
+    "stepMinMs": 62.158,
+    "imbalance": 1.174,
+    "phaseImbalance": {
+     "rules": 1.182,
+     "apply": 1.18
+    },
+    "wallMs": 91.867,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ],
+     [
+      10
+     ],
+     [
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "classic_2000x2000_s400_vn|p8": {
+  "threads": 8,
+  "schedule": "static",
+  "chunk": 0,
+  "phaseMs": 93.512,
+  "stats": {
+   "ca": {
+    "threads": 8,
+    "steps": 199,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      33.87,
+      33.358,
+      33.662,
+      33.71,
+      34.121,
+      33.249,
+      33.199,
+      50.042
+     ],
+     "apply": [
+      19.805,
+      18.581,
+      19.357,
+      18.161,
+      19.56,
+      18.732,
+      19.134,
+      23.633
+     ]
+    },
+    "threadWorkMs": [
+     53.675,
+     51.939,
+     53.019,
+     51.871,
+     53.682,
+     51.981,
+     52.334,
+     73.675
+    ],
+    "stepMaxMs": 85.584,
+    "stepMeanMs": 55.272,
+    "stepMinMs": 41.179,
+    "imbalance": 1.548,
+    "phaseImbalance": {
+     "rules": 1.634,
+     "apply": 1.435
+    },
+    "wallMs": 92.429,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ],
+     [
+      10
+     ],
+     [
+      12
+     ],
+     [
+      14
+     ],
+     [
+      0
+     ]
+    ]
+   }
+  }
+ },
+ "classic_300x300x300_s100_vn|p2": {
+  "threads": 2,
+  "schedule": "dynamic",
+  "chunk": 4,
+  "phaseMs": 1853.145,
+  "stats": {
+   "ca": {
+    "threads": 2,
+    "steps": 114,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      1241.39,
+      1234.781
+     ],
+     "apply": [
+      571.653,
+      573.741
+     ]
+    },
+    "threadWorkMs": [
+     1813.043,
+     1808.522
+    ],
+    "stepMaxMs": 1820.885,
+    "stepMeanMs": 1810.783,
+    "stepMinMs": 1800.68,
+    "imbalance": 1.006,
+    "phaseImbalance": {
+     "rules": 1.007,
+     "apply": 1.011
+    },
+    "wallMs": 1826.598,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ]
+    ]
+   }
+  }
+ },
+ "classic_300x300x300_s100_vn|p4": {
+  "threads": 4,
+  "schedule": "dynamic",
+  "chunk": 4,
+  "phaseMs": 1068.671,
+  "stats": {
+   "ca": {
+    "threads": 4,
+    "steps": 114,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      658.047,
+      659.699,
+      654.349,
+      651.826
+     ],
+     "apply": [
+      373.019,
+      372.976,
+      372.144,
+      369.386
+     ]
+    },
+    "threadWorkMs": [
+     1031.065,
+     1032.675,
+     1026.493,
+     1021.212
+    ],
+    "stepMaxMs": 1044.788,
+    "stepMeanMs": 1027.861,
+    "stepMinMs": 1010.235,
+    "imbalance": 1.016,
+    "phaseImbalance": {
+     "rules": 1.021,
+     "apply": 1.024
+    },
+    "wallMs": 1051.613,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ]
+    ]
+   }
+  }
+ },
+ "classic_300x300x300_s100_vn|p6": {
+  "threads": 6,
+  "schedule": "dynamic",
+  "chunk": 4,
+  "phaseMs": 778.627,
+  "stats": {
+   "ca": {
+    "threads": 6,
+    "steps": 114,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      448.187,
+      448.631,
+      451.639,
+      445.041,
+      448.368,
+      443.587
+     ],
+     "apply": [
+      287.15,
+      289.063,
+      293.083,
+      289.333,
+      290.435,
+      286.642
+     ]
+    },
+    "threadWorkMs": [
+     735.337,
+     737.694,
+     744.722,
+     734.374,
+     738.803,
+     730.229
+    ],
+    "stepMaxMs": 758.545,
+    "stepMeanMs": 736.86,
+    "stepMinMs": 715.726,
+    "imbalance": 1.029,
+    "phaseImbalance": {
+     "rules": 1.036,
+     "apply": 1.038
+    },
+    "wallMs": 764.981,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ],
+     [
+      10
+     ],
+     [
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "classic_300x300x300_s100_vn|p8": {
+  "threads": 8,
+  "schedule": "dynamic",
+  "chunk": 4,
+  "phaseMs": 739.081,
+  "stats": {
+   "ca": {
+    "threads": 8,
+    "steps": 114,
+    "phases": [
+     "rules",
+     "apply"
+    ],
+    "workMs": {
+     "rules": [
+      378.558,
+      374.221,
+      377.921,
+      375.683,
+      378.696,
+      372.699,
+      377.299,
+      395.81
+     ],
+     "apply": [
+      266.532,
+      266.786,
+      268.286,
+      267.948,
+      265.454,
+      267.583,
+      265.474,
+      290.768
+     ]
+    },
+    "threadWorkMs": [
+     645.09,
+     641.006,
+     646.207,
+     643.631,
+     644.15,
+     640.282,
+     642.773,
+     686.578
+    ],
+    "stepMaxMs": 708.418,
+    "stepMeanMs": 648.715,
+    "stepMinMs": 612.33,
+    "imbalance": 1.092,
+    "phaseImbalance": {
+     "rules": 1.097,
+     "apply": 1.127
+    },
+    "wallMs": 721.612,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ],
+     [
+      10
+     ],
+     [
+      12
+     ],
+     [
+      14
+     ],
+     [
+      0
+     ]
+    ]
+   }
+  }
+ },
+ "mc_cb_2d_1000|p2": {
+  "threads": 2,
+  "schedule": "guided",
+  "chunk": 4,
+  "phaseMs": 1135.344,
+  "stats": {
+   "mc": {
+    "threads": 2,
+    "steps": 100,
+    "phases": [
+     "c0",
+     "c1"
+    ],
+    "workMs": {
+     "c0": [
+      544.735,
+      562.604
+     ],
+     "c1": [
+      526.872,
+      562.161
+     ]
+    },
+    "threadWorkMs": [
+     1071.607,
+     1124.765
+    ],
+    "stepMaxMs": 1128.159,
+    "stepMeanMs": 1098.186,
+    "stepMinMs": 1068.212,
+    "imbalance": 1.027,
+    "phaseImbalance": {
+     "c0": 1.022,
+     "c1": 1.036
+    },
+    "wallMs": 1135.198,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ]
+    ]
+   }
+  }
+ },
+ "mc_cb_2d_1000|p4": {
+  "threads": 4,
+  "schedule": "guided",
+  "chunk": 4,
+  "phaseMs": 529.421,
+  "stats": {
+   "mc": {
+    "threads": 4,
+    "steps": 100,
+    "phases": [
+     "c0",
+     "c1"
+    ],
+    "workMs": {
+     "c0": [
+      263.599,
+      262.572,
+      262.666,
+      262.11
+     ],
+     "c1": [
+      260.542,
+      259.839,
+      259.711,
+      259.915
+     ]
+    },
+    "threadWorkMs": [
+     524.14,
+     522.412,
+     522.377,
+     522.025
+    ],
+    "stepMaxMs": 525.264,
+    "stepMeanMs": 522.739,
+    "stepMinMs": 520.015,
+    "imbalance": 1.005,
+    "phaseImbalance": {
+     "c0": 1.007,
+     "c1": 1.007
+    },
+    "wallMs": 529.311,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ]
+    ]
+   }
+  }
+ },
+ "mc_cb_2d_1000|p6": {
+  "threads": 6,
+  "schedule": "guided",
+  "chunk": 4,
+  "phaseMs": 359.544,
+  "stats": {
+   "mc": {
+    "threads": 6,
+    "steps": 100,
+    "phases": [
+     "c0",
+     "c1"
+    ],
+    "workMs": {
+     "c0": [
+      176.841,
+      178.535,
+      176.478,
+      176.005,
+      176.358,
+      176.503
+     ],
+     "c1": [
+      174.207,
+      174.316,
+      173.927,
+      173.99,
+      174.198,
+      174.112
+     ]
+    },
+    "threadWorkMs": [
+     351.047,
+     352.851,
+     350.405,
+     349.994,
+     350.556,
+     350.615
+    ],
+    "stepMaxMs": 357.007,
+    "stepMeanMs": 350.911,
+    "stepMinMs": 346.466,
+    "imbalance": 1.017,
+    "phaseImbalance": {
+     "c0": 1.029,
+     "c1": 1.014
+    },
+    "wallMs": 359.455,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ],
+     [
+      10
+     ],
+     [
+      12
+     ]
+    ]
+   }
+  }
+ },
+ "mc_cb_2d_1000|p8": {
+  "threads": 8,
+  "schedule": "guided",
+  "chunk": 4,
+  "phaseMs": 336.012,
+  "stats": {
+   "mc": {
+    "threads": 8,
+    "steps": 100,
+    "phases": [
+     "c0",
+     "c1"
+    ],
+    "workMs": {
+     "c0": [
+      136.765,
+      150.771,
+      136.481,
+      136.69,
+      136.411,
+      136.851,
+      136.432,
+      157.774
+     ],
+     "c1": [
+      134.365,
+      144.146,
+      134.323,
+      134.736,
+      134.685,
+      133.764,
+      134.264,
+      143.967
+     ]
+    },
+    "threadWorkMs": [
+     271.13,
+     294.916,
+     270.804,
+     271.426,
+     271.097,
+     270.614,
+     270.696,
+     301.74
+    ],
+    "stepMaxMs": 330.656,
+    "stepMeanMs": 277.803,
+    "stepMinMs": 264.177,
+    "imbalance": 1.19,
+    "phaseImbalance": {
+     "c0": 1.243,
+     "c1": 1.147
+    },
+    "wallMs": 335.927,
+    "cpus": [
+     [
+      2
+     ],
+     [
+      4
+     ],
+     [
+      6
+     ],
+     [
+      8
+     ],
+     [
+      10
+     ],
+     [
+      12
+     ],
+     [
+      14
+     ],
+     [
+      0
+     ]
+    ]
+   }
+  }
+ }
+}

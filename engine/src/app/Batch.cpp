@@ -393,7 +393,7 @@ int BatchRunner::runFromCli(const CliOptions& opt) {
     }
     fs::create_directories(out);
 
-    // Opcje wspólne dla wszystkich przebiegów: --set (w tym --grid) i --timing-detail.
+    // Opcje wspólne dla wszystkich przebiegów: --set (w tym --grid i --threads), --timing-detail, --thread-stats.
     std::vector<std::string> extra;
     for (const std::string& o : opt.overrides) {
         extra.push_back("--set");
@@ -401,6 +401,9 @@ int BatchRunner::runFromCli(const CliOptions& opt) {
     }
     if (opt.timingDetail) {
         extra.push_back("--timing-detail");
+    }
+    if (opt.threadStats) {
+        extra.push_back("--thread-stats");
     }
     ProgressReporter progress = opt.progress ? ProgressReporter(std::cout) : ProgressReporter();
     const fs::path summary = out / "batch_summary.csv";

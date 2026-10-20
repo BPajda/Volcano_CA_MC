@@ -15,6 +15,7 @@ ograniczenia (stan z dnia etapu — późniejsze zmiany opisują kolejne etapy).
 | [Etap 6 — prawdziwe wulkany](etap-6-prawdziwe-wulkany.md) | Teren Etny i Wezuwiusza z AWS Terrain Tiles, kratery w zadanych miejscach, odtwarzanie erupcji krok po kroku. |
 | [Etap 7 — wygląd GUI](etap-7-wyglad-gui.md) | Motyw „Bazalt i lawa” (ciemny i jasny), paleta danych sprawdzona pod kątem kontrastu i daltonizmu, płynność odtwarzania. |
 | [Etap 8 — optymalizacja sekwencyjna](etap-8-optymalizacja-sekwencyjna.md) | Automat frontalny, MC bez skoku warunkowego, ramka i przesunięcia liniowe, tańsze statystyki i zapis; testy A/B i bitowa zgodność każdego kroku; wnioski dla OpenMP. |
+| [Etap 9 — OpenMP](etap-9-openmp.md) | Podział przestrzeni na warstwy między wątki, szachownica MC z walidacją statystyczną, przypinanie do rdzeni P; przyspieszenie, efektywność, prawo Amdahla, harmonogramy i nierównomierność obciążenia; narzut przy 1 wątku; wnioski dla MPI. |
 
 ## Przewodniki i wyniki
 
@@ -26,7 +27,8 @@ ograniczenia (stan z dnia etapu — późniejsze zmiany opisują kolejne etapy).
 | [Raport (PDF)](raport.pdf) | Raport techniczny (10 stron): architektura, modele CA i MC, interfejs, wyniki i profil wydajności; źródło [`raport.md`](raport.md), budowanie `python tools/build_report.py`. |
 
 Dane do wykresów: [`data/`](data/) (seria CA vs MC), [`../bench/results/`](../bench/results/) (profil),
-[`../bench/results/ab/`](../bench/results/ab/) (testy A/B i zgodność etapu 8, dziennik `POSTEP.md`);
+[`../bench/results/ab/`](../bench/results/ab/) (testy A/B i zgodność etapu 8, dziennik `POSTEP.md`),
+[`../bench/results/omp/`](../bench/results/omp/) (skalowanie, harmonogramy, narzut i zgodność etapu 9, dziennik `POSTEP.md`);
 obrazy: [`img/`](img/) (zrzuty GUI i wykresy), [`img/raport/`](img/raport/) (rysunki raportu: `python gui/tests/raport_shots.py`,
 `python tools/raport_wykresy.py`), [`img/readme/`](img/readme/) (zrzuty do README:
 `python gui/tests/raport_shots.py --shots 3,4 --etna etna_real --theme dark --out docs/img/readme`).

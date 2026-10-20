@@ -60,6 +60,16 @@ CliOptions Cli::parse(int argc, const char* const* argv) {
         } else if (arg == "--grid") {
             // Skrót dla --set grid=...; poprawność nazwy sprawdza walidacja configu.
             opt.overrides.push_back("grid=" + requireValue(i, argc, argv, arg));
+        } else if (arg == "--threads") {
+            // Skrót dla --set parallel.threads=N (etap 9) — nadpisuje config, zakres sprawdza walidacja configu.
+            const std::string n = requireValue(i, argc, argv, arg);
+            if (n.empty() || n.find_first_not_of("0123456789") != std::string::npos) {
+                throw CliError("opcja --threads wymaga liczby całkowitej >= 0 (0 = wszystkie wątki OpenMP), podano: " +
+                               n);
+            }
+            opt.overrides.push_back("parallel.threads=" + n);
+        } else if (arg == "--thread-stats") {
+            opt.threadStats = true;
         } else if (arg == "--benchmark") {
             opt.benchmark = true;
         } else if (arg == "--repeats") {
@@ -81,19 +91,24 @@ CliOptions Cli::parse(int argc, const char* const* argv) {
     // Opcje dla GUI (etap 4): --print-defaults i --validate niczego nie liczą i nie zapisują,
     // więc nie łączą się z opcjami przebiegu.
     if (opt.printDefaults &&
-        (opt.validate || opt.benchmark || opt.progress || opt.timingDetail || !opt.configPath.empty() ||
-         !opt.outDir.empty() || !opt.mcFrom.empty() || !opt.batchDir.empty() || !opt.overrides.empty())) {
+        (opt.validate || opt.benchmark || opt.progress || opt.timingDetail || opt.threadStats ||
+         !opt.configPath.empty() || !opt.outDir.empty() || !opt.mcFrom.empty() || !opt.batchDir.empty() ||
+         !opt.overrides.empty())) {
         throw CliError("--print-defaults nie przyjmuje innych opcji");
     }
     // Seria (etap 5): configi pochodzą z folderu, więc --config i --mc-from nie mają sensu;
     // --set, --grid, --timing-detail i --out dotyczą wszystkich przebiegów serii.
     if (!opt.batchDir.empty() && (!opt.configPath.empty() || !opt.mcFrom.empty() || opt.benchmark || opt.validate)) {
         throw CliError("--batch uruchamia wszystkie configi z folderu — nie łączy się z --config, --mc-from, "
-                       "--benchmark ani --validate (dozwolone: --out, --set, --grid, --timing-detail, --progress)");
+                       "--benchmark ani --validate (dozwolone: --out, --set, --grid, --threads, --timing-detail, "
+                       "--thread-stats, --progress)");
     }
-    if (opt.validate && (opt.benchmark || opt.progress || opt.timingDetail)) {
+    if (opt.validate && (opt.benchmark || opt.progress || opt.timingDetail || opt.threadStats)) {
         throw CliError("--validate tylko sprawdza config (--config, --set, --mc-from) — nie łączy się z "
-                       "--benchmark, --progress ani --timing-detail");
+                       "--benchmark, --progress, --timing-detail ani --thread-stats");
+    }
+    if (opt.benchmark && opt.threadStats) {
+        throw CliError("--thread-stats dotyczy pojedynczej symulacji — nie działa razem z --benchmark");
     }
     if (opt.benchmark && opt.progress) {
         throw CliError("--progress dotyczy pojedynczej symulacji — nie działa razem z --benchmark");
@@ -117,7 +132,7 @@ std::string Cli::usage() {
         "\n"
         "Użycie:\n"
         "  engine --config <plik.json> --out <folder> [--set klucz=wartość]... [--grid vector|matrix]\n"
-        "         [--timing-detail] [--progress]\n"
+        "         [--threads N] [--timing-detail] [--thread-stats] [--progress]\n"
         "  engine --mc-from <folder_wyniku_CA> --config <mc.json> --out <folder> [--set klucz=wartość]...\n"
         "         [--progress]\n"
         "  engine --batch <folder_z_configami> --out <folder_wyników> [--set klucz=wartość]... [--progress]\n"
@@ -134,6 +149,9 @@ std::string Cli::usage() {
         "  --set k=w          nadpisanie parametru ścieżką z kropkami, np.\n"
         "                     --set space.nx=1000 --set neighborhood=von_neumann\n"
         "  --grid <g>         reprezentacja siatki: vector (płaska tablica) lub matrix\n"
+        "  --threads N        liczba wątków OpenMP (skrót dla --set parallel.threads=N; 0 = wszystkie,\n"
+        "                     1 = jeden wątek); harmonogram i przypinanie: parallel.schedule, parallel.chunk,\n"
+        "                     parallel.affinity (pcores — jeden wątek na rdzeń fizyczny P)\n"
         "  --mc-from <f>      samo Monte Carlo na wyniku CA z folderu f (ca_result.bin lub .txt);\n"
         "                     parametry MC z sekcji mc configu (mc.domain = basalt), wymiary z pliku\n"
         "  --batch <f>        seria: po kolei wszystkie configi *.json z folderu f (kolejność nazw,\n"
@@ -146,6 +164,8 @@ std::string Cli::usage() {
         "  --quick            benchmark bez przypadków >= 1 mln komórek\n"
         "  --timing-detail    dodatkowo czasy faz wewnątrz CA (ramka, D(n), reguły, zamiana buforów)\n"
         "                     i MC (kroki, składniki statystyk) — sekcja detail w times.json\n"
+        "  --thread-stats     czas pracy każdego wątku w fazach kroku CA i MC (min / średnia / maks po wątkach,\n"
+        "                     nierównomierność obciążenia, procesory) — sekcja threadStats w times.json\n"
         "  --progress         co ~0,5 s linia postępu na stdout: PROGRESS ca <krok>/<maxSteps> active=<n>,\n"
         "                     PROGRESS mc <MCS>/<mcs>, PROGRESS save 0/1 (dla GUI); z --batch:\n"
         "                     PROGRESS batch <gotowe>/<wszystkie> po każdym configu\n"

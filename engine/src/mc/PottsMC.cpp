@@ -7,6 +7,7 @@
 
 #include "core/Rng.hpp"
 #include "core/Timer.hpp"
+#include "parallel/ThreadStats.hpp"
 
 namespace volcano {
 
@@ -105,10 +106,90 @@ void PottsMC::initialize() {
         }
     }
     fillFrame();
+    colors_ = 0;
+    if (checkerboard_) {
+        buildColors();
+    }
     sweeps_ = 0;
     attempts_ = 0;
     accepted_ = 0;
     uphill_ = 0;
+}
+
+int PottsMC::axisClass(int c, int a) const {
+    const int n = a == 0 ? dims_.nx : (a == 1 ? dims_.ny : dims_.nz);
+    if (periodic_[a] && (n % 2) == 1 && c == n - 1) {
+        return 2;  // ostatnia warstwa nieparzystej osi periodycznej sąsiaduje przez ramkę z warstwą 0 (też parzystą)
+    }
+    return c & 1;
+}
+
+int PottsMC::colorOf(int x, int y, int z) const {
+    if (parityColors_) {
+        return (x + y + z) & 1;
+    }
+    return colorIndex_[axisClass(x, 0) + 3 * axisClass(y, 1) + 9 * axisClass(z, 2)];
+}
+
+void PottsMC::buildColors() {
+    // Dlaczego kolory są poprawne: dwie komórki o tej samej klasie w każdej osi różnią się w każdej osi o 0 albo o co
+    // najmniej 2 (także przez ramkę periodyczną — stąd osobna klasa ostatniej warstwy nieparzystej osi), a sąsiedzi
+    // Moore'a różnią się w każdej osi najwyżej o 1 i nie są tą samą komórką. Von Neumann zmienia jedną współrzędną
+    // o 1, więc zmienia parzystość x + y + z — przy parzystych osiach periodycznych wystarczą 2 kolory. Sąsiedztwa
+    // losowe (pentagonal, hexagonal) są podzbiorami Moore'a. Sprawdza to test_parallel.cpp na wszystkich sąsiedztwach.
+    const int n[3] = {dims_.nx, dims_.ny, dims_.nz};
+    bool oddPeriodic = false;
+    for (int a = 0; a < 3; ++a) {
+        oddPeriodic = oddPeriodic || (periodic_[a] && n[a] % 2 == 1);
+    }
+    parityColors_ = nb_.kind() == NeighborhoodKind::VonNeumann && !oddPeriodic;
+    for (int& c : colorIndex_) {
+        c = -1;
+    }
+    if (parityColors_) {
+        colors_ = 2;
+    } else {
+        // Klasy występujące w osi: 1 (oś o rozmiarze 1), 2 (parzystość), 3 (+ ostatnia warstwa nieparzystej osi
+        // periodycznej). Kolory numerowane rosnąco wg cx + 3·cy + 9·cz.
+        int classes[3];
+        for (int a = 0; a < 3; ++a) {
+            classes[a] = n[a] == 1 ? 1 : (periodic_[a] && n[a] % 2 == 1 ? 3 : 2);
+        }
+        colors_ = 0;
+        for (int cz = 0; cz < classes[2]; ++cz) {
+            for (int cy = 0; cy < classes[1]; ++cy) {
+                for (int cx = 0; cx < classes[0]; ++cx) {
+                    colorIndex_[cx + 3 * cy + 9 * cz] = colors_++;
+                }
+            }
+        }
+    }
+    // Lista domeny kolor po kolorze, w kolorze warstwa po warstwie (w warstwie globalIndex rosnąco): komórki koloru c
+    // w warstwie k to fragment [colorLayerStart_[c·L + k], colorLayerStart_[c·L + k + 1]).
+    const bool layerZ = dims_.nz > 1;
+    layers_ = layerZ ? dims_.nz : dims_.ny;
+    colorLayerStart_.assign(static_cast<std::size_t>(colors_ * layers_) + 1, 0);
+    domainFrame_.clear();
+    domainGlobal_.clear();
+    for (int c = 0; c < colors_; ++c) {
+        for (int k = 0; k < layers_; ++k) {
+            colorLayerStart_[static_cast<std::size_t>(c * layers_ + k)] = domainFrame_.size();
+            const int z0 = layerZ ? k : 0;
+            const int y0 = layerZ ? 0 : k;
+            const int y1 = layerZ ? dims_.ny : k + 1;
+            for (int y = y0; y < y1; ++y) {
+                std::uint64_t g = globalIndex(dims_, 0, y, z0);
+                for (int x = 0; x < dims_.nx; ++x, ++g) {
+                    const std::size_t i = frameIndex(x, y, z0);
+                    if ((mask_[i] & kInDomain) != 0 && colorOf(x, y, z0) == c) {
+                        domainFrame_.push_back(i);
+                        domainGlobal_.push_back(g);
+                    }
+                }
+            }
+        }
+    }
+    colorLayerStart_.back() = domainFrame_.size();
 }
 
 void PottsMC::fillFrame() {
@@ -278,10 +359,128 @@ std::uint64_t PottsMC::sweepTrials() {
     return acceptedNow;
 }
 
+template <bool kMobility, bool kRandomNb>
+void PottsMC::colorTrials(std::uint64_t prefix, std::size_t b, std::size_t e, TrialCounts& out) {
+    // Liczniki lokalne (dodawane do out na końcu): przez referencję MSVC zapisywał je do pamięci w każdej próbie.
+    TrialCounts n;
+    std::int32_t* const spin = spin_.data();
+    const std::size_t* const domainFrame = domainFrame_.data();
+    const std::uint64_t* const domainGlobal = domainGlobal_.data();
+    const std::ptrdiff_t* const offsets0 = linear_[0].data();
+    const std::size_t count0 = linear_[0].size();
+    const std::uint64_t otherStates = static_cast<std::uint64_t>(p_.Q - 1);
+    for (std::size_t j = b; j < e; ++j) {
+        const std::size_t i = domainFrame[j];
+        // Próba komórki o globalnym indeksie g: losowość hashRand(seed, MCS, g, sól) — nie zależy od kolejności prób.
+        const std::uint64_t h = hashIndex(prefix, domainGlobal[j]);
+        // Dalej kroki jak w sweepTrials (bez kroku 1 — komórkę wyznacza szachownica): mobilność, nowa orientacja,
+        // energia przed i po w jednym przejściu, akceptacja Metropolisa.
+        if constexpr (kMobility) {
+            if (toUniform(hashSalt(h, kSaltMcMobility)) >= static_cast<double>(mobility_[i])) {
+                continue;
+            }
+        }
+        ++n.attempts;
+        const std::ptrdiff_t* offsets = offsets0;
+        std::size_t count = count0;
+        if constexpr (kRandomNb) {
+            const std::vector<std::ptrdiff_t>& v =
+                linear_[static_cast<std::size_t>(nb_.variantFromPrefix(prefix, domainGlobal[j]))];
+            offsets = v.data();
+            count = v.size();
+        }
+        const std::int32_t current = spin[i];
+        std::int32_t proposed = 1 + static_cast<std::int32_t>(hashSalt(h, kSaltMcOrient) % otherStates);
+        if (proposed >= current) {
+            ++proposed;
+        }
+        int unlikeBefore = 0;
+        int unlikeAfter = 0;
+        unlikeBeforeAfter(spin + i, current, proposed, offsets, count, unlikeBefore, unlikeAfter);
+        const double deltaE = p_.J * unlikeAfter - p_.J * unlikeBefore;
+        bool accept = deltaE <= 0.0;
+        if (!accept && p_.kT > 0.0) {
+            accept = toUniform(hashSalt(h, kSaltMcAccept)) < std::exp(-deltaE / p_.kT);
+            n.uphill += accept ? 1 : 0;
+        }
+        if (accept) {
+            spin[i] = proposed;
+            ++n.accepted;
+            if ((mask_[i] & kPeriodicEdge) != 0) {
+                syncFrame(i);  // kopie w ramce — inne komórki ramki dla każdej komórki: bez konfliktu między wątkami
+            }
+        }
+    }
+    out.attempts += n.attempts;
+    out.accepted += n.accepted;
+    out.uphill += n.uphill;
+}
+
+template <bool kMobility, bool kRandomNb>
+std::uint64_t PottsMC::sweepColors() {
+    const std::uint64_t prefix = hashPrefix(p_.seed, static_cast<std::uint64_t>(sweeps_));
+    TrialCounts total;
+    if (!par_.parallel()) {
+        for (int c = 0; c < colors_; ++c) {
+            colorTrials<kMobility, kRandomNb>(prefix, colorBegin(c), colorEnd(c), total);
+        }
+    } else {
+        // Jeden region na MCS: kolor po kolorze, komórki koloru dzielone między wątki po warstwach (pasach z albo y);
+        // bariera po kolorze — następny kolor czyta komórki zmienione w tym.
+        const std::ptrdiff_t nl = layers_;
+        const Schedule sched = par_.schedule;
+        const int chunk = par_.chunk;
+        ThreadStats* const ts = par_.stats;
+        const double wall0 = ts != nullptr ? omp_get_wtime() : 0.0;
+        std::uint64_t attempts = 0;
+        std::uint64_t accepted = 0;
+        std::uint64_t uphill = 0;
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(par_.threads) reduction(+ : attempts, accepted, uphill)
+#endif
+        {
+            const int tid = omp_get_thread_num();
+            PhaseClock clock(ts, tid);
+            if (ts != nullptr) {
+                ts->noteCpu(tid);
+            }
+            TrialCounts mine;
+            for (int c = 0; c < colors_; ++c) {
+                const std::size_t* const start = colorLayerStart_.data() + static_cast<std::size_t>(c * layers_);
+                clock.begin();
+                ompFor(nl, sched, chunk, [&](std::ptrdiff_t k) {
+                    colorTrials<kMobility, kRandomNb>(prefix, start[k], start[k + 1], mine);
+                });
+                clock.end(c);
+                ompBarrier();
+            }
+            attempts += mine.attempts;
+            accepted += mine.accepted;
+            uphill += mine.uphill;
+        }
+        if (ts != nullptr) {
+            ts->addWall(omp_get_wtime() - wall0);
+            ts->endStep();
+        }
+        total.attempts = attempts;
+        total.accepted = accepted;
+        total.uphill = uphill;
+    }
+    attempts_ += total.attempts;
+    uphill_ += total.uphill;
+    return total.accepted;
+}
+
 std::uint64_t PottsMC::sweep() {
     const bool useMobility = !mobility_.empty();
     std::uint64_t acceptedNow;
-    if (nb_.isRandom()) {
+    if (checkerboard_) {
+        if (nb_.isRandom()) {
+            acceptedNow = useMobility ? sweepColors<true, true>() : sweepColors<false, true>();
+        } else {
+            acceptedNow = useMobility ? sweepColors<true, false>() : sweepColors<false, false>();
+        }
+    } else if (nb_.isRandom()) {
         acceptedNow = useMobility ? sweepTrials<true, true>() : sweepTrials<false, true>();
     } else {
         acceptedNow = useMobility ? sweepTrials<true, false>() : sweepTrials<false, false>();
@@ -314,7 +513,8 @@ McStats PottsMC::measure(GrainLabels* labels, McMeasureTimes* times) const {
 std::size_t PottsMC::bytes() const {
     std::size_t b = spin_.size() * sizeof(std::int32_t) + mask_.size() * sizeof(std::uint8_t) +
                     mobility_.size() * sizeof(float) + domainFrame_.capacity() * sizeof(std::size_t) +
-                    domainGlobal_.capacity() * sizeof(std::uint64_t);
+                    domainGlobal_.capacity() * sizeof(std::uint64_t) +
+                    colorLayerStart_.capacity() * sizeof(std::size_t);
     for (const std::vector<std::ptrdiff_t>& l : linear_) {
         b += l.size() * sizeof(std::ptrdiff_t);
     }
@@ -363,17 +563,48 @@ double PottsMC::totalEnergy() const {
         // Bez skoków warunkowych (jak unlikeNeighbors): różnych = w domenie (S_j != 0) − tej samej orientacji (s >= 1).
         std::uint64_t inDomain = 0;
         std::uint64_t same = 0;
-        for (const std::size_t i : domainFrame_) {
-            const std::int32_t* const spin = spin_.data() + i;
-            const std::int32_t s = *spin;
-            for (const std::ptrdiff_t o : forward) {
-                const std::int32_t sj = spin[o];
-                inDomain += static_cast<std::uint64_t>(sj != 0);
-                same += static_cast<std::uint64_t>(sj == s);
+        if (par_.parallel()) {
+            // Etap 9: komórki domeny dzielone między wątki, sumy całkowite przez redukcję (wynik ten sam).
+            const std::ptrdiff_t n = static_cast<std::ptrdiff_t>(domainFrame_.size());
+            const std::size_t* const domain = domainFrame_.data();
+            const std::int32_t* const spins = spin_.data();
+#ifdef _OPENMP
+#  pragma omp parallel for schedule(static) num_threads(par_.threads) reduction(+ : inDomain, same)
+#endif
+            for (std::ptrdiff_t k = 0; k < n; ++k) {
+                const std::int32_t* const spin = spins + domain[k];
+                const std::int32_t s = *spin;
+                for (const std::ptrdiff_t o : forward) {
+                    const std::int32_t sj = spin[o];
+                    inDomain += static_cast<std::uint64_t>(sj != 0);
+                    same += static_cast<std::uint64_t>(sj == s);
+                }
+            }
+        } else {
+            for (const std::size_t i : domainFrame_) {
+                const std::int32_t* const spin = spin_.data() + i;
+                const std::int32_t s = *spin;
+                for (const std::ptrdiff_t o : forward) {
+                    const std::int32_t sj = spin[o];
+                    inDomain += static_cast<std::uint64_t>(sj != 0);
+                    same += static_cast<std::uint64_t>(sj == s);
+                }
             }
         }
         unlike = inDomain - same;
         return p_.J * static_cast<double>(unlike);
+    }
+    if (par_.parallel()) {
+        const std::ptrdiff_t n = static_cast<std::ptrdiff_t>(domainFrame_.size());
+#ifdef _OPENMP
+#  pragma omp parallel for schedule(static) num_threads(par_.threads) reduction(+ : unlike)
+#endif
+        for (std::ptrdiff_t k = 0; k < n; ++k) {
+            const std::size_t i = domainFrame_[static_cast<std::size_t>(k)];
+            unlike += static_cast<std::uint64_t>(
+                unlikeNeighbors(i, spin_[i], offsetsFor(t, domainGlobal_[static_cast<std::size_t>(k)])));
+        }
+        return 0.5 * p_.J * static_cast<double>(unlike);
     }
     for (std::size_t k = 0; k < domainFrame_.size(); ++k) {
         const std::size_t i = domainFrame_[k];
@@ -386,6 +617,24 @@ CrystalMap PottsMC::crystals() const {
     CrystalMap m;
     m.dims = dims_;
     m.crystal.resize(dims_.cells());
+    if (par_.parallel()) {
+        // Etap 9: wiersze (y, z) dzielone między wątki — każdy wiersz pisze swój fragment mapy.
+        const std::ptrdiff_t rows = static_cast<std::ptrdiff_t>(dims_.ny) * dims_.nz;
+        std::int32_t* const out = m.crystal.data();
+#ifdef _OPENMP
+#  pragma omp parallel for schedule(static) num_threads(par_.threads)
+#endif
+        for (std::ptrdiff_t r = 0; r < rows; ++r) {
+            const int y = static_cast<int>(r % dims_.ny);
+            const int z = static_cast<int>(r / dims_.ny);
+            std::int32_t* const row = out + static_cast<std::size_t>(r) * static_cast<std::size_t>(dims_.nx);
+            const std::int32_t* const src = spin_.data() + frameIndex(0, y, z);
+            for (int x = 0; x < dims_.nx; ++x) {
+                row[x] = src[x];  // poza domeną 0
+            }
+        }
+        return m;
+    }
     std::size_t g = 0;
     for (int z = 0; z < dims_.nz; ++z) {
         for (int y = 0; y < dims_.ny; ++y) {

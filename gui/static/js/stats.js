@@ -9,13 +9,15 @@ import { onThemeChange, themeColors } from './theme.js';
 
 const SECTION_NAMES = {
   readConfig: 'wczytanie configu', readInput: 'wczytanie wyniku CA (--mc-from)', allocate: 'alokacja siatki',
-  terrain: 'teren', vents: 'kratery / zarodki', caSim: 'symulacja CA', snapshots: 'migawki', save: 'zapis wyników CA',
+  terrain: 'teren', vents: 'kratery / zarodki', caSim: 'symulacja CA', snapshots: 'migawki', caStats: 'statystyki CA (stats.json)',
+  save: 'zapis wyników CA',
   mcInit: 'MC: przygotowanie', mcSim: 'symulacja MC', mcStats: 'MC: statystyki', mcSave: 'zapis wyników MC',
 };
 const INFO_NAMES = {
   cells: 'komórki', space: 'wymiary', mode: 'tryb', grid: 'siatka', neighborhood: 'sąsiedztwo', boundary: 'brzeg',
   steps: 'kroki CA', stopReason: 'koniec CA', mcDomain: 'domena MC', mcs: 'MCS', domainCells: 'komórki domeny MC',
-  Q: 'Q', mcMobility: 'mobilność ze stygnięcia', mcFrom: 'wejście (--mc-from)', cpu: 'procesor', compiler: 'kompilator', build: 'build',
+  Q: 'Q', mcMobility: 'mobilność ze stygnięcia', mcFrom: 'wejście (--mc-from)', threads: 'wątki OpenMP', schedule: 'harmonogram',
+  chunk: 'porcja harmonogramu', affinity: 'przypinanie wątków', cpus: 'procesory wątków', cpu: 'procesor', compiler: 'kompilator', build: 'build',
 };
 const charts = [];
 let last = null;  // { root, d } — do ponownego narysowania po zmianie motywu

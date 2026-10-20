@@ -18,7 +18,8 @@ Kolejka (etap 5, „GUI — kolejkowanie zadań”):
   - anulowanie zadania i całej serii, zmiana kolejności oczekujących (move), ponowienie zadania
     z błędem / anulowanego / przerwanego (retry),
   - opcjonalne przypięcie procesu silnika do wybranego procesora logicznego (rdzeń P) i wysoki priorytet
-    — tak jak pomiary z etapu 3 (bench/run_profile.py),
+    — tak jak pomiary z etapu 3 (bench/run_profile.py); zadanie z wieloma wątkami OpenMP (parallel.threads > 1,
+    etap 9) zawsze z wysokim priorytetem i bez przypięcia do jednego procesora (launch_mode),
   - stan (zadania, kolejność kolejki, pauza, liczba workerów, przypięcie) w results/gui/jobs.json —
     przeżywa restart GUI; zadanie, które „działało” w chwili zamknięcia, dostaje status „przerwane”.
 
@@ -62,6 +63,20 @@ MAX_WORKERS = max(1, min(16, os.cpu_count() or 4))
 PROGRESS_RE = re.compile(r"^PROGRESS (\w+) (\d+)/(\d+)(?: (\w+)=(\d+))?\s*$")
 # Windows: HIGH_PRIORITY_CLASS przy przypięciu (jak bench/run_profile.py); na Linuksie nie zmieniamy priorytetu.
 HIGH_PRIORITY = getattr(subprocess, "HIGH_PRIORITY_CLASS", 0) if sys.platform == "win32" else 0
+
+
+def launch_mode(pin_enabled: bool, threads: int) -> tuple[bool, int]:
+    """Jak uruchomić proces silnika: (przypiąć do jednego procesora?, flaga priorytetu dla creationflags).
+
+    Jeden wątek: przypięcie i wysoki priorytet razem, gdy przypinanie jest włączone (pomiar jak w etapie 3).
+    Wiele wątków (parallel.threads > 1, etap 9): ZAWSZE wysoki priorytet — przy zajętych wszystkich rdzeniach P wątek
+    o priorytecie normalnym wywłaszczony przez program w tle zatrzymuje pozostałe na barierze (8 wątków liczyło się
+    wolniej niż 6; docs/etap-9-openmp.md, punkt 4.2) — i bez przypięcia procesu do jednego procesora (wszystkie
+    wątki na jednym rdzeniu); rdzenie wątków wybiera silnik (parallel.affinity). threads = 0 („wszystkie” = każdy
+    procesor logiczny, także rdzenie E): bez przypięcia i z priorytetem normalnym — nie zagładzać systemu."""
+    if threads == 1:
+        return pin_enabled, HIGH_PRIORITY if pin_enabled else 0
+    return False, HIGH_PRIORITY if threads > 1 else 0
 
 
 class JobError(Exception):
@@ -575,11 +590,20 @@ class JobManager:
         prio = ", priorytet wysoki" if HIGH_PRIORITY else ""
         return cpu, f"# przypięto do procesora logicznego {cpu}{prio}\n"
 
+    def _threads_of(self, job: Job) -> int:
+        """parallel.threads z configu zadania (etap 9); 1 przy braku pola albo błędzie odczytu."""
+        try:
+            cfg = json.loads((self.settings.root / job.configPath).read_text(encoding="utf-8"))
+            return int(cfg.get("parallel", {}).get("threads", 1))
+        except (OSError, ValueError, TypeError, AttributeError):
+            return 1
+
     def _run(self, job: Job, index: int = 0) -> None:
         out_dir = self.settings.root / job.outDir
         out_dir.mkdir(parents=True, exist_ok=True)
         log = self.log_path(job)
-        pin = bool(self.pin.get("enabled"))
+        threads = self._threads_of(job)
+        pin, priority = launch_mode(bool(self.pin.get("enabled")), threads)
         t0 = time.monotonic()
         exit_code: int | None = None
         error: str | None = None
@@ -589,7 +613,7 @@ class JobManager:
             try:
                 proc = subprocess.Popen(job.command, cwd=self.settings.root, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
-                                        bufsize=1, creationflags=CREATE_NO_WINDOW | (HIGH_PRIORITY if pin else 0))
+                                        bufsize=1, creationflags=CREATE_NO_WINDOW | priority)
             except OSError as e:
                 error = f"Nie można uruchomić silnika: {e}"
                 logf.write(error + "\n")
@@ -598,6 +622,11 @@ class JobManager:
                     cpu, note = self._pin_process(proc, index)
                     job.pinnedCpu = cpu
                     logf.write(note)
+                    logf.flush()
+                elif threads != 1:
+                    prio = "priorytet wysoki" if priority else "priorytet normalny"
+                    logf.write(f"# wątki OpenMP: {threads if threads > 0 else 'wszystkie'} — {prio}, bez przypięcia "
+                               "do jednego procesora (rdzenie wątków wybiera silnik: parallel.affinity)\n")
                     logf.flush()
                 with self._lock:
                     self._procs[job.id] = proc

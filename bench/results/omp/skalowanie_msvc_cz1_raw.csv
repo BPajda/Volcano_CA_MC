@@ -1,0 +1,116 @@
+name,mode,case,group,variant,threads,schedule,chunk,rep,timestamp,readConfig,allocate,terrain,vents,caSim,caStats,save,mcInit,mcSim,mcStats,mcSave,total,procWall,threadsUsed,cpus,identical
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,0,2026-10-20T04:59:29,0.683,9.127,12.302,1.974,85.056,1.695,31.378,,,,,146.267,170.047,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,0,2026-10-20T04:59:29,0.655,9.282,12.074,1.009,67.444,0.938,25.029,,,,,120.505,141.609,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,0,2026-10-20T04:59:29,0.676,9.37,11.89,0.535,26.592,0.537,23.569,,,,,78.652,101.294,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,0,2026-10-20T04:59:29,0.663,9.27,11.654,0.372,18.261,0.418,22.236,,,,,67.53,87.94,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,0,2026-10-20T04:59:29,0.659,9.108,11.7,0.291,17.146,0.331,21.873,,,,,65.755,85.748,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,0,2026-10-20T04:59:30,11.029,5.54,5.694,1.344,718.166,1.546,19.019,,,,,765.799,794.234,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,0,2026-10-20T04:59:31,0.659,5.599,5.531,0.854,396.605,1.042,16.198,,,,,430.489,452.958,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,0,2026-10-20T04:59:31,0.649,5.586,5.41,0.688,190.155,0.632,15.023,,,,,222.123,244.543,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,0,2026-10-20T04:59:31,0.635,5.533,5.52,0.595,133.68,0.492,14.591,,,,,165.089,186.443,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,0,2026-10-20T04:59:31,0.632,5.65,5.463,0.527,218.485,0.452,14.13,,,,,249.931,275.83,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p1,1,guided,0,0,2026-10-20T04:59:44,11.459,9.973,5.619,1.427,12488.952,1.538,26.976,,,,,12550.031,12570.55,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p2,2,guided,0,0,2026-10-20T04:59:51,0.618,9.951,5.444,0.91,6513.199,1.002,16.463,,,,,6551.852,6573.711,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p4,4,guided,0,0,2026-10-20T04:59:54,0.634,9.991,5.463,0.605,3230.331,0.642,13.801,,,,,3265.96,3290.358,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p6,6,guided,0,0,2026-10-20T04:59:56,0.629,10.028,5.389,0.571,2218.302,0.519,14.178,,,,,2254.353,2275.004,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p8,8,guided,0,0,2026-10-20T04:59:58,0.632,9.98,5.407,2.68,1924.317,3.632,15.234,,,,,1971.781,1994.824,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,1,2026-10-20T04:59:58,0.656,9.756,11.894,0.423,15.294,0.31,21.75,,,,,65.38,96.283,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,1,2026-10-20T04:59:58,0.641,9.099,11.766,0.368,18.807,0.379,21.606,,,,,67.172,88.219,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,1,2026-10-20T04:59:58,0.657,9.25,13.38,0.535,27.464,0.522,22.965,,,,,79.677,100.818,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,1,2026-10-20T04:59:59,0.662,9.066,12.016,1.021,48.742,0.939,24.919,,,,,101.413,121.135,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,1,2026-10-20T04:59:59,0.659,9.321,12.3,1.961,85.273,1.665,30.419,,,,,145.488,169.286,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,1,2026-10-20T04:59:59,0.614,5.481,5.388,2.323,116.684,0.471,17.371,,,,,152.414,181.867,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,1,2026-10-20T04:59:59,0.647,5.446,5.379,0.559,133.196,0.502,14.305,,,,,164.096,183.776,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,1,2026-10-20T05:00:00,0.622,5.58,5.535,0.609,190.814,0.646,13.152,,,,,221.686,243.446,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,1,2026-10-20T05:00:00,0.625,5.621,5.544,1.013,373.056,1.08,14.646,,,,,405.597,430.839,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,1,2026-10-20T05:00:01,0.611,5.581,5.606,1.386,717.38,1.524,17.564,,,,,753.078,775.671,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p8,8,guided,0,1,2026-10-20T05:00:03,0.656,10.165,5.413,0.959,1985.716,5.964,16.084,,,,,2032.126,2061.992,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p6,6,guided,0,1,2026-10-20T05:00:05,0.631,9.755,5.507,0.572,2219.435,0.519,14.123,,,,,2255.034,2274.552,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p4,4,guided,0,1,2026-10-20T05:00:09,0.628,9.836,5.456,0.662,3230.234,0.638,14.865,,,,,3266.697,3288.416,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p2,2,guided,0,1,2026-10-20T05:00:15,0.624,9.834,5.457,0.949,6468.938,1.082,24.705,,,,,6515.797,6538.667,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p1,1,guided,0,1,2026-10-20T05:00:28,0.635,9.866,5.63,1.376,12483.288,1.608,18.974,,,,,12525.305,12548.6,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,2,2026-10-20T05:00:28,0.672,9.388,12.374,1.993,85.534,1.762,30.479,,,,,146.176,168.98,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,2,2026-10-20T05:00:28,0.657,9.254,11.972,1.028,48.142,0.925,25.427,,,,,101.408,121.739,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,2,2026-10-20T05:00:28,0.66,9.223,11.868,0.535,25.911,0.517,23.736,,,,,76.791,98.365,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,2,2026-10-20T05:00:28,0.723,9.237,11.744,0.376,18.642,0.388,21.863,,,,,67.76,89.758,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,2,2026-10-20T05:00:28,0.666,9.102,11.814,0.299,15.726,0.297,21.626,,,,,64.085,94.972,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,2,2026-10-20T05:00:29,0.63,5.457,5.544,1.382,718.255,1.594,19.533,,,,,755.695,778.471,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,2,2026-10-20T05:00:30,0.624,5.527,5.449,0.925,394.481,1.071,15.879,,,,,428.01,449.46,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,2,2026-10-20T05:00:30,0.621,5.57,5.358,0.655,194.268,0.65,14.654,,,,,225.739,248.16,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,2,2026-10-20T05:00:30,0.614,5.74,5.476,0.544,137.139,0.502,14.112,,,,,168.125,188.46,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,2,2026-10-20T05:00:30,0.651,5.585,5.351,0.553,124.429,0.407,14.019,,,,,155.277,176.161,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p1,1,guided,0,2,2026-10-20T05:00:43,0.706,9.839,5.522,1.432,12532.843,1.541,19.255,,,,,12575.057,12593.735,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p2,2,guided,0,2,2026-10-20T05:00:50,0.684,9.908,5.455,0.929,6407.778,1.085,24.286,,,,,6454.526,6480.113,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p4,4,guided,0,2,2026-10-20T05:00:53,0.63,10.039,5.439,3.132,3216.256,0.645,33.29,,,,,3274.716,3295.932,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p6,6,guided,0,2,2026-10-20T05:00:55,0.633,9.85,5.43,0.59,2218.43,0.538,14.284,,,,,2254.327,2278.979,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p8,8,guided,0,2,2026-10-20T05:00:57,0.618,9.933,5.406,0.544,1950.752,0.869,13.766,,,,,1986.569,2020.667,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,3,2026-10-20T05:00:57,0.663,9.305,11.83,0.287,15.842,0.3,20.723,,,,,63.64,92.454,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,3,2026-10-20T05:00:58,0.661,9.048,11.741,0.393,19.722,0.367,21.983,,,,,68.205,87.248,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,3,2026-10-20T05:00:58,0.641,9.28,11.878,0.525,25.651,0.522,21.962,,,,,75.251,96.908,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,3,2026-10-20T05:00:58,0.648,9.269,11.969,6.587,51.094,3.018,27.525,,,,,119.612,138.933,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,3,2026-10-20T05:00:58,0.692,9.38,12.172,2.001,86.073,1.733,29.841,,,,,145.922,168.263,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,3,2026-10-20T05:00:58,0.616,5.378,5.582,0.464,134.801,4.552,14.253,,,,,174.903,198.876,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,3,2026-10-20T05:00:59,0.604,5.454,5.332,0.572,134.474,0.488,14.149,,,,,165.201,185.814,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,3,2026-10-20T05:00:59,0.625,5.69,5.467,0.612,189.848,0.629,14.249,,,,,221.154,241.574,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,3,2026-10-20T05:00:59,0.618,5.386,5.398,0.886,417.566,2.363,15.859,,,,,453.064,477.044,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,3,2026-10-20T05:01:00,0.632,5.615,5.599,1.374,717.198,1.791,19.997,,,,,755.437,777.503,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p8,8,guided,0,3,2026-10-20T05:01:02,0.676,10.184,6.493,6.03,2017.177,0.455,14.152,,,,,2060.685,2095.86,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p6,6,guided,0,3,2026-10-20T05:01:05,0.615,9.866,5.435,0.478,2218.827,0.485,19.879,,,,,2260.242,2280.856,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p4,4,guided,0,3,2026-10-20T05:01:08,0.622,10.024,5.396,0.655,3240.354,0.68,14.523,,,,,3276.459,3296.543,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p2,2,guided,0,3,2026-10-20T05:01:15,0.618,9.812,5.459,0.901,6803.56,1.002,15.804,,,,,6841.411,6860.131,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p1,1,guided,0,3,2026-10-20T05:01:27,0.621,9.762,5.587,1.356,12595.987,1.529,18.765,,,,,12637.55,12660.842,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,4,2026-10-20T05:01:28,0.658,8.955,12.046,1.976,85.127,1.714,29.983,,,,,144.311,165.279,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,4,2026-10-20T05:01:28,0.818,9.338,11.969,1.028,47.96,0.959,25.5,,,,,101.595,129.796,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,4,2026-10-20T05:01:28,0.67,9.024,11.858,0.549,25.427,0.51,22.704,,,,,74.911,97.048,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,4,2026-10-20T05:01:28,0.645,9.135,11.708,0.363,18.922,0.366,21.898,,,,,67.33,88.017,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,4,2026-10-20T05:01:28,0.625,9.052,13.058,4.614,18.267,5.709,21.885,,,,,79.75,106.798,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,4,2026-10-20T05:01:29,0.602,5.363,5.523,1.398,714.687,1.557,19.275,,,,,751.711,770.856,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,4,2026-10-20T05:01:30,0.65,5.549,5.461,1.254,415.268,1.048,16.054,,,,,449.261,470.986,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,4,2026-10-20T05:01:30,0.614,5.575,5.52,0.611,190.393,0.633,14.689,,,,,221.874,243.945,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,4,2026-10-20T05:01:30,0.635,5.487,5.375,0.596,136.267,0.482,13.908,,,,,167.083,188.22,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,4,2026-10-20T05:01:30,0.607,5.535,5.335,0.488,137.054,0.533,14.061,,,,,171.745,192.777,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p1,1,guided,0,4,2026-10-20T05:01:43,0.634,10.078,5.649,1.441,12460.683,1.548,18.827,,,,,12502.763,12525.18,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p2,2,guided,0,4,2026-10-20T05:01:50,0.617,9.75,5.404,0.949,6787.038,0.992,23.771,,,,,6832.793,6854.334,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p4,4,guided,0,4,2026-10-20T05:01:53,0.63,9.822,5.398,0.677,3234.554,0.666,14.562,,,,,3270.746,3292.591,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p6,6,guided,0,4,2026-10-20T05:01:55,0.627,9.741,5.357,0.475,2201.151,0.5,14.065,,,,,2236.534,2256.608,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_full,ca_lava,p8,8,guided,0,4,2026-10-20T05:01:57,0.631,10.147,5.403,1.72,1971.381,8.269,13.876,,,,,2017.292,2037.288,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,5,2026-10-20T05:01:58,0.731,9.228,13.72,0.283,15.348,0.3,21.97,,,,,68.828,98.049,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,5,2026-10-20T05:01:58,0.629,8.98,11.68,0.385,18.411,0.376,20.944,,,,,65.731,86.582,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,5,2026-10-20T05:01:58,0.64,9.005,11.759,0.538,25.608,0.512,23.013,,,,,75.474,97.116,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,5,2026-10-20T05:01:58,0.658,9.092,11.862,1.004,48.116,0.963,25.071,,,,,100.833,122.05,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,5,2026-10-20T05:01:58,0.635,9.186,12.255,1.962,85.44,1.768,30.238,,,,,145.549,166.13,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,5,2026-10-20T05:01:58,0.644,5.533,5.387,0.486,133.922,0.403,14.234,,,,,164.691,192.359,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,5,2026-10-20T05:01:59,0.617,5.364,5.443,0.508,135.558,0.502,13.939,,,,,165.782,186.358,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,5,2026-10-20T05:01:59,0.611,5.488,5.431,0.647,190.231,0.639,14.432,,,,,221.291,240.711,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,5,2026-10-20T05:01:59,0.618,5.426,5.431,0.949,371.884,1.028,16.248,,,,,405.527,426.839,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,5,2026-10-20T05:02:00,0.638,5.521,5.64,1.336,719.131,1.547,19.032,,,,,756.21,779.071,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,6,2026-10-20T05:02:00,0.644,9.249,12.377,1.976,86.165,1.74,30.191,,,,,146.192,171.324,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,6,2026-10-20T05:02:00,0.646,8.96,11.859,1.005,47.986,0.932,26.455,,,,,101.975,122.848,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,6,2026-10-20T05:02:01,0.648,9.115,11.926,0.526,25.781,0.515,22.55,,,,,75.381,99.132,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,6,2026-10-20T05:02:01,0.655,9.221,11.764,0.365,18.158,0.383,21.418,,,,,66.435,86.687,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,6,2026-10-20T05:02:01,0.66,9.105,11.716,0.363,18.075,0.305,22.035,,,,,68.117,95.201,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p1,1,static,1,6,2026-10-20T05:02:02,0.61,5.499,5.575,1.392,717.772,1.575,18.749,,,,,754.646,777.103,1,2,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p2,2,static,1,6,2026-10-20T05:02:02,0.66,5.427,5.486,0.883,376.334,1.029,15.232,,,,,409.027,428.762,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p4,4,static,1,6,2026-10-20T05:02:02,0.654,5.653,5.459,0.596,193.594,0.626,14.453,,,,,225.026,243.158,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p6,6,static,1,6,2026-10-20T05:02:03,0.611,5.456,5.385,0.558,133.395,0.501,14.876,,,,,164.809,185.116,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_duza_3d_front,ca_lava,p8,8,static,1,6,2026-10-20T05:02:03,0.636,5.581,5.395,0.556,108.039,0.437,13.875,,,,,139.866,165.322,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,7,2026-10-20T05:02:03,0.667,9.15,11.901,2.906,23.35,1.435,23.654,,,,,78.855,106.787,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,7,2026-10-20T05:02:03,0.632,9.066,11.935,0.369,18.646,0.393,21.347,,,,,66.81,86.065,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,7,2026-10-20T05:02:03,0.668,9.217,11.706,0.544,25.526,0.52,23.134,,,,,75.678,99.006,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,7,2026-10-20T05:02:03,0.7,9.377,12.029,1.014,49.194,0.939,25.512,,,,,102.959,124.096,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,7,2026-10-20T05:02:04,0.645,9.25,12.206,1.993,85.425,1.741,30.072,,,,,145.154,168.808,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,8,2026-10-20T05:02:04,0.669,9.169,12.329,1.968,85.472,1.78,30.572,,,,,145.879,167.044,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,8,2026-10-20T05:02:04,0.661,9.033,12.061,1.001,48.749,0.94,25.831,,,,,102.57,123.983,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,8,2026-10-20T05:02:04,0.656,9.12,11.851,0.567,32.459,0.525,23.095,,,,,82.49,102.015,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,8,2026-10-20T05:02:04,0.674,9.237,11.827,0.367,18.856,0.401,23.77,,,,,69.772,90.824,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,8,2026-10-20T05:02:04,0.652,9.356,12.764,3.035,17.352,3.147,22.361,,,,,76.384,98.476,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,9,2026-10-20T05:02:05,0.655,9.213,11.755,0.298,40.343,0.295,21.535,,,,,88.645,117.145,8,2 4 6 8 10 12 14 0,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,9,2026-10-20T05:02:05,0.661,9.213,11.784,0.367,18.184,0.391,21.274,,,,,66.279,88.438,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,9,2026-10-20T05:02:05,0.685,9.136,11.82,0.532,25.997,0.521,22.606,,,,,75.619,97.72,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,9,2026-10-20T05:02:05,0.682,9.187,11.892,1.025,48.077,0.938,24.654,,,,,100.577,120.888,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,9,2026-10-20T05:02:05,0.675,9.248,12.184,1.994,85.712,1.734,30.47,,,,,145.853,168.999,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p1,1,static,1,10,2026-10-20T05:02:05,0.647,9.109,12.17,1.989,86.072,1.772,28.953,,,,,144.545,166.456,1,2,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p2,2,static,1,10,2026-10-20T05:02:06,0.678,9.202,11.987,1.007,48.542,0.934,25.373,,,,,101.917,125.118,2,2 4,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p4,4,static,1,10,2026-10-20T05:02:06,0.649,9.179,11.945,0.54,26.003,0.527,21.964,,,,,75.571,95.056,4,2 4 6 8,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p6,6,static,1,10,2026-10-20T05:02:06,0.641,9.17,12.121,0.487,18.996,0.4,21.822,,,,,68.082,89.893,6,2 4 6 8 10 12,True
+skalowanie_msvc_cz1,scaling,lava_etna_real,ca_lava,p8,8,static,1,10,2026-10-20T05:02:06,0.644,9.083,11.907,0.283,15.689,4.43,21.78,,,,,69.916,100.099,8,2 4 6 8 10 12 14 0,True

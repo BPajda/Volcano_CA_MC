@@ -27,11 +27,12 @@ struct CliOptions {
     bool printDefaults = false;          // --print-defaults: wypisz domyślny config JSON (GUI buduje z niego formularz)
     bool validate = false;               // --validate: tylko walidacja configu, wynik jako JSON na stdout
     bool progress = false;               // --progress: linie „PROGRESS etap i/n” na stdout (postęp w GUI)
+    bool threadStats = false;            // --thread-stats: czas pracy każdego wątku w fazach kroku (etap 9)
     std::string configPath;             // --config: plik JSON (pusty = same wartości domyślne)
     std::string outDir;                  // --out: folder wyników (pusty = domyślny)
     std::string mcFrom;                  // --mc-from: folder z wynikiem CA — samo MC na tym wyniku
     std::string batchDir;                // --batch: folder z configami *.json — seria przebiegów (etap 5)
-    std::vector<std::string> overrides;  // --set a.b=v oraz --grid (jako "grid=...")
+    std::vector<std::string> overrides;  // --set a.b=v oraz --grid (jako "grid=...") i --threads ("parallel.threads=...")
 };
 
 // Parser argumentów. Klasa statyczna — nie przechowuje stanu.

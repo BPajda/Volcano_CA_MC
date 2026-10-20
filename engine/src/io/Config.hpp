@@ -14,6 +14,7 @@
 
 #include "core/Types.hpp"
 #include "json.hpp"
+#include "parallel/Omp.hpp"
 
 namespace volcano {
 
@@ -76,6 +77,10 @@ struct McConfig {
     double J = 1.0;                      // energia granicy ziarna
     double kT = 0.0;                     // temperatura Metropolisa (0 = tylko ΔE <= 0)
     bool mobilityFromCooling = true;     // mobilność z czasu stygnięcia (tylko basalt)
+    // mc.update (etap 9): false = "random" — próby w losowych komórkach po kolei (wariant naiwny, sekwencyjny);
+    // true = "checkerboard" — szachownica: kolory komórek niebędących sąsiadami, kolor po kolorze, równolegle.
+    // Pole 1 B w miejscu wypełnienia po mobilityFromCooling — rozmiar struktury bez zmian.
+    bool checkerboard = false;
     double mobilityMin = 0.05;           // mobilność najszybciej zastygłej lawy
     int statsEvery = 10;                 // co ile MCS liczyć statystyki (mc_stats.csv)
     int snapshotsEvery = 0;              // co ile MCS zapisać migawkę kryształów (0 = wyłączone)
@@ -87,6 +92,14 @@ struct McConfig {
 struct OutputConfig {
     OutputFormat format = OutputFormat::Txt;
     int snapshotsEvery = 0;       // co ile kroków zapisać migawkę .bin (0 = wyłączone)
+};
+
+// Równoległość OpenMP (etap 9, sekcja parallel) — opis w parallel/Omp.hpp i docs/etap-9-openmp.md.
+struct ParallelConfig {
+    int threads = 1;                       // 1 = jeden wątek (kod jak w etapie 8); 0 = omp_get_max_threads()
+    Schedule schedule = Schedule::Static;  // harmonogram pętli po warstwach / pasach
+    int chunk = 0;                         // rozmiar porcji harmonogramu; 0 = domyślny OpenMP
+    Affinity affinity = Affinity::None;    // pcores — jeden wątek na rdzeń fizyczny P (parallel/Affinity.hpp)
 };
 
 // Pełna, zwalidowana konfiguracja.
@@ -101,6 +114,7 @@ struct Config {
     CaConfig ca;
     McConfig mc;
     OutputConfig output;
+    ParallelConfig parallel;
 
     std::string sourcePath;              // plik, z którego wczytano config (może być pusty)
     bool spaceFromUser = false;          // czy wymiary podano w pliku lub --set (a nie z domyślnych)
@@ -121,6 +135,9 @@ struct Config {
     // w kolejności listy = flowId 1, 2, … Pusta lista, gdy nie podano.
     std::vector<std::pair<int, int>> ventColumns() const;
 
+    // Ustawienia równoległości do obliczeń (etap 9): threads = 0 -> omp_get_max_threads(), bez OpenMP zawsze 1.
+    ParallelSettings parallelSettings() const;
+
     // Nakłada nadpisanie "ścieżka.z.kropkami=wartość" na JSON. Wartość jest parsowana
     // jako JSON (liczby, true/false, null); jeśli się nie da — traktowana jako tekst.
     static void applyOverride(nlohmann::ordered_json& j, const std::string& keyValue);
@@ -135,5 +152,7 @@ const char* nameOf(GridKind g);
 const char* nameOf(CaMode m);
 const char* nameOf(OutputFormat f);
 const char* nameOf(McDomain d);
+// mc.update: "random" albo "checkerboard".
+inline const char* mcUpdateName(bool checkerboard) { return checkerboard ? "checkerboard" : "random"; }
 
 }  // namespace volcano
