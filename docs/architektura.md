@@ -81,6 +81,8 @@ volcano-ca-mc/
 │                                       etap 9: scaling.py (skalowanie OpenMP), mc_validation.py, plot_etap9.py, micro/omp_overhead.cpp, results/omp/
 │                                       etap 10: scaling_mpi.py (skalowanie MPI), plot_etap10.py, compare_results.py --launch, results/mpi/
 │                                       etap 11: mpi_io.py (typy pochodne i MPI-IO), plot_etap11.py, results/mpi_io/
+│                                       etap 12: zestawienie_e12.py, memory.py, cachegrind.py, cache_info.py, cell_time.py,
+│                                       scaling*.py --weak, micro/bandwidth.cpp, plot_etap12.py, results/testy/
 ├── configs/                            przykładowe configi (test_2d, test_3d, etna_3d, classic_ref, lava_mc_*, mc_full_*, heightmap_*,
 │                                       etna_real, etna_real_boczna, wezuwiusz_real), heightmaps/ (mapy CSV + PNG + JSON, README z przypisaniem
 │                                       danych); gui/ i series/ — generowane (poza repozytorium)
@@ -769,6 +771,7 @@ narzut przy 1 wątku ≤ 3%. Narzędzia: `bench/scaling.py` (S(p), E(p), Amdahl,
 | skalowanie MPI, hybryda, MPI vs OpenMP (etap 10) | `bench/scaling_mpi.py`, `bench/plot_etap10.py`; zgodność `bench/compare_results.py --launch`; wyniki `bench/results/mpi/` |
 | typy pochodne MPI: komunikat warstw z pól SoA, blok configu, tablica kraterów (etap 11) | `engine/src/mpi/MpiHalo.cpp`, `messageType()`, `runTyped()`; `engine/src/mpi/MpiTypes.cpp`, `configBlockType()`, `ventType()`; `MpiSimulation.cpp`, `bcastConfig()`, `bcastVents()` |
 | MPI-IO: pas w pliku (subarray), tekst (`MPI_Exscan`), odczyt `--mc-from` (etap 11) | `engine/src/mpi/MpiIo.cpp`, `writeStrips()`, `writeText()`, `readCaStrip()`; pomiar `bench/mpi_io.py`, wyniki `bench/results/mpi_io/` |
+| testy wydajności: zestawienie S / E, skalowanie słabe, pamięć, pamięć podręczna (etap 12) | `bench/zestawienie_e12.py`, `scaling.py` / `scaling_mpi.py --weak` (`weak_cases()`), `memory.py`, `cachegrind.py`, `cell_time.py`, `micro/bandwidth.cpp`, `plot_etap12.py`; wyniki `bench/results/testy/` |
 | sąsiad przez przesunięcie liniowe | `engine/src/core/Storage.hpp`, `linear()`, `shifted()`, `nextX()`; `LavaCA::nbSteps_` |
 | reguła rozlewania lawy (kierunek największego spadku) | `LavaCA.hpp`, `gatherLavaCandidates()`, `computeDescent()`, `descent()` |
 | wypełnianie krateru (ponding) | `LavaCA.hpp`, `tryPonding()`; opis w `CaRules.hpp` |

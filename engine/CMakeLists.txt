@@ -129,6 +129,9 @@ target_include_directories(mc_kernels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(VOLCANO_OMP_TARGET)
     add_executable(omp_overhead ${PROJECT_SOURCE_DIR}/bench/micro/omp_overhead.cpp)
     target_link_libraries(omp_overhead PRIVATE volcano_engine)
+    # ---- mikrotest przepustowości pamięci i fałszywego współdzielenia (etap 12) ----
+    add_executable(bandwidth ${PROJECT_SOURCE_DIR}/bench/micro/bandwidth.cpp)
+    target_link_libraries(bandwidth PRIVATE volcano_engine)
 endif()
 
 # ---- testy jednostkowe (doctest) ----

@@ -54,7 +54,7 @@ COPY: list[tuple[str, str]] = [
     ("bench/*.py", "bench"),
     ("bench/*.sh", "bench"),
     ("bench/README.md", "bench/README.md"),
-    ("bench/micro", "bench/micro"),             # mc_kernels.cpp, omp_overhead.cpp — cele CMake o tych nazwach
+    ("bench/micro", "bench/micro"),             # mc_kernels.cpp, omp_overhead.cpp, bandwidth.cpp — cele CMake o tych nazwach
     ("bench/results/*.csv", "bench/results"),   # dane pomiarowe cytowane w raporcie (bez bench/profiles/)
     ("CMakeLists.txt", "CMakeLists.txt"),
     ("CMakePresets.json", "CMakePresets.json"),

@@ -60,13 +60,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ab import ROOT, background_load, compare_dirs, fmt_ms, wsl_path  # noqa: E402
-from scaling import amdahl_f, amdahl_s  # noqa: E402
+from scaling import amdahl_f, amdahl_s, summarize_weak, weak_cases  # noqa: E402
 from scaling import cases as omp_cases  # noqa: E402
 
 IS_WINDOWS = os.name == "nt"
 SECTIONS = ["readConfig", "readInput", "allocate", "terrain", "vents", "caSim", "caStats", "save", "mcInit", "mcSim",
             "mcStats", "mcSave", "total"]
 DEFAULT_VARIANTS = "m1,m2,m3,m4,m6,m8"
+# Skalowanie słabe (etap 12, --weak): typy pochodne w wymianie (mpi.pack = datatype — ustawienie pomiarów etapu 12).
+DEFAULT_WEAK_VARIANTS = "m1d,m2d,m4d,m6d,m7d,m8d"
 # Miary z sekcji "mpi" w times.json (klucz w raw.csv -> ścieżka; stage = ca albo mc wg fazy przypadku).
 MPI_FIELDS = {
     "commAvg": ("commMs", "avg"), "commMax": ("commMs", "max"), "haloAvg": ("haloMs", "avg"),
@@ -179,6 +181,8 @@ class Runner:
             times = json.load(f)
         row = {s: times[s] for s in SECTIONS if s in times}
         row["procWall"] = round(wall * 1000.0, 3)
+        for k in ("cells", "steps", "mcs"):  # rozmiar i liczba kroków (skalowanie słabe — normalizacja)
+            row[k] = times.get(k)
         for name, short in RESULT_FILES.items():
             f = times.get("files", {}).get(name)
             if f:
@@ -344,7 +348,10 @@ def from_raw(args: argparse.Namespace, plan: list[dict]) -> int:
     ids = {c["id"] for c in plan}
     raw = [r for r in raw if r["case"] in ids]
     variants = [parse_variant(l) for l in dict.fromkeys(r["variant"] for r in raw)]
-    summary, md = summarize(raw, plan, variants)
+    if raw and raw[0].get("mode") == "weak":
+        summary, md = summarize_weak(raw, plan, cores_key="cores")
+    else:
+        summary, md = summarize(raw, plan, variants)
     notes = []
     for s in srcs:
         part_md = s.with_name(s.name.replace("_raw.csv", ".md"))
@@ -367,7 +374,9 @@ def main() -> int:
                                       "build-gcc-release/bin/engine)")
     ap.add_argument("--mpiexec", default="mpiexec", help="polecenie mpiexec (domyślnie z PATH)")
     ap.add_argument("--cases", help="tylko wybrane przypadki (id po przecinku)")
-    ap.add_argument("--variants", default=DEFAULT_VARIANTS, help=f"warianty (domyślnie {DEFAULT_VARIANTS})")
+    ap.add_argument("--variants", help=f"warianty (domyślnie {DEFAULT_VARIANTS}; z --weak {DEFAULT_WEAK_VARIANTS})")
+    ap.add_argument("--weak", action="store_true", help="skalowanie słabe (etap 12): przestrzeń razy liczba rdzeni "
+                                                         "wariantu, przypadki scaling.weak_cases()")
     ap.add_argument("--reps", type=int, help="powtórzenia (domyślnie z tabeli przypadków)")
     ap.add_argument("--min-reps", type=int, default=5, help="minimalna liczba powtórzeń (domyślnie 5)")
     ap.add_argument("--name", help="nazwa zestawu wyników (domyślnie skalowanie_mpi_<data>_<godzina>)")
@@ -385,16 +394,18 @@ def main() -> int:
         args.omp_bin = "build-gcc-release/bin/engine" if linux else "build/Release/engine.exe"
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
+    if not args.variants:
+        args.variants = DEFAULT_WEAK_VARIANTS if args.weak else DEFAULT_VARIANTS
 
-    plan = cases()
+    plan = weak_cases() if args.weak else cases()
     if args.cases:
         wanted = [c.strip() for c in args.cases.split(",")]
         plan = [c for c in plan if c["id"] in wanted]
     variants = [parse_variant(s) for s in args.variants.split(",") if s.strip()]
     if args.list:
-        for c in cases():
+        for c in plan if args.weak else cases():
             print(f"{c['group']:10s} {c['id']:30s} reps {c['reps']:2d}  faza {c['phase']:6s} harmonogram "
-                  f"{c['schedule'][0]},{c['schedule'][1]}")
+                  f"{c['schedule'][0]},{c['schedule'][1]}" + (f"  {c['desc']}" if args.weak else ""))
         return 0
     if args.from_raw:
         if not args.name:
@@ -416,6 +427,8 @@ def main() -> int:
                           ("--mpiexec", args.mpiexec if args.mpiexec != "mpiexec" else None)):
             if val:
                 cmd += [flag, str(val)]
+        if args.weak:
+            cmd.append("--weak")
         r = subprocess.run(cmd)
         load_end = background_load()
         md = Path(args.out) / f"{name}.md"
@@ -457,11 +470,17 @@ def main() -> int:
           f"({', '.join(v['label'] for v in variants)}), przebiegów {sum(c['reps'] for c in plan) * len(variants)}")
     if load_start:
         print(f"Tło: {load_start['totalPercent']:.0f}% CPU ({', '.join(load_start['top'][:3])})", flush=True)
-    cfgs = {c["id"]: runner.prepare_config(c) for c in plan}
+    if args.weak:
+        # Skalowanie słabe: osobny config dla każdej liczby rdzeni wariantu (przestrzeń tyle razy większa).
+        cfgs = {(c["id"], n): runner.prepare_config({"id": f"{c['id']}_c{n}", "config": c["size"](n, tmp)})
+                for c in plan for n in sorted({v["cores"] for v in variants})}
+    else:
+        cfgs = {c["id"]: runner.prepare_config(c) for c in plan}
+    cfg_of = (lambda cid, v: cfgs[(cid, v["cores"])]) if args.weak else (lambda cid, v: cfgs[cid])  # noqa: E731
     # Rozgrzewka: pliki programów w pamięci podręcznej systemu, start mpiexec.
     first = plan[0]
     for v in variants[:2]:
-        runner.run(v, cfgs[first["id"]], tmp / "warm", first["phase"], *first["schedule"])
+        runner.run(v, cfg_of(first["id"], v), tmp / "warm", first["phase"], *first["schedule"])
 
     raw: list[dict] = []
     failures = 0
@@ -474,8 +493,9 @@ def main() -> int:
             outs = {}
             for v in order:
                 out = tmp / "out" / f"{case['id']}__{v['label']}__{rep}"
-                row = runner.run(v, cfgs[case["id"]], out, case["phase"], *case["schedule"])
-                row.update({"name": name, "case": case["id"], "group": case["group"], "variant": v["label"],
+                row = runner.run(v, cfg_of(case["id"], v), out, case["phase"], *case["schedule"])
+                row.update({"name": name, "mode": "weak" if args.weak else "scaling", "case": case["id"],
+                            "group": case["group"], "variant": v["label"],
                             "kind": v["kind"], "procs": v["procs"], "threads": v["threads"], "cores": v["cores"],
                             "exchange": v["exchange"], "pack": v["pack"], "bcast": v["bcast"], "io": v["io"],
                             "schedule": case["schedule"][0], "chunk": case["schedule"][1],
@@ -486,6 +506,9 @@ def main() -> int:
             outs[ref_label][1]["identical"] = True
             for label, (out, row) in outs.items():
                 if label == ref_label:
+                    continue
+                if args.weak:  # inne rozmiary — porównanie bitowe nie ma sensu (zgodność: etapy 10–11, ctest)
+                    row["identical"] = ""
                     continue
                 diffs = compare_dirs(outs[ref_label][0], out)
                 row["identical"] = not diffs
@@ -504,15 +527,19 @@ def main() -> int:
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    keys = ["name", "case", "group", "variant", "kind", "procs", "threads", "cores", "exchange", "pack", "bcast", "io",
-            "schedule", "chunk", "rep", "timestamp", *SECTIONS, "procWall", *MPI_FIELDS, "gatherMax", "initMax",
+    keys = ["name", "mode", "case", "group", "variant", "kind", "procs", "threads", "cores", "exchange", "pack", "bcast",
+            "io", "schedule", "chunk", "rep", "timestamp", *SECTIONS, "procWall", "cells", "steps", "mcs", *MPI_FIELDS,
+            "gatherMax", "initMax",
             "bcastMs", "bcastBytes", *IO_FIELDS, "priority", "cpus", "computePerRank", "identical"]
     with open(out_dir / f"{name}_raw.csv", "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys, extrasaction="ignore", lineterminator="\n")
         w.writeheader()
         w.writerows(raw)
     raw_s = [{k: ("" if v is None else v) for k, v in r.items()} for r in raw]
-    summary, md = summarize(raw_s, plan, variants)
+    if args.weak:
+        summary, md = summarize_weak(raw_s, plan, cores_key="cores")
+    else:
+        summary, md = summarize(raw_s, plan, variants)
     header = [f"# Skalowanie MPI `{name}`", ""]
     if args.note:
         header += [args.note, ""]
@@ -527,8 +554,12 @@ def main() -> int:
     if load_start:
         header.append(f"- Tło: start {load_start['totalPercent']:.0f}% CPU ({', '.join(load_start['top'][:3])}), "
                       f"koniec {load_end.get('totalPercent', 0):.0f}%")
-    header.append(f"- Zgodność wyników z `{variants[0]['label']}`: " +
-                  ("wszystkie przebiegi bitowo zgodne" if failures == 0 else f"**{failures} różnic**"))
+    if args.weak:
+        header.append("- Skalowanie słabe: przestrzeń razy liczba rdzeni wariantu, `output.format = none`; wyników "
+                      "różnych rozmiarów nie porównuje się bitowo (zgodność procesów — etapy 10–11)")
+    else:
+        header.append(f"- Zgodność wyników z `{variants[0]['label']}`: " +
+                      ("wszystkie przebiegi bitowo zgodne" if failures == 0 else f"**{failures} różnic**"))
     header.append("")
     write_outputs(out_dir, name, summary, md, header)
     print(f"({minutes:.1f} min); różnic wyników: {failures}")

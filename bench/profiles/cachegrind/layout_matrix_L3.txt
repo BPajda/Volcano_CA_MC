@@ -1,0 +1,31 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 8-way associative
+D1 cache:         49152 B, 64 B, 12-way associative
+LL cache:         37748736 B, 64 B, 18-way associative
+Command:          <tmp> --config <tmp> --out <tmp> --threads 1
+Data file:        <tmp>
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: D1mr DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Dr                     D1mr               DLmr            Dw                   D1mw               DLmw             
+--------------------------------------------------------------------------------
+3,247,944,537 (100.0%) 9,470,233 (100.0%) 37,077 (100.0%) 518,240,111 (100.0%) 9,468,396 (100.0%) 651,730 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Dr                     D1mr               DLmr            Dw                   D1mw               DLmw              file:function
+--------------------------------------------------------------------------------
+1,577,375,520 (48.57%) 7,690,458 (81.21%)      0          320,000,000 (61.75%) 8,181,060 (86.40%)       0           <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::MatrixStorage>::updateClassic(volcano::LavaCA<volcano::MatrixStorage>::StepCtx, int, int, volcano::CandidateVote&, volcano::LavaCA<volcano::MatrixStorage>::StepCounts&) [clone .isra.0]
+  486,547,788 (14.98%)   642,159 ( 6.78%)      0          144,900,962 (27.96%)         0                0           <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::MatrixStorage>::updateClassic(volcano::LavaCA<volcano::MatrixStorage>::StepCtx, int, int, volcano::CandidateVote&, volcano::LavaCA<volcano::MatrixStorage>::StepCounts&) [clone .isra.0]
+    1,775,301 ( 0.05%)   404,205 ( 4.27%)     19 ( 0.05%)   1,706,108 ( 0.33%)   793,599 ( 8.38%) 433,473 (66.51%)  ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S:__memcpy_avx_unaligned_erms
+    2,242,240 ( 0.07%)   291,600 ( 3.08%)      0                    0                  0                0           <repo>/engine/src/core/Storage.hpp:volcano::MatrixStorage::cell(int, int, int) const
+   19,002,015 ( 0.59%)   206,403 ( 2.18%) 26,162 (70.56%)   5,000,008 ( 0.96%)   203,130 ( 2.15%)       0           <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::MatrixStorage>(volcano::MatrixStorage const&, int)
+    7,868,030 ( 0.24%)   156,552 ( 1.65%)     24 ( 0.06%)   1,100,606 ( 0.21%)         3 ( 0.00%)       0           <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::flowSums(volcano::Microstructure const&, std::vector<volcano::Vent, std::allocator<volcano::Vent> > const&, int, int)
+      835,682 ( 0.03%)    20,675 ( 0.22%)    917 ( 2.47%)     371,512 ( 0.07%)       502 ( 0.01%)     115 ( 0.02%)  ./malloc/./malloc/malloc.c:_int_free
+      130,435 ( 0.00%)    16,381 ( 0.17%)      0                  126 ( 0.00%)         2 ( 0.00%)       0           /usr/include/c++/11/bits/stl_vector.h:volcano::RunSummary volcano::Simulation::runWith<volcano::MatrixStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&)
+

@@ -1,0 +1,31 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 8-way associative
+D1 cache:         49152 B, 64 B, 12-way associative
+LL cache:         37748736 B, 64 B, 18-way associative
+Command:          <tmp> --config <tmp> --out <tmp> --threads 1
+Data file:        <tmp>
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: D1mr DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Dr                   D1mr               DLmr               Dw                   D1mw                DLmw                
+--------------------------------------------------------------------------------
+849,875,352 (100.0%) 9,229,489 (100.0%) 8,277,837 (100.0%) 269,572,004 (100.0%) 12,026,771 (100.0%) 11,924,818 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Dr                   D1mr               DLmr               Dw                   D1mw               DLmw                file:function
+--------------------------------------------------------------------------------
+452,794,004 (53.28%) 4,731,848 (51.27%) 4,712,945 (56.93%) 150,947,494 (56.00%) 5,114,262 (42.52%) 5,085,527 (42.65%)  <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::stepClassic()
+ 50,361,455 ( 5.93%) 1,713,446 (18.56%) 1,704,760 (20.59%)  41,934,090 (15.56%) 1,703,577 (14.16%) 1,670,071 (14.01%)  <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::VectorStorage>(volcano::VectorStorage const&, int)
+ 33,873,362 ( 3.99%) 1,313,694 (14.23%) 1,310,166 (15.83%)      79,958 ( 0.03%)       114 ( 0.00%)         1 ( 0.00%)  <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::flowSums(volcano::Microstructure const&, std::vector<volcano::Vent, std::allocator<volcano::Vent> > const&, int, int)
+150,951,229 (17.76%) 1,186,167 (12.85%)   371,241 ( 4.48%)      19,270 ( 0.01%)     5,397 ( 0.04%)         6 ( 0.00%)  <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::stepClassic()
+  1,051,595 ( 0.12%)   131,141 ( 1.42%)   130,345 ( 1.57%)         827 ( 0.00%)         2 ( 0.00%)         0           /usr/include/c++/11/bits/stl_vector.h:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&)
+    286,899 ( 0.03%)    46,990 ( 0.51%)    37,864 ( 0.46%)     191,271 ( 0.07%)     7,089 ( 0.06%)     6,570 ( 0.06%)  <repo>/engine/src/core/Storage.hpp:void volcano::Boundary::applyWith<volcano::VectorStorage, volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const::{lambda(long, auto:1 const&)#1}>(volcano::VectorStorage&, volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const::{lambda(long, auto:1 const&)#1}&&) const [clone .isra.0]
+    184,837 ( 0.02%)    14,880 ( 0.16%)         7 ( 0.00%)     163,307 ( 0.06%)         7 ( 0.00%)         0           ./malloc/./malloc/malloc.c:malloc_consolidate
+  2,739,153 ( 0.32%)    14,691 ( 0.16%)       110 ( 0.00%)   1,964,901 ( 0.73%)       808 ( 0.01%)       419 ( 0.00%)  <repo>/engine/third_party/json.hpp:nlohmann::json_abi_v3_11_3::basic_json<nlohmann::json_abi_v3_11_3::ordered_map, std::vector, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, bool, long, unsigned long, double, std::allocator, nlohmann::json_abi_v3_11_3::adl_serializer, std::vector<unsigned char, std::allocator<unsigned char> >, void>::json_value::destroy(nlohmann::json_abi_v3_11_3::detail::value_t)
+

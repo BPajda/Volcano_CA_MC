@@ -1,0 +1,38 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 8-way associative
+D1 cache:         49152 B, 64 B, 12-way associative
+LL cache:         37748736 B, 64 B, 18-way associative
+Command:          <tmp> --config <tmp> --out <tmp> --threads 1
+Data file:        <tmp>
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: D1mr DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Dr                   D1mr               DLmr           Dw                  D1mw               DLmw             
+--------------------------------------------------------------------------------
+277,548,640 (100.0%) 4,791,956 (100.0%) 8,843 (100.0%) 79,248,739 (100.0%) 5,042,876 (100.0%) 523,161 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Dr                  D1mr               DLmr           Dw                  D1mw               DLmw              file:function
+--------------------------------------------------------------------------------
+14,794,672 ( 5.33%) 1,435,006 (29.95%)     0                   0                  0                0           <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::RuleSums volcano::LavaCA<volcano::VectorStorage>::frontRulesLayer<false>(int, volcano::LavaCA<volcano::VectorStorage>::StepCtx const&, volcano::CandidateVote&)
+20,071,100 ( 7.23%) 1,264,178 (26.38%)     0          11,071,211 (13.97%)   234,968 ( 4.66%)       0           <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::RuleSums volcano::LavaCA<volcano::VectorStorage>::frontRulesLayer<false>(int, volcano::LavaCA<volcano::VectorStorage>::StepCtx const&, volcano::CandidateVote&)
+69,207,694 (24.94%) 1,083,443 (22.61%)     0           6,038,674 ( 7.62%)   189,853 ( 3.76%)   3,447 ( 0.66%)  <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::StepCounts volcano::LavaCA<volcano::VectorStorage>::frontStepSequential<false>(volcano::LapTimer*)
+29,423,655 (10.60%)   440,417 ( 9.19%)     0           5,003,011 ( 6.31%) 3,056,971 (60.62%)       0           <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::StepCounts volcano::LavaCA<volcano::VectorStorage>::frontStepSequential<false>(volcano::LapTimer*)
+ 6,140,312 ( 2.21%)   207,695 ( 4.33%)     0           5,000,208 ( 6.31%)   203,130 ( 4.03%)       0           <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::VectorStorage>(volcano::VectorStorage const&, int)
+18,160,042 ( 6.54%)   156,990 ( 3.28%)     0           4,000,038 ( 5.05%)         1 ( 0.00%)       0           <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::flowSums(volcano::Microstructure const&, std::vector<volcano::Vent, std::allocator<volcano::Vent> > const&, int, int)
+   514,717 ( 0.19%)    58,790 ( 1.23%)     0             327,881 ( 0.41%)    12,941 ( 0.26%)       0           <repo>/engine/src/core/Storage.hpp:void volcano::Boundary::applyWith<volcano::VectorStorage, volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const::{lambda(long, auto:1 const&)#1}>(volcano::VectorStorage&, volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const::{lambda(long, auto:1 const&)#1}&&) const [clone .isra.0]
+   163,556 ( 0.06%)    20,040 ( 0.42%)     9 ( 0.10%)    142,841 ( 0.18%)    46,265 ( 0.92%)  12,189 ( 2.33%)  ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S:__memcpy_avx_unaligned_erms
+   203,890 ( 0.07%)    18,511 ( 0.39%)     0               8,544 ( 0.01%)     1,044 ( 0.02%)     613 ( 0.12%)  /usr/include/c++/11/ext/new_allocator.h:void std::vector<volcano::LavaCA<volcano::VectorStorage>::Change, std::allocator<volcano::LavaCA<volcano::VectorStorage>::Change> >::_M_realloc_insert<volcano::LavaCA<volcano::VectorStorage>::Change>(__gnu_cxx::__normal_iterator<volcano::LavaCA<volcano::VectorStorage>::Change*, std::vector<volcano::LavaCA<volcano::VectorStorage>::Change, std::allocator<volcano::LavaCA<volcano::VectorStorage>::Change> > >, volcano::LavaCA<volcano::VectorStorage>::Change&&)
+ 5,000,000 ( 1.80%)    16,037 ( 0.33%)     0                   0                  0                0           <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::initFront()
+   121,246 ( 0.04%)    15,396 ( 0.32%)     0                 127 ( 0.00%)         2 ( 0.00%)       0           /usr/include/c++/11/bits/stl_vector.h:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&)
+   189,772 ( 0.07%)    11,368 ( 0.24%)     0             183,781 ( 0.23%)     5,832 ( 0.12%)     972 ( 0.19%)  ./malloc/./malloc/malloc.c:_int_malloc
+ 6,034,136 ( 2.17%)    10,368 ( 0.22%)     0                   0                  0                0           /usr/include/c++/11/bits/stl_iterator.h:volcano::LavaCA<volcano::VectorStorage>::StepCounts volcano::LavaCA<volcano::VectorStorage>::frontStepSequential<false>(volcano::LapTimer*)
+ 2,082,968 ( 0.75%)     5,346 ( 0.11%)    12 ( 0.14%)      2,407 ( 0.00%)        55 ( 0.00%)      19 ( 0.00%)  ???:???
+ 6,056,120 ( 2.18%)     5,141 ( 0.11%)     0              25,929 ( 0.03%)         0                0           /usr/include/c++/11/bits/stl_vector.h:volcano::LavaCA<volcano::VectorStorage>::StepCounts volcano::LavaCA<volcano::VectorStorage>::frontStepSequential<false>(volcano::LapTimer*)
+

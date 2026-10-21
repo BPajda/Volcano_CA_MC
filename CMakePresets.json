@@ -87,6 +87,14 @@
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG -march=native" }
     },
     {
+      "name": "gcc-release-g",
+      "inherits": "gcc-base",
+      "displayName": "GCC Release + -g (etap 12, cachegrind)",
+      "description": "Kod jak gcc-release (-O3 z VOLCANO_OPT_FLAG, -falign-functions=64) z informacją dla debuggera — valgrind --tool=cachegrind / cg_annotate przypisuje chybienia pamięci podręcznej do funkcji i wierszy; -g nie zmienia kodu GCC.",
+      "binaryDir": "${sourceDir}/build-gcc-release-g",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CMAKE_CXX_FLAGS_RELEASE": "-DNDEBUG -g" }
+    },
+    {
       "name": "gcc-debug",
       "inherits": "gcc-base",
       "displayName": "GCC Debug",
@@ -154,6 +162,7 @@
     { "name": "msvc-profile-noinline", "configurePreset": "msvc-profile-noinline", "configuration": "Release" },
     { "name": "gcc-release",  "configurePreset": "gcc-release" },
     { "name": "gcc-release-native", "configurePreset": "gcc-release-native" },
+    { "name": "gcc-release-g", "configurePreset": "gcc-release-g" },
     { "name": "gcc-debug",    "configurePreset": "gcc-debug" },
     { "name": "gcc-o0",       "configurePreset": "gcc-o0" },
     { "name": "gcc-o2",       "configurePreset": "gcc-o2" },

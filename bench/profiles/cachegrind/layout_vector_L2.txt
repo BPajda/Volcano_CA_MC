@@ -1,0 +1,29 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 8-way associative
+D1 cache:         49152 B, 64 B, 12-way associative
+LL cache:         2097152 B, 64 B, 16-way associative
+Command:          <tmp> --config <tmp> --out <tmp> --threads 1
+Data file:        <tmp>
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: D1mr DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Dr                     D1mr               DLmr               Dw                   D1mw               DLmw               
+--------------------------------------------------------------------------------
+1,173,970,270 (100.0%) 8,751,102 (100.0%) 8,699,399 (100.0%) 289,888,485 (100.0%) 9,000,792 (100.0%) 8,996,079 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Dr                   D1mr               DLmr               Dw                   D1mw               DLmw                file:function
+--------------------------------------------------------------------------------
+703,974,962 (59.97%) 7,511,706 (85.84%) 7,499,984 (86.21%) 236,156,300 (81.46%) 8,141,520 (90.45%) 8,141,520 (90.50%)  <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::stepClassic()
+221,452,744 (18.86%)   623,439 ( 7.12%)   619,344 ( 7.12%)     276,242 ( 0.10%)       580 ( 0.01%)       176 ( 0.00%)  <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::stepClassic()
+  1,322,600 ( 0.11%)   216,481 ( 2.47%)   193,337 ( 2.22%)     881,800 ( 0.30%)    32,593 ( 0.36%)    31,466 ( 0.35%)  <repo>/engine/src/core/Storage.hpp:void volcano::Boundary::applyWith<volcano::VectorStorage, volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const::{lambda(long, auto:1 const&)#1}>(volcano::VectorStorage&, volcano::Boundary::apply<volcano::VectorStorage>(volcano::VectorStorage&) const::{lambda(long, auto:1 const&)#1}&&) const [clone .isra.0]
+  6,014,015 ( 0.51%)   203,544 ( 2.33%)   203,544 ( 2.34%)   5,000,010 ( 1.72%)   203,130 ( 2.26%)   203,129 ( 2.26%)  <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::VectorStorage>(volcano::VectorStorage const&, int)
+  7,868,030 ( 0.67%)   156,538 ( 1.79%)   156,324 ( 1.80%)   1,100,606 ( 0.38%)         1 ( 0.00%)         1 ( 0.00%)  <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::flowSums(volcano::Microstructure const&, std::vector<volcano::Vent, std::allocator<volcano::Vent> > const&, int, int)
+    124,443 ( 0.01%)    15,538 ( 0.18%)    15,437 ( 0.18%)         127 ( 0.00%)         2 ( 0.00%)         0           /usr/include/c++/11/bits/stl_vector.h:volcano::RunSummary volcano::Simulation::runWith<volcano::VectorStorage>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, volcano::TimingReport&)
+

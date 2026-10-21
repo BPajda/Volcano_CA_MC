@@ -107,6 +107,127 @@ def cases() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Skalowanie słabe (etap 12, --weak): rozmiar przestrzeni rośnie z liczbą rdzeni p (prawo Gustafsona), praca na rdzeń
+# stała; E_w(p) = T(1) / T(p). Rozmiar rośnie w osi warstw podziału (2D — y; lawa 3D — powierzchnia x–y, bo warstwy
+# to z), więc każdy wątek / proces dostaje tyle samo warstw co przy p = 1 (2D) albo warstwy p razy większe (lawa).
+# Zapis wyników wyłączony (output.format = none — zapis zestawiony osobno w etapie 11).
+# ---------------------------------------------------------------------------
+WEAK_TILE = 128  # bok kafla terenu lawy (jak lava_big z etapów 9–11)
+
+
+def lava_tile_heightmap(tiles: int, path: Path) -> list[list[int]]:
+    """Mapa wysokości lawy: `tiles` takich samych kafli 128 × 128 (stożek jak lava_big: wysokość 48, promień 60, krater
+    o promieniu 6 i głębokości 3, deterministyczne nierówności) wzdłuż y; zwraca położenia kraterów — 24 na kafel na
+    zboczu (pierścień o promieniu 26). Każda warstwa z ma więc ten sam skład skała / powietrze przy każdym p."""
+    import math
+    n = WEAK_TILE
+    c = (n - 1) / 2.0
+    tile = []
+    for y in range(n):
+        row = []
+        for x in range(n):
+            d = math.hypot(x - c, y - c)
+            h = max(0.0, 48.0 * (1.0 - d / 60.0))
+            if d < 6.0:
+                h -= 3.0 * (1.0 - d / 6.0)
+            h += 1.5 * math.sin(0.37 * x + 0.11 * y) * math.cos(0.23 * y - 0.05 * x)  # nierówności (bez losowania)
+            row.append(max(0.0, h))
+        tile.append(row)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(f"# kafel lawy {n} × {n} × {tiles} wzdłuż y (bench/scaling.py --weak)\n")
+        for t in range(tiles):
+            for row in tile:
+                f.write(",".join(f"{v:.2f}" for v in row) + "\n")
+    vents = []
+    for t in range(tiles):
+        for k in range(24):
+            a = 2.0 * math.pi * (k + 0.5) / 24.0
+            vents.append([round(c + 26.0 * math.cos(a)), round(c + 26.0 * math.sin(a)) + t * n])
+    return vents
+
+
+def weak_cases() -> list[dict]:
+    """Przypadki skalowania słabego; size(p, tmp) -> config przestrzeni p razy większej niż przy p = 1."""
+    def classic_w(p: int, tmp: Path) -> dict:
+        return classic((2000, 2000 * p, 1), 400 * p, "von_neumann", fmt="none")
+
+    def mc_w(p: int, tmp: Path) -> dict:
+        return from_file("mc_full_2d", {"space": {"nx": 1000, "ny": 1000 * p, "nz": 1},
+                                        "mc": {"update": "checkerboard", "mcs": 30, "statsEvery": 30},
+                                        "output": {"format": "none"}})
+
+    def lava_w(sweep: str, steps: int):
+        def make(p: int, tmp: Path) -> dict:
+            hm = tmp / "heightmaps" / f"weak_tile_{p}.csv"
+            vents = lava_tile_heightmap(p, hm)
+            cfg = from_file("test_3d", {"space": {"nx": WEAK_TILE, "ny": WEAK_TILE * p, "nz": 64},
+                                        "terrain": {"type": "file", "file": str(hm)},
+                                        "vents": {"count": len(vents), "placement": "positions", "eruptionSteps": 400},
+                                        "ca": {"coolingLateral": 20, "coolingFall": 15, "sweep": sweep,
+                                               "maxSteps": steps},
+                                        "output": {"format": "none"}})
+            cfg["vents"]["positions"] = vents
+            return cfg
+        return make
+
+    return [
+        {"id": "weak_classic_2d", "group": "ca_classic", "phase": "caSim", "reps": 5, "schedule": ("static", 0),
+         "size": classic_w, "desc": "classic 2000 × 2000·p, 400·p zarodków, VN"},
+        {"id": "weak_mc_cb_2d", "group": "mc", "phase": "mcSim", "reps": 5, "schedule": ("guided", 4),
+         "size": mc_w, "desc": "MC szachownica 1000 × 1000·p, VN, 30 MCS"},
+        {"id": "weak_lava_full", "group": "ca_lava", "phase": "caSim", "reps": 5, "schedule": ("guided", 0),
+         "size": lava_w("full", 20), "desc": "lawa full 128 × 128·p × 64, 24·p kraterów, 20 kroków"},
+        {"id": "weak_lava_front", "group": "ca_lava", "phase": "caSim", "reps": 5, "schedule": ("static", 1),
+         "size": lava_w("front", 5000), "desc": "lawa front 128 × 128·p × 64, 24·p kraterów"},
+    ]
+
+
+def summarize_weak(raw: list[dict], plan: list[dict], cores_key: str = "threads") -> tuple[list[dict], list[str]]:
+    """Skalowanie słabe: mediana [min–max] T(p), E_w = T(1)/T(p) fazy i całości, czas na komórkę × krok (CA) albo na
+    próbę MC (normalizacja — liczba kroków classic zależy od położenia zarodków i może się zmieniać z p)."""
+    summary = []
+    md = ["| Przypadek | wariant | p | komórki | kroki / MCS | faza [ms] | E_w fazy | total [ms] | E_w total | "
+          "ns rdzenia / (komórka × krok) albo / próbę | E_w znormalizowana |",
+          "|---|---|---|---|---|---|---|---|---|---|---|"]
+    for case in plan:
+        rows = [r for r in raw if r["case"] == case["id"]]
+        if not rows:
+            continue
+        ph = case["phase"]
+        labels = list(dict.fromkeys(r["variant"] for r in rows))
+        ent = []
+        for l in labels:
+            rl = [r for r in rows if r["variant"] == l]
+            e = {"case": case["id"], "group": case["group"], "variant": l, "cores": int(rl[0][cores_key]),
+                 "phase": ph, "n": len(rl), "cells": int(float(rl[0]["cells"])),
+                 "work": float(rl[0].get("mcs") or rl[0].get("steps") or 1)}
+            for m in ("total", ph):
+                vals = [float(r[m]) for r in rl if r.get(m) not in (None, "")]
+                e[f"{m}_med"] = statistics.median(vals)
+                e[f"{m}_min"] = min(vals)
+                e[f"{m}_max"] = max(vals)
+            # czas rdzenia na jednostkę pracy: faza × p / (komórki × kroki albo MCS)
+            e["ns_unit"] = e[f"{ph}_med"] * 1e6 * e["cores"] / (e["cells"] * e["work"])
+            ent.append(e)
+        base = next((e for e in ent if e["cores"] == 1), None)
+        for e in ent:
+            if base:
+                e["Ew_phase"] = base[f"{ph}_med"] / e[f"{ph}_med"]
+                e["Ew_total"] = base["total_med"] / e["total_med"]
+                e["Ew_norm"] = base["ns_unit"] / e["ns_unit"]
+            summary.append(e)
+            g = lambda k: f"{e[k]:.2f}" if k in e else "—"  # noqa: E731
+            md.append(f"| {case['id']} | {e['variant']} | {e['cores']} | {e['cells']:,}".replace(",", " ") +
+                      f" | {e['work']:.0f} | {fmt_ms(e[f'{ph}_med'])} [{fmt_ms(e[f'{ph}_min'])}–"
+                      f"{fmt_ms(e[f'{ph}_max'])}] | {g('Ew_phase')} | {fmt_ms(e['total_med'])} | {g('Ew_total')} | "
+                      f"{e['ns_unit']:.2f} | {g('Ew_norm')} |")
+    md += ["", "E_w = T(1) / T(p) przy przestrzeni p razy większej (ideał 1); znormalizowana — z czasu na (komórkę × "
+           "krok / p), gdy liczba kroków albo MCS zmienia się z p (classic: największa luka między zarodkami)."]
+    return summary, md
+
+
+# ---------------------------------------------------------------------------
 # Uruchomienie
 # ---------------------------------------------------------------------------
 class Runner:
@@ -159,6 +280,8 @@ class Runner:
         row["procWall"] = round(wall * 1000.0, 3)
         row["threadsUsed"] = times.get("threads")
         row["cpus"] = " ".join(str(c) for c in times.get("cpus", []))
+        for k in ("cells", "steps", "mcs"):  # rozmiar i liczba kroków (skalowanie słabe — normalizacja)
+            row[k] = times.get(k)
         if stats:
             row["threadStats"] = times.get("threadStats")
         return row
@@ -294,7 +417,11 @@ def from_raw(args: argparse.Namespace, plan: list[dict]) -> int:
     ids = {c["id"] for c in plan}
     raw = [r for r in raw if r["case"] in ids]
     mode = raw[0].get("mode", "scaling") if raw else "scaling"
-    summary, md = (summarize_schedules if mode == "schedules" else summarize_scaling)(raw, plan)
+    if mode == "weak":
+        ids = {r["case"] for r in raw}
+        summary, md = summarize_weak(raw, [c for c in weak_cases() if c["id"] in ids])
+    else:
+        summary, md = (summarize_schedules if mode == "schedules" else summarize_scaling)(raw, plan)
     notes = []
     for s in srcs:
         part_md = s.with_name(s.name.replace("_raw.csv", ".md"))
@@ -327,6 +454,8 @@ def main() -> int:
     ap.add_argument("--reps", type=int, help="powtórzenia (domyślnie z tabeli przypadków)")
     ap.add_argument("--min-reps", type=int, default=5, help="minimalna liczba powtórzeń (domyślnie 5)")
     ap.add_argument("--schedules", action="store_true", help="porównanie harmonogramów przy --sched-threads wątkach")
+    ap.add_argument("--weak", action="store_true", help="skalowanie słabe (etap 12): przestrzeń p razy większa przy p "
+                                                         "wątkach, przypadki weak_cases()")
     ap.add_argument("--sched-threads", type=int, default=8, help="liczba wątków w trybie --schedules (domyślnie 8)")
     ap.add_argument("--no-stats", action="store_true", help="bez przebiegów --thread-stats (czas pracy wątków)")
     ap.add_argument("--name", help="nazwa zestawu wyników (domyślnie skalowanie_<data>_<godzina>)")
@@ -345,14 +474,15 @@ def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-    plan = cases()
+    plan = weak_cases() if args.weak else cases()
     if args.cases:
         wanted = [c.strip() for c in args.cases.split(",")]
         plan = [c for c in plan if c["id"] in wanted]
     if args.list:
-        for c in cases():
+        for c in plan if args.weak else cases():
             print(f"{c['group']:10s} {c['id']:30s} reps {c['reps']:2d}  faza {c['phase']:6s} harmonogram "
-                  f"{c['schedule'][0]},{c['schedule'][1]}  wątki {c.get('threads', THREADS)}")
+                  f"{c['schedule'][0]},{c['schedule'][1]}  wątki {c.get('threads', THREADS)}"
+                  + (f"  {c['desc']}" if args.weak else ""))
         return 0
     if args.from_raw:
         if not args.name:
@@ -371,6 +501,8 @@ def main() -> int:
                 cmd += [flag, str(val)]
         if args.schedules:
             cmd.append("--schedules")
+        if args.weak:
+            cmd.append("--weak")
         if args.no_stats:
             cmd.append("--no-stats")
         r = subprocess.run(cmd)
@@ -417,9 +549,15 @@ def main() -> int:
           f"przebiegów {sum(c['reps'] for c, *_ in variants)}")
     if load_start:
         print(f"Tło: {load_start['totalPercent']:.0f}% CPU ({', '.join(load_start['top'][:3])})", flush=True)
-    cfgs = {c["id"]: runner.prepare_config(c) for c in plan}
+    if args.weak:
+        # Skalowanie słabe: osobny config dla każdego p (przestrzeń p razy większa).
+        cfgs = {(c["id"], p): runner.prepare_config({"id": f"{c['id']}_p{p}", "config": c["size"](p, tmp)})
+                for c in plan for p in threads}
+    else:
+        cfgs = {c["id"]: runner.prepare_config(c) for c in plan}
+    cfg_of = (lambda cid, p: cfgs[(cid, p)]) if args.weak else (lambda cid, p: cfgs[cid])  # noqa: E731
     # Rozgrzewka: plik programu w pamięci podręcznej systemu, start puli wątków.
-    runner.run(cfgs[plan[0]["id"]], tmp / "warm", 2, "static", 0)
+    runner.run(cfg_of(plan[0]["id"], threads[0]), tmp / "warm", 2, "static", 0)
 
     raw: list[dict] = []
     failures = 0
@@ -433,8 +571,9 @@ def main() -> int:
             outs = {}
             for c, label, p, sch, ch in order:
                 out = tmp / "out" / f"{case['id']}__{label}__{rep}"
-                row = runner.run(cfgs[case["id"]], out, p, sch, ch)
-                row.update({"name": name, "mode": "schedules" if args.schedules else "scaling", "case": case["id"],
+                row = runner.run(cfg_of(case["id"], p), out, p, sch, ch)
+                mode = "weak" if args.weak else ("schedules" if args.schedules else "scaling")
+                row.update({"name": name, "mode": mode, "case": case["id"],
                             "group": case["group"], "variant": label, "threads": p, "schedule": sch, "chunk": ch,
                             "rep": rep, "timestamp": dt.datetime.now().isoformat(timespec="seconds")})
                 outs[label] = (out, row)
@@ -443,6 +582,9 @@ def main() -> int:
             outs[ref_label][1]["identical"] = True
             for label, (out, row) in outs.items():
                 if label == ref_label:
+                    continue
+                if args.weak:  # inne rozmiary — porównanie bitowe nie ma sensu (zgodność: etapy 9–10, ctest)
+                    row["identical"] = ""
                     continue
                 diffs = compare_dirs(outs[ref_label][0], out)
                 row["identical"] = not diffs
@@ -459,10 +601,10 @@ def main() -> int:
 
     # Czas pracy wątków (--thread-stats): jeden przebieg na wariant z p > 1, poza pomiarem czasu.
     thread_stats = {}
-    if not args.no_stats:
+    if not args.no_stats and not args.weak:  # skalowanie słabe — bez przebiegów --thread-stats
         for c, label, p, sch, ch in variants:
             if p > 1:
-                row = runner.run(cfgs[c["id"]], tmp / "stats", p, sch, ch, stats=True)
+                row = runner.run(cfg_of(c["id"], p), tmp / "stats", p, sch, ch, stats=True)
                 thread_stats[f"{c['id']}|{label}"] = {"threads": p, "schedule": sch, "chunk": ch,
                                                       "phaseMs": row.get(c["phase"]), "stats": row["threadStats"]}
     load_end = background_load()
@@ -471,7 +613,7 @@ def main() -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     keys = ["name", "mode", "case", "group", "variant", "threads", "schedule", "chunk", "rep", "timestamp", *SECTIONS,
-            "procWall", "threadsUsed", "cpus", "identical"]
+            "procWall", "threadsUsed", "cpus", "cells", "steps", "mcs", "identical"]
     with open(out_dir / f"{name}_raw.csv", "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys, extrasaction="ignore", lineterminator="\n")
         w.writeheader()
@@ -480,7 +622,10 @@ def main() -> int:
         with open(out_dir / f"{name}_threads.json", "w", encoding="utf-8", newline="\n") as f:
             json.dump(thread_stats, f, indent=1, ensure_ascii=False)
     raw_s = [{k: ("" if v is None else v) for k, v in r.items()} for r in raw]
-    summary, md = (summarize_schedules if args.schedules else summarize_scaling)(raw_s, plan)
+    if args.weak:
+        summary, md = summarize_weak(raw_s, plan)
+    else:
+        summary, md = (summarize_schedules if args.schedules else summarize_scaling)(raw_s, plan)
     header = [f"# Skalowanie OpenMP `{name}`", ""]
     if args.note:
         header += [args.note, ""]
@@ -493,8 +638,12 @@ def main() -> int:
     if load_start:
         header.append(f"- Tło: start {load_start['totalPercent']:.0f}% CPU ({', '.join(load_start['top'][:3])}), "
                       f"koniec {load_end.get('totalPercent', 0):.0f}%")
-    header.append("- Zgodność wyników z p = 1 (albo z pierwszym harmonogramem): " +
-                  ("wszystkie przebiegi bitowo zgodne" if failures == 0 else f"**{failures} różnic**"))
+    if args.weak:
+        header.append("- Skalowanie słabe: przestrzeń p razy większa przy p wątkach, `output.format = none`; wyników "
+                      "różnych rozmiarów nie porównuje się bitowo (zgodność wątków — etapy 9–10)")
+    else:
+        header.append("- Zgodność wyników z p = 1 (albo z pierwszym harmonogramem): " +
+                      ("wszystkie przebiegi bitowo zgodne" if failures == 0 else f"**{failures} różnic**"))
     header.append("")
     write_outputs(out_dir, name, summary, md, header)
     print(f"({minutes:.1f} min); różnic wyników: {failures}")

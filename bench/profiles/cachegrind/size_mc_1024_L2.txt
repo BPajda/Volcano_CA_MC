@@ -1,0 +1,31 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 8-way associative
+D1 cache:         49152 B, 64 B, 12-way associative
+LL cache:         2097152 B, 64 B, 16-way associative
+Command:          <tmp> --config <tmp> --out <tmp> --threads 1
+Data file:        <tmp>
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: D1mr DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Dr                   D1mr                DLmr               Dw                  D1mw               DLmw               
+--------------------------------------------------------------------------------
+145,404,526 (100.0%) 11,969,148 (100.0%) 9,313,916 (100.0%) 46,047,354 (100.0%) 1,495,003 (100.0%) 1,460,243 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Dr                  D1mr               DLmr               Dw                  D1mw             DLmw              file:function
+--------------------------------------------------------------------------------
+20,180,926 (13.88%) 5,858,574 (48.95%) 4,589,974 (49.28%)  2,110,554 ( 4.58%)       0                0           <repo>/engine/src/mc/PottsMC.cpp:unsigned long volcano::PottsMC::sweepTrials<false, false>()
+20,971,520 (14.42%) 4,427,085 (36.99%) 3,089,969 (33.18%)          0                0                0           <repo>/engine/src/mc/PottsMC.hpp:unsigned long volcano::PottsMC::sweepTrials<false, false>()
+39,118,948 (26.90%)   655,718 ( 5.48%)   655,718 ( 7.04%)  5,432,906 (11.80%) 131,082 ( 8.77%) 131,082 ( 8.98%)  <repo>/engine/src/mc/Grains.cpp:volcano::Grains::label(volcano::CrystalMap const&, bool, bool const*)
+12,582,948 ( 8.65%)   393,616 ( 3.29%)   393,616 ( 4.23%)         26 ( 0.00%)       4 ( 0.00%)       4 ( 0.00%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::totalEnergy() const
+ 2,532,206 ( 1.74%)   261,517 ( 2.18%)   228,058 ( 2.45%)  2,529,349 ( 5.49%) 262,289 (17.54%) 260,965 (17.87%)  ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S:__memcpy_avx_unaligned_erms
+ 6,294,567 ( 4.33%)   197,008 ( 1.65%)   197,008 ( 2.12%)  3,145,746 ( 6.83%) 196,611 (13.15%) 196,611 (13.46%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::crystals() const
+ 2,788,681 ( 1.92%)   131,078 ( 1.10%)   131,078 ( 1.41%)         36 ( 0.00%)       1 ( 0.00%)       1 ( 0.00%)  <repo>/engine/src/app/McStage.cpp:volcano::McStage::statsJson[abi:cxx11](volcano::Config const&, volcano::McSummary const&, volcano::McStatsInput const&)
+ 9,429,080 ( 6.48%)    16,460 ( 0.14%)    15,970 ( 0.17%)  4,195,347 ( 9.11%)  65,685 ( 4.39%)  65,673 ( 4.50%)  <repo>/engine/src/mc/PottsMC.cpp:volcano::PottsMC::initialize()
+

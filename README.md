@@ -109,6 +109,11 @@ Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie
   liniowo — **6,7× na 7 procesach**, szybciej niż OpenMP na 8 wątkach; lawa skupia się w kilku warstwach, więc stałe
   pasy mają nierówną pracę (pełny przebieg 5,4×, automat frontalny ≤ 2,6×), a małą Etnę MPI wręcz spowalnia — wymiana
   warstw trwa dłużej niż krok ([docs/etap-10-mpi.md](docs/etap-10-mpi.md)).
+- **Wersje równoległe — podsumowanie** (testy wydajności): lawę najlepiej liczy OpenMP, siatki o równej pracy na
+  komórkę — MPI na 7 procesach (E = 0,95–0,96); łącznie z optymalizacją sekwencyjną erupcja Etny liczy się
+  **~1 900× szybciej** niż przed zmianami, CA classic 3D ~50×, MC ~40–47×. Przy rosnącym zadaniu (skalowanie słabe)
+  MC i lawa utrzymują E = 0,87–1,00 na 8 rdzeniach, a CA classic ogranicza przepustowość pamięci RAM, nasycona już
+  przy 6 rdzeniach ([docs/etap-12-testy-wydajnosci.md](docs/etap-12-testy-wydajnosci.md)).
 - Model pamięci z kodu (~40 B na komórkę w CA 3D) zgadza się z pomiarem szczytu procesu z dokładnością 0–4%.
 
 ![Czas symulacji CA i MC vs liczba komórek, 2D i 3D, z krotnością MC/CA](docs/img/raport/ca_vs_mc.png)
@@ -118,7 +123,7 @@ Zestawienie wyników przykładowych przypadków: [docs/wyniki.md](docs/wyniki.md
 
 ## Dokumentacja
 
-Spis dokumentacji — opisy etapów 1–10, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
+Spis dokumentacji — opisy etapów 1–12, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
 
 ## Dalszy rozwój
 
@@ -137,6 +142,10 @@ Spis dokumentacji — opisy etapów 1–10, architektura, uruchamianie, wyniki i
   wymiana warstw typem `MPI_Type_create_struct` bez pakowania skraca wymianę o 25–50%, a równoległy zapis MPI-IO
   zapisuje duże wyniki do 3× szybciej przy 4× mniejszej pamięci procesu 0
   ([docs/etap-11-mpi-typy-io.md](docs/etap-11-mpi-typy-io.md)).
+- **Testy wydajności — zrobione** (etap 12): zestawienie przyspieszenia i efektywności, skalowanie słabe, pamięć
+  główna wątków i procesów, pamięć podręczna (symulacja cachegrind, czas na komórkę vs rozmiar siatki, przepustowość).
+  Do zrobienia: mniejszy ruch do pamięci w CA classic (mniejsze typy pól, bloki mieszczące się w L2), podział lawy
+  w poziomie, pomiar na klastrze.
 
 ## Dane terenu
 

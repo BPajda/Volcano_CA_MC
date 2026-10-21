@@ -1,0 +1,30 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 8-way associative
+D1 cache:         49152 B, 64 B, 12-way associative
+LL cache:         37748736 B, 64 B, 18-way associative
+Command:          <tmp> --config <tmp> --out <tmp> --threads 1
+Data file:        <tmp>
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: D1mr DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Dr                     D1mr               DLmr           Dw                   D1mw               DLmw             
+--------------------------------------------------------------------------------
+4,807,237,335 (100.0%) 9,233,139 (100.0%) 8,838 (100.0%) 709,966,531 (100.0%) 9,895,681 (100.0%) 134,869 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Dr                     D1mr               DLmr           Dw                   D1mw               DLmw             file:function
+--------------------------------------------------------------------------------
+  297,202,788 ( 6.18%) 5,739,904 (62.17%)     0          147,456,000 (20.77%) 6,222,900 (62.89%)      0           <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava(volcano::LavaCA<volcano::VectorStorage>::StepCtx, int, int, volcano::CandidateVote&, volcano::LavaCA<volcano::VectorStorage>::StepCounts&) [clone .isra.0]
+2,404,815,865 (50.02%) 2,831,274 (30.66%)     0          261,934,370 (36.89%)       450 ( 0.00%)      0           <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, unsigned long, volcano::CandidateVote&) const
+  152,529,041 ( 3.17%)   492,501 ( 5.33%)     0           89,306,792 (12.58%)   460,950 ( 4.66%)      0           <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::computeDescent(int, int)
+  834,233,717 (17.35%)    53,265 ( 0.58%)     0           71,710,290 (10.10%)         0               0           <repo>/engine/src/core/Storage.hpp:volcano::LavaCA<volcano::VectorStorage>::gatherLavaCandidates(int, int, int, unsigned long, unsigned long, unsigned long, volcano::CandidateVote&) const
+    1,222,812 ( 0.03%)    41,430 ( 0.45%)     0              983,144 ( 0.14%)    39,941 ( 0.40%)      0           <repo>/engine/src/core/Storage.hpp:volcano::Microstructure volcano::toMicrostructure<volcano::VectorStorage>(volcano::VectorStorage const&, int)
+      894,384 ( 0.02%)    30,734 ( 0.33%)     0               16,826 ( 0.00%)         0               0           <repo>/engine/src/app/Simulation.cpp:volcano::Simulation::flowSums(volcano::Microstructure const&, std::vector<volcano::Vent, std::allocator<volcano::Vent> > const&, int, int)
+  346,749,256 ( 7.21%)    12,232 ( 0.13%)     0           71,296,848 (10.04%)       300 ( 0.00%)      0           <repo>/engine/src/ca/LavaCA.hpp:volcano::LavaCA<volcano::VectorStorage>::updateLava(volcano::LavaCA<volcano::VectorStorage>::StepCtx, int, int, volcano::CandidateVote&, volcano::LavaCA<volcano::VectorStorage>::StepCounts&) [clone .isra.0]
+

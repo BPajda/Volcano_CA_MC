@@ -536,6 +536,28 @@ python bench\scaling_mpi.py --cases classic_2000x2000_s400_vn --variants m1,m4,m
   `pomiar_msvc.md`, `pomiar_gcc.md`, `pomiar_gcc_romio.md`), więc próby kieruj do `results\`. Wykresy:
   `python bench\plot_etap11.py` (z `pomiar_*_raw.csv` → `docs\img\etap11_*.png`). Opis: `docs\etap-11-mpi-typy-io.md`.
 
+### 7.5 Testy wydajności (etap 12)
+
+```powershell
+python bench\zestawienie_e12.py                                          # zestawienie S / E etapów 8–11 z CSV (bez przebiegów)
+python bench\scaling.py --weak --list                                    # przypadki skalowania słabego
+python bench\scaling.py --weak --threads 1,2 --cases weak_lava_front --reps 1 --min-reps 1 --no-stats --name slabe_test --out results\testy_test
+python bench\scaling_mpi.py --weak --variants m1d,m2d --cases weak_classic_2d --reps 1 --min-reps 1 --name slabe_mpi_test --out results\testy_test
+python bench\cell_time.py --curves mc_random --sizes 256,1024 --reps 1 --name krzywa_test --out results\testy_test
+python bench\memory.py --cases classic2d_2000 --name pamiec_test --out results\testy_test
+cmake --build build --config Release --target bandwidth; build\Release\bandwidth.exe --mode stream --threads 1,8 --reps 5 --pin --high-priority
+wsl -e python3 bench/cachegrind.py --ll L2,L3 --name cachegrind_test     # symulacja pamięci podręcznej (WSL, preset gcc-release-g)
+python bench\plot_etap12.py                                              # docs\img\etap12_*.png
+```
+
+- `--weak` — przestrzeń rośnie z p (classic 2000 × 2000·p, MC szachownica 1000 × 1000·p, lawa 128 × 128·p × 64 na p
+  kaflach terenu); E_w = T(1) / T(p), obok E_w znormalizowana na komórkę × krok. `--wsl` — GCC / OpenMPI.
+- Domyślny folder `scaling.py` to `bench\results\omp\`, `scaling_mpi.py` — `bench\results\mpi\`, `cell_time.py`
+  i `memory.py` — `bench\results\testy\` (pomiar etapu: `PLAN_POMIARU.md`, ~18 min) — próby kieruj do `results\`.
+  `cachegrind.py` nie ma `--out` (zawsze `bench/results/testy/` + `bench/profiles/cachegrind/`, pełny zestaw ~10 min) —
+  w próbach zmieniaj `--name`, żeby nie nadpisać `cachegrind.md`.
+  Opis: `docs\etap-12-testy-wydajnosci.md`.
+
 ## 8. Szybki przegląd możliwości (demo, ≈ 6–8 min)
 
 **Przygotowanie:** zbudowany silnik (2.3), `python -m gui` uruchomione, policzone:
