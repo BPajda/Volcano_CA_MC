@@ -66,7 +66,21 @@ public:
     static std::vector<Vent> buildVents(const Config& c, const Heightmap& hm);
 
     // Statystyki do stats.json: objętość lawy na krater, zasięg, aktywne komórki w krokach.
+    // = statsFromSums(c, s, flowSums(s.result, s.vents, wątki)).
     static nlohmann::ordered_json buildStats(const Config& c, const RunSummary& s);
+
+    // Sumy po ziarnach (indeks = flowId, 0 nieużywane): komórki LAVA i BASALT, zasięg = maks. odległość pozioma od
+    // krateru. Etap 11 (engine_mpi, mpi.io = "mpiio"): każdy proces liczy je na swoim pasie (yOffset — globalne y
+    // pierwszego wiersza pasa w płaszczyźnie x–y, inaczej 0), a proces 0 dostaje sumę i maksimum (MPI_Reduce) — liczby
+    // całkowite i maksimum nie zależą od podziału, więc stats.json jest bitowo ten sam co z całej siatki.
+    struct FlowSums {
+        std::vector<std::uint64_t> lava;
+        std::vector<std::uint64_t> basalt;
+        std::vector<double> reach;
+    };
+    static FlowSums flowSums(const Microstructure& m, const std::vector<Vent>& vents, int threads, int yOffset = 0);
+    // stats.json z sum (s: kroki, powód końca, kratery, historia liczników — wynik s.result nie jest czytany).
+    static nlohmann::ordered_json statsFromSums(const Config& c, const RunSummary& s, const FlowSums& sums);
 
     // Obsługa wywołania z linii poleceń: wczytanie configu, folder wyników, times.json,
     // podsumowanie w konsoli. sinceStart mierzy czas od startu programu (sekcja total).

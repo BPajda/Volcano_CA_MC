@@ -9,6 +9,8 @@ Warianty (--variants, po przecinku; pierwszy = odniesienie zgodności i T(1)):
   h<p>x<t>   engine_mpi na p procesach po t wątków (tryb hybrydowy)    (h2x4, h4x2)
   c<p>       engine_mpi na p procesach, mpi.exchange = changed         (c4, c8)
   o<t>       engine (OpenMP) na t wątkach                              (o1, o8)
+  przyrostki wariantów MPI (etap 11, dowolne z d, s, i): d — mpi.pack = datatype, s — mpi.bcast = struct,
+             i — mpi.io = mpiio, np. m8d, c8d, m4i, h2x4dsi (bez przyrostka — jak w etapie 10)
 Każdy przebieg z `--high-priority` (mpiexec uruchamia procesy z priorytetem normalnym, a przy 8 zajętych rdzeniach P
 proces wywłaszczony przez program w tle zatrzymuje pozostałe na wymianie / MPI_Allreduce) i przypięciem
 `parallel.affinity = pcores`: proces r z t wątkami na rdzeniach P nr r·t … r·t + t − 1 (procesory logiczne 2, 4, …, 14,
@@ -47,6 +49,7 @@ import datetime as dt
 import json
 import os
 import re
+import shlex
 import shutil
 import statistics
 import subprocess
@@ -61,8 +64,8 @@ from scaling import amdahl_f, amdahl_s  # noqa: E402
 from scaling import cases as omp_cases  # noqa: E402
 
 IS_WINDOWS = os.name == "nt"
-SECTIONS = ["readConfig", "allocate", "terrain", "vents", "caSim", "caStats", "save", "mcInit", "mcSim", "mcStats",
-            "mcSave", "total"]
+SECTIONS = ["readConfig", "readInput", "allocate", "terrain", "vents", "caSim", "caStats", "save", "mcInit", "mcSim",
+            "mcStats", "mcSave", "total"]
 DEFAULT_VARIANTS = "m1,m2,m3,m4,m6,m8"
 # Miary z sekcji "mpi" w times.json (klucz w raw.csv -> ścieżka; stage = ca albo mc wg fazy przypadku).
 MPI_FIELDS = {
@@ -71,7 +74,14 @@ MPI_FIELDS = {
     "computeMax": ("computeMs", "max"), "bytesPerExchange": ("bytesPerExchange",), "messagesPerExchange":
     ("messagesPerExchange",), "exchanges": ("exchanges",), "bytes": ("bytes",), "layersSkipped": ("layersSkipped",),
     "statsAvg": ("statsMs", "avg"), "statsGatherAvg": ("statsGatherMs", "avg"), "statsLabel": ("statsLabelMs",),
+    "typesBuilt": ("typesBuilt",), "typeBuildAvg": ("typeBuildMs", "avg"),
 }
+# Etap 11: pliki wyników (sekcja files: rozmiar i czas zapisu na procesie 0; mpi.io.files: formatowanie i MPI-IO
+# — maksimum po procesach) i rozsyłanie configu (mpi.bcast).
+RESULT_FILES = {"ca_result.bin": "caBin", "ca_result.txt": "caTxt", "mc_result.bin": "mcBin", "mc_result.txt": "mcTxt"}
+IO_FIELDS = [f"{s}{k}" for s in RESULT_FILES.values() for k in ("Ms", "Bytes", "FormatMax", "IoMax")] + \
+    ["ioMode", "readIoMax", "readBytes", "scatterMax", "bcastMode", "bcastConfigMs", "bcastConfigBytes",
+     "configPrepMs", "configBuildMax", "ventsMs", "ventsBytes", "peakRoot", "peakMax", "caPrepMax"]
 
 
 def cases() -> list[dict]:
@@ -81,19 +91,24 @@ def cases() -> list[dict]:
 
 
 def parse_variant(spec: str) -> dict:
-    """m3 / h2x4 / c8 / o8 -> opis wariantu."""
-    m = re.fullmatch(r"([mhco])(\d+)(?:x(\d+))?", spec.strip())
+    """m3 / h2x4 / c8 / o8 (+ przyrostki etapu 11: d, s, i — np. m8d, h2x4dsi) -> opis wariantu."""
+    m = re.fullmatch(r"([mhco])(\d+)(?:x(\d+))?([dsi]*)", spec.strip())
     if not m:
-        raise ValueError(f"nieznany wariant {spec!r} (m<p>, h<p>x<t>, c<p>, o<t>)")
-    kind, a, b = m.group(1), int(m.group(2)), m.group(3)
+        raise ValueError(f"nieznany wariant {spec!r} (m<p>, h<p>x<t>, c<p>, o<t>; przyrostki d, s, i)")
+    kind, a, b, flags = m.group(1), int(m.group(2)), m.group(3), m.group(4)
+    if flags and kind == "o":
+        raise ValueError(f"przyrostki d / s / i dotyczą tylko engine_mpi, podano {spec!r}")
+    opts = {"pack": "datatype" if "d" in flags else "manual", "bcast": "struct" if "s" in flags else "json",
+            "io": "mpiio" if "i" in flags else "gather"}
     if kind == "h":
         if b is None:
             raise ValueError(f"wariant hybrydowy wymaga postaci h<p>x<t>, podano {spec!r}")
-        return {"label": spec, "kind": "mpi", "procs": a, "threads": int(b), "exchange": "always", "cores": a * int(b)}
+        return {"label": spec, "kind": "mpi", "procs": a, "threads": int(b), "exchange": "always", "cores": a * int(b),
+                **opts}
     if kind == "o":
-        return {"label": spec, "kind": "omp", "procs": 1, "threads": a, "exchange": "always", "cores": a}
+        return {"label": spec, "kind": "omp", "procs": 1, "threads": a, "exchange": "always", "cores": a, **opts}
     return {"label": spec, "kind": "mpi", "procs": a, "threads": 1, "exchange": "changed" if kind == "c" else "always",
-            "cores": a}
+            "cores": a, **opts}
 
 
 class Runner:
@@ -122,10 +137,13 @@ class Runner:
             json.dump(cfg, f, indent=2, ensure_ascii=False)
         return path
 
-    def command(self, v: dict, cfg: Path, out: Path, schedule: str, chunk: int) -> tuple[list[str], dict]:
+    def command(self, v: dict, cfg: Path, out: Path, schedule: str, chunk: int,
+                mc_from: Path | None = None) -> tuple[list[str], dict]:
         env = dict(os.environ)
         common = ["--config", str(cfg), "--out", str(out), "--threads", str(v["threads"]), "--high-priority",
                   "--set", f"parallel.schedule={schedule}", "--set", f"parallel.chunk={chunk}"]
+        if mc_from is not None:
+            common += ["--mc-from", str(mc_from)]
         if v["kind"] == "omp":
             # Jak w etapie 9: Windows — przypięcie przez program; WSL — libgomp (program bez przypinania).
             affinity = "pcores" if IS_WINDOWS else "none"
@@ -134,17 +152,23 @@ class Runner:
             return [self.omp_exe, *common, "--set", f"parallel.affinity={affinity}"], env
         env.pop("OMP_PROC_BIND", None)
         env.pop("OMP_PLACES", None)
-        launch = [self.mpiexec, "-n", str(v["procs"])]
+        # --mpiexec może mieć własne opcje (np. "mpiexec --mca io romio321" — implementacja MPI-IO w OpenMPI);
+        # w Windows bez trybu POSIX, żeby ukośniki odwrotne ścieżki zostały.
+        mpiexec = shlex.split(self.mpiexec, posix=not IS_WINDOWS)
+        launch = [*mpiexec, "-n", str(v["procs"])]
         if not IS_WINDOWS:
-            launch = [self.mpiexec, "--allow-run-as-root", "--use-hwthread-cpus", "--bind-to", "none", "-n",
+            launch = [*mpiexec, "--allow-run-as-root", "--use-hwthread-cpus", "--bind-to", "none", "-n",
                       str(v["procs"])]
         return [*launch, self.mpi_exe, *common, "--set", "parallel.affinity=pcores",
-                "--set", f"mpi.exchange={v['exchange']}"], env
+                "--set", f"mpi.exchange={v['exchange']}", "--set", f"mpi.pack={v['pack']}",
+                "--set", f"mpi.bcast={v['bcast']}", "--set", f"mpi.io={v['io']}"], env
 
-    def run(self, v: dict, cfg: Path, out: Path, phase: str, schedule: str, chunk: int) -> dict:
-        """Jeden przebieg; zwraca sekcje times.json, miary komunikacji (sekcja mpi) i czas procesu."""
+    def run(self, v: dict, cfg: Path, out: Path, phase: str, schedule: str, chunk: int,
+            mc_from: Path | None = None) -> dict:
+        """Jeden przebieg; zwraca sekcje times.json, miary komunikacji (sekcja mpi) i czas procesu. mc_from — folder
+        wyniku CA (engine --mc-from)."""
         shutil.rmtree(out, ignore_errors=True)
-        cmd, env = self.command(v, cfg, out, schedule, chunk)
+        cmd, env = self.command(v, cfg, out, schedule, chunk, mc_from)
         t0 = time.perf_counter()
         r = subprocess.run(cmd, cwd=ROOT, capture_output=True, creationflags=self.flags, env=env)
         wall = time.perf_counter() - t0
@@ -155,8 +179,36 @@ class Runner:
             times = json.load(f)
         row = {s: times[s] for s in SECTIONS if s in times}
         row["procWall"] = round(wall * 1000.0, 3)
+        for name, short in RESULT_FILES.items():
+            f = times.get("files", {}).get(name)
+            if f:
+                row[f"{short}Ms"] = f.get("writeMs")
+                row[f"{short}Bytes"] = f.get("bytes")
+        row["peakRoot"] = times.get("memory", {}).get("peakRssBytes")  # szczyt pamięci procesu 0
         mpi = times.get("mpi")
         if mpi:
+            row["peakMax"] = mpi.get("peakRssBytes", {}).get("max")  # największy szczyt wśród procesów
+            row["caPrepMax"] = mpi.get("ca", {}).get("gatherMs", {}).get("max")  # pas bez ramki (+ Gatherv)
+            io = mpi.get("io", {})
+            row["ioMode"] = io.get("mode", "gather")
+            for f in io.get("files", []):
+                short = RESULT_FILES.get(f.get("file"))
+                if short:
+                    row[f"{short}FormatMax"] = f.get("formatMs", {}).get("max")
+                    row[f"{short}IoMax"] = f.get("ioMs", {}).get("max")
+            if "read" in io:
+                row["readIoMax"] = io["read"].get("ioMs", {}).get("max")
+                row["readBytes"] = io["read"].get("bytes")
+            if "scatter" in mpi:
+                row["scatterMax"] = mpi["scatter"].get("ms", {}).get("max")
+            bc = mpi.get("bcast", {})
+            row["bcastMode"] = bc.get("mode", "json")
+            row["bcastConfigMs"] = bc.get("configMs")
+            row["bcastConfigBytes"] = bc.get("configBytes")
+            row["configPrepMs"] = bc.get("configPrepMs")
+            row["configBuildMax"] = bc.get("configBuildMs", {}).get("max")
+            row["ventsMs"] = bc.get("ventsMs")
+            row["ventsBytes"] = bc.get("ventsBytes")
             stage = mpi.get("ca" if phase == "caSim" else "mc", {})
             for key, path in MPI_FIELDS.items():
                 val = stage
@@ -360,7 +412,8 @@ def main() -> int:
                "--bin", wsl_path(ROOT / args.bin), "--omp-bin", wsl_path(ROOT / args.omp_bin),
                "--variants", args.variants, "--min-reps", str(args.min_reps), "--name", name,
                "--out", wsl_path(Path(args.out))]
-        for flag, val in (("--cases", args.cases), ("--reps", args.reps), ("--note", args.note)):
+        for flag, val in (("--cases", args.cases), ("--reps", args.reps), ("--note", args.note),
+                          ("--mpiexec", args.mpiexec if args.mpiexec != "mpiexec" else None)):
             if val:
                 cmd += [flag, str(val)]
         r = subprocess.run(cmd)
@@ -424,7 +477,8 @@ def main() -> int:
                 row = runner.run(v, cfgs[case["id"]], out, case["phase"], *case["schedule"])
                 row.update({"name": name, "case": case["id"], "group": case["group"], "variant": v["label"],
                             "kind": v["kind"], "procs": v["procs"], "threads": v["threads"], "cores": v["cores"],
-                            "exchange": v["exchange"], "schedule": case["schedule"][0], "chunk": case["schedule"][1],
+                            "exchange": v["exchange"], "pack": v["pack"], "bcast": v["bcast"], "io": v["io"],
+                            "schedule": case["schedule"][0], "chunk": case["schedule"][1],
                             "rep": rep, "timestamp": dt.datetime.now().isoformat(timespec="seconds")})
                 outs[v["label"]] = (out, row)
                 raw.append(row)
@@ -450,9 +504,9 @@ def main() -> int:
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    keys = ["name", "case", "group", "variant", "kind", "procs", "threads", "cores", "exchange", "schedule", "chunk",
-            "rep", "timestamp", *SECTIONS, "procWall", *MPI_FIELDS, "gatherMax", "initMax", "bcastMs", "bcastBytes",
-            "priority", "cpus", "computePerRank", "identical"]
+    keys = ["name", "case", "group", "variant", "kind", "procs", "threads", "cores", "exchange", "pack", "bcast", "io",
+            "schedule", "chunk", "rep", "timestamp", *SECTIONS, "procWall", *MPI_FIELDS, "gatherMax", "initMax",
+            "bcastMs", "bcastBytes", *IO_FIELDS, "priority", "cpus", "computePerRank", "identical"]
     with open(out_dir / f"{name}_raw.csv", "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys, extrasaction="ignore", lineterminator="\n")
         w.writeheader()

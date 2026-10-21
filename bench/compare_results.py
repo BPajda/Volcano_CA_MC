@@ -5,7 +5,9 @@ Każdy config (w wariancie domyślnym — tak jak leży w configs/) jest liczony
 porównywany bajt po bajcie z wynikiem pierwszego programu (wszystkie pliki poza times.json i config_used.json;
 stats.json przy różnicy bajtowej — jeszcze raz jako JSON bez pól z czasem). configs/mc_basalt.json jest liczony
 w trybie --mc-from na wyniku lava_mc_2d danego programu. Programy z przedrostkiem „wsl:” (build GCC) są
-uruchamiane w WSL z katalogu projektu — dzięki temu ta sama tabela sprawdza zgodność MSVC ↔ GCC.
+uruchamiane w WSL z katalogu projektu — dzięki temu ta sama tabela sprawdza zgodność MSVC ↔ GCC. Programy WSL piszą
+wyniki na ext4 (/tmp/volcano_cmp — etap 11: MPI-IO w WSL tylko tam, dysk Windows przez 9p jest wielokrotnie wolniejszy),
+a do porównania trafia ich kopia; folder wejściowy --mc-from jest przed przebiegiem kopiowany na ext4.
 
     python bench/compare_results.py --bin przed=bench/baseline/engine_przed_msvc.exe \\
         --bin msvc=build/Release/engine.exe --bin gcc=wsl:build-gcc-release/bin/engine --name zgodnosc_po
@@ -20,6 +22,7 @@ Wynik: tabela Markdown na ekranie i w bench/results/ab/<nazwa>.md; kod wyjścia 
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
 import subprocess
 import sys
@@ -32,6 +35,7 @@ from ab import compare_dirs, wsl_path  # noqa: E402  (ta sama definicja zgodnoś
 
 ROOT = Path(__file__).resolve().parent.parent
 MC_FROM = ("mc_basalt", "lava_mc_2d")  # config samego MC i wynik CA, na którym go liczymy
+WSL_TMP = "/tmp/volcano_cmp"  # wyniki programów WSL (ext4), kopiowane potem do folderu porównania
 
 
 def shown(exe: str) -> str:
@@ -44,13 +48,27 @@ def shown(exe: str) -> str:
 
 def run(exe: str, args: list[str], out: Path, launch: list[str] | None = None) -> tuple[bool, str, float]:
     """Jeden przebieg (Windows albo WSL); zwraca (ok, komunikat błędu, czas [s]). launch — polecenie uruchamiające
-    program (etap 10: mpiexec -n N …) wstawiane przed ścieżkę programu."""
+    program (etap 10: mpiexec -n N …) wstawiane przed ścieżkę programu. WSL: wyniki na ext4, potem kopia do out."""
     shutil.rmtree(out, ignore_errors=True)
     t0 = time.perf_counter()
     launch = launch or []
     if exe.startswith("wsl:"):
-        conv = [wsl_path(Path(a)) if (Path(a).is_absolute() and Path(a).drive) else a for a in args]
-        cmd = ["wsl", "-e", *launch, exe[4:], *conv, "--out", wsl_path(out)]
+        conv, pre, post = [], [], []
+        for a in args:
+            if Path(a).is_absolute() and Path(a).drive:  # folder Windows (--mc-from) -> kopia na ext4
+                dst = f"{WSL_TMP}/in_{Path(a).name}"
+                pre.append(f"rm -rf {shlex.quote(dst)} && cp -r {shlex.quote(wsl_path(Path(a)))} {shlex.quote(dst)}")
+                post.append(f"rm -rf {shlex.quote(dst)}")
+                conv.append(dst)
+            else:
+                conv.append(a)
+        tmp_out = f"{WSL_TMP}/{out.name}"
+        program = " ".join(shlex.quote(c) for c in [*launch, exe[4:], *conv, "--out", tmp_out])
+        win_out = shlex.quote(wsl_path(out))
+        script = " && ".join([f"mkdir -p {WSL_TMP}", f"rm -rf {shlex.quote(tmp_out)}", *pre, program]) + \
+            f"; rc=$?; mkdir -p {win_out} && cp -r {shlex.quote(tmp_out)}/. {win_out}/; " + \
+            "; ".join([f"rm -rf {shlex.quote(tmp_out)}", *post]) + "; exit $rc"
+        cmd = ["wsl", "-e", "bash", "-c", script]
     else:
         cmd = [*launch, exe, *args, "--out", str(out)]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -139,7 +157,8 @@ def main() -> int:
                                      f"`{shown(exes[l])}`" + (f" `{' '.join(extra[l])}`" if extra[l] else "")
                                      for l in labels) + (f"; nadpisania: {', '.join(args.set_values)}" if sets else ""),
             f"Porównanie bajt po bajcie z `{labels[0]}` (bez times.json i config_used.json; stats.json bez ścieżki "
-            "folderu wejściowego --mc-from; MSVC ↔ GCC: txt/csv bez różnicy końców linii CRLF/LF).", "",
+            "folderu wejściowego --mc-from; MSVC ↔ GCC: txt/csv bez różnicy końców linii CRLF/LF; programy WSL piszą "
+            "na ext4).", "",
             "| Config | pliki | " + " | ".join(f"{l} = {labels[0]}" for l in labels[1:]) + " |",
             "|---|---|" + "---|" * (len(labels) - 1)]
     out_dir = Path(args.out)

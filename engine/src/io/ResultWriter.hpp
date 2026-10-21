@@ -62,6 +62,20 @@ public:
     // Przebieg MC (mc_stats.csv) — jeden wiersz na pomiar statystyk.
     static void writeMcStatsCsv(const std::string& path, const std::vector<McStats>& history);
 
+    // --- Etap 11 (engine_mpi, mpi.io = "mpiio"): pliki wyników składane z części pisanych przez różne procesy ---
+    // Nagłówki ca_result.bin (20 B) i mc_result.bin (16 B) — te same bajty co writeBin / writeCrystalBin.
+    static std::vector<char> binHeader(const Dims& d);
+    static std::vector<char> crystalBinHeader(const Dims& d);
+    // Nagłówek pliku tekstowego („nx ny nz” + nazwy kolumn) — jak writeTxt (crystal = false) / writeCrystalTxt.
+    // Ta i dwie następne funkcje są w ResultWriterSlabs.cpp (w tym pliku zmieniały kod writeTxt w MSVC).
+    static std::string txtHeader(const Dims& d, bool crystal);
+    // Wiersze pasa warstw dopisane do out — te same znaki co wiersze tych komórek w writeTxt / writeCrystalTxt.
+    // Pas = kolejne warstwy osi zewnętrznej przestrzeni global (z; w płaszczyźnie x–y — y), slab — jego wymiary
+    // (pełne pozostałe osie), layer0 — globalny numer pierwszej warstwy pasa (współrzędna w wierszach).
+    static void appendTxtRows(std::string& out, const Microstructure& slab, const Dims& global, int layer0);
+    static void appendCrystalTxtRows(std::string& out, const Dims& slab, const std::int32_t* crystal,
+                                     const Dims& global, int layer0);
+
     // Zapis dowolnego JSON z wcięciami (config_used.json, times.json, stats.json ...).
     static void writeJson(const std::string& path, const nlohmann::ordered_json& j);
 };

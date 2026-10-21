@@ -4,6 +4,7 @@
 #include <climits>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -22,6 +23,7 @@
 #include "mc/CoolingMobility.hpp"
 #include "mc/Grains.hpp"
 #include "mc/PottsMC.hpp"
+#include "mpi/MpiTypes.hpp"
 #include "parallel/Affinity.hpp"
 #include "parallel/Omp.hpp"
 #include "parallel/ThreadStats.hpp"
@@ -63,6 +65,85 @@ void bcastText(MpiContext& ctx, std::string& text) {
     }
     ctx.bcastConfigMs += (MPI_Wtime() - t0) * 1000.0;
     ctx.bcastConfigBytes += sizeof(n) + n;
+}
+
+// Config procesu 0 -> wszystkie procesy (krok 1). Najpierw wariant (mpi.bcast z configu procesu 0), potem:
+//   "json"   — scalony JSON (bcastText) i CoolingData; pozostałe procesy parsują i walidują go (Config::fromJson);
+//   "struct" — blok liczbowy configu jednym MPI_Bcast typu MPI_Type_create_struct (z CoolingData w bloku);
+//              pozostałe procesy przepisują pola (MpiTypes::fromBlock), bez tekstu i parsowania.
+// Czasy: bcastConfigMs — same wywołania MPI_Bcast, configPrepMs — przygotowanie na procesie 0, configBuildMs —
+// budowa Config na pozostałych procesach.
+void bcastConfig(MpiContext& ctx, Config& cfg, CoolingData& cooling) {
+    double t0 = MPI_Wtime();
+    int mode = ctx.root() && cfg.mpiBcastStruct() ? 1 : 0;
+    MPI_Bcast(&mode, 1, MPI_INT, 0, ctx.comm);
+    ctx.bcastConfigMs += (MPI_Wtime() - t0) * 1000.0;
+    ctx.bcastConfigBytes += sizeof(mode);
+    ctx.bcastStruct = mode != 0;
+    int coolingCode = static_cast<int>(cooling);
+    if (!ctx.bcastStruct) {
+        std::string text;
+        if (ctx.root()) {
+            t0 = MPI_Wtime();
+            text = cfg.effective.dump();
+            ctx.configPrepMs = (MPI_Wtime() - t0) * 1000.0;
+        }
+        bcastText(ctx, text);
+        t0 = MPI_Wtime();
+        MPI_Bcast(&coolingCode, 1, MPI_INT, 0, ctx.comm);
+        ctx.bcastConfigMs += (MPI_Wtime() - t0) * 1000.0;
+        ctx.bcastConfigBytes += sizeof(coolingCode);
+        if (!ctx.root()) {
+            t0 = MPI_Wtime();
+            cfg = Config::fromJson(ojson::parse(text));
+            ctx.configBuildMs = (MPI_Wtime() - t0) * 1000.0;
+        }
+    } else {
+        const MpiType type = MpiTypes::configBlockType();
+        ConfigBlock block;
+        std::memset(&block, 0, sizeof(block));
+        if (ctx.root()) {
+            t0 = MPI_Wtime();
+            block = MpiTypes::toBlock(cfg, coolingCode);
+            ctx.configPrepMs = (MPI_Wtime() - t0) * 1000.0;
+        }
+        t0 = MPI_Wtime();
+        MPI_Bcast(&block, 1, type.get(), 0, ctx.comm);
+        ctx.bcastConfigMs += (MPI_Wtime() - t0) * 1000.0;
+        int bytes = 0;
+        MPI_Type_size(type.get(), &bytes);  // pola bez wypełnienia (sizeof(ConfigBlock) jest większe)
+        ctx.bcastConfigBytes += static_cast<std::uint64_t>(bytes);
+        if (!ctx.root()) {
+            t0 = MPI_Wtime();
+            cfg = MpiTypes::fromBlock(block);
+            ctx.configBuildMs = (MPI_Wtime() - t0) * 1000.0;
+        }
+        coolingCode = block.cooling;
+    }
+    cooling = static_cast<CoolingData>(coolingCode);
+}
+
+// Kratery / zarodki procesu 0 -> wszystkie procesy (mpi.bcast = "struct"): liczba, potem tablica struktur Vent
+// (typ MPI_Type_create_struct, extent = sizeof(Vent)). vents — lista procesu 0 (pozostałe: pusta).
+std::vector<Vent> bcastVents(MpiContext& ctx, std::vector<Vent> vents) {
+    const double t0 = MPI_Wtime();
+    const MpiType type = MpiTypes::ventType();
+    unsigned long long n = vents.size();
+    MPI_Bcast(&n, 1, MPI_UNSIGNED_LONG_LONG, 0, ctx.comm);
+    if (n > static_cast<unsigned long long>(INT_MAX)) {
+        throw std::runtime_error("za dużo kraterów / zarodków do rozesłania jednym komunikatem");
+    }
+    if (!ctx.root()) {
+        vents.assign(static_cast<std::size_t>(n), Vent{0, 0, 0, 0});
+    }
+    if (n > 0) {
+        MPI_Bcast(vents.data(), static_cast<int>(n), type.get(), 0, ctx.comm);
+    }
+    int bytes = 0;
+    MPI_Type_size(type.get(), &bytes);
+    ctx.bcastVentsMs += (MPI_Wtime() - t0) * 1000.0;
+    ctx.bcastVentsBytes += sizeof(n) + n * static_cast<std::uint64_t>(bytes);
+    return vents;
 }
 
 // Mapa wysokości: wymiary, potem tablica wysokości.
@@ -213,6 +294,9 @@ ojson parallelJson(const Config& c, int processes) {
     j["affinity"] = nameOf(c.parallel.affinity);
     j["processes"] = processes;
     j["exchange"] = c.mpiExchangeChanged() ? "changed" : "always";
+    j["pack"] = c.mpiPackDatatype() ? "datatype" : "manual";
+    j["bcast"] = c.mpiBcastStruct() ? "struct" : "json";
+    j["io"] = c.mpiIoParallel() ? "mpiio" : "gather";
     return j;
 }
 
@@ -267,6 +351,8 @@ ojson stageJson(MpiContext& ctx, const StripPlan& plan, const CommCounters& c, d
     j["haloMs"] = spread(ctx, c.haloMs);
     j["reduceMs"] = spread(ctx, c.reduceMs);
     j["computeMs"] = spread(ctx, simMs - c.commMs(), &computeR);
+    j["typeBuildMs"] = spread(ctx, c.typeBuildMs);  // mpi.pack = "datatype": budowa typów komunikatów (w haloMs)
+    const std::uint64_t typesBuilt = total(ctx, c.typesBuilt);
     const std::uint64_t messages = total(ctx, c.messages);
     const std::uint64_t bytes = total(ctx, c.bytes);
     const std::uint64_t sent = total(ctx, c.layersSent);
@@ -287,8 +373,54 @@ ojson stageJson(MpiContext& ctx, const StripPlan& plan, const CommCounters& c, d
         j["layersSkipped"] = skipped;
         j["bytesPerExchange"] = c.exchanges > 0 ? round3(double(bytes) / double(c.exchanges)) : 0.0;
         j["messagesPerExchange"] = c.exchanges > 0 ? round3(double(messages) / double(c.exchanges)) : 0.0;
+        j["typesBuilt"] = typesBuilt;  // suma po procesach
     }
     return j;
+}
+
+// Sekcja mpi.io w times.json (wywołują wszystkie procesy): pliki zapisane przez MPI-IO — bajty, formatowanie i samo
+// MPI-IO (min / średnia / maks po procesach), cały zapis na procesie 0 i przepustowość; odczyt --mc-from.
+ojson ioJson(MpiContext& ctx, bool parallel) {
+    ojson j;
+    j["mode"] = parallel ? "mpiio" : "gather";
+    ojson files = ojson::array();
+    for (const IoRecord& r : ctx.io) {
+        ojson f;
+        f["file"] = r.file;
+        f["bytes"] = r.times.fileBytes;
+        f["formatMs"] = spread(ctx, r.times.formatMs);
+        f["ioMs"] = spread(ctx, r.times.ioMs);
+        f["ms"] = round3(r.wallMs);  // proces 0
+        f["MBps"] = r.wallMs > 0 ? round3(double(r.times.fileBytes) / 1e6 / (r.wallMs / 1000.0)) : 0.0;
+        files.push_back(f);
+    }
+    j["files"] = files;
+    int readParallel = ctx.readParallel ? 1 : 0;
+    MPI_Allreduce(MPI_IN_PLACE, &readParallel, 1, MPI_INT, MPI_MAX, ctx.comm);
+    if (readParallel != 0) {
+        const ojson ms = spread(ctx, ctx.read.ioMs);
+        const double maxMs = ctx.root() ? ms["max"].get<double>() : 0.0;
+        j["read"] = {{"mode", "mpiio"},
+                     {"bytes", ctx.read.fileBytes},
+                     {"ioMs", ms},
+                     {"MBps", maxMs > 0 ? round3(double(ctx.read.fileBytes) / 1e6 / (maxMs / 1000.0)) : 0.0}};
+    }
+    return j;
+}
+
+// Zapis pliku pasami przez MPI-IO: czas całego zapisu na tym procesie + rekord do mpi.io; plik w sekcji files
+// (proces 0).
+template <class Write>
+void writeParallel(MpiContext& ctx, TimingReport& timing, const std::string& path, Write&& write) {
+    const double t0 = MPI_Wtime();
+    IoRecord r;
+    r.file = fs::path(path).filename().string();
+    r.times = write();
+    r.wallMs = (MPI_Wtime() - t0) * 1000.0;
+    if (ctx.root()) {
+        timing.addFile(path, r.wallMs);
+    }
+    ctx.io.push_back(r);
 }
 
 // Wersja biblioteki MPI (napis biblioteki tylko w MPI >= 3).
@@ -342,9 +474,11 @@ ProcessSetup setupProcess(MpiContext& ctx, const Config& c, TimingReport& timing
     return out;
 }
 
-// --mc-from (proces 0): wynik CA z folderu, wymiary z pliku — jak Simulation::runMcFrom.
-void prepareMcFrom(Config& cfg, const std::string& folder, Microstructure& ca, ResultSource& src, CoolingData& cooling,
-                   std::vector<std::string>& warnings, TimingReport& timing) {
+// --mc-from (proces 0): wynik CA z folderu, wymiary z pliku — jak Simulation::runMcFrom. headerOnly (etap 11,
+// mpi.io = "mpiio") i plik ca_result.bin: proces 0 czyta tylko nagłówek (header), pasy tablic każdy proces czyta sam
+// (MpiIo::readCaStrip); ca_result.txt (wiersze zmiennej długości) — zawsze cały plik na procesie 0.
+void prepareMcFrom(Config& cfg, const std::string& folder, bool headerOnly, Microstructure& ca, BinHeader& header,
+                   ResultSource& src, CoolingData& cooling, std::vector<std::string>& warnings, TimingReport& timing) {
     if (cfg.mc.domain != McDomain::Basalt) {
         throw ConfigError("--mc-from krystalizuje wynik CA z pliku — wymaga mc.domain = \"basalt\" (podano \"" +
                           std::string(nameOf(cfg.mc.domain)) + "\")");
@@ -354,7 +488,18 @@ void prepareMcFrom(Config& cfg, const std::string& folder, Microstructure& ca, R
         cfg.mc.enabled = true;
     }
     Timer t;
-    ca = ResultReader::readFolder(folder, &src);
+    const fs::path bin = fs::path(folder) / "ca_result.bin";
+    if (headerOnly && fs::exists(bin)) {
+        header = ResultReader::readBinHeader(bin.string());
+        ca.dims = header.dims;  // tablice zostają puste — czyta je każdy proces (swój pas)
+        src.path = bin.string();
+        src.format = "bin";
+        src.version = header.version;
+        src.hasSolidStep = true;
+        src.hasArrivalStep = header.version >= 2;
+    } else {
+        ca = ResultReader::readFolder(folder, &src);
+    }
     timing.add("readInput", t.elapsedMs());
     if (ca.dims != cfg.space && cfg.spaceFromUser) {
         warnings.push_back("wymiary z pliku " + std::to_string(ca.dims.nx) + " x " + std::to_string(ca.dims.ny) +
@@ -431,7 +576,8 @@ MpiCaRun MpiSimulation::runCa(MpiContext& ctx, const Config& cfg, TimingReport& 
     const std::vector<int> split = splitLayers(L, ctx.size);
     const Boundary bcw = ctx.size > 1 ? bc.withoutPeriodic(axis) : bc;
     LavaCA<VectorStorage> ca(windowDims(G, plan.windowLayers), Simulation::caParams(cfg), nb, bcw);
-    MpiHalo halo(ctx.comm, plan, cfg.mpiExchangeChanged(), kTagCa);
+    MpiHalo halo(ctx.comm, plan, cfg.mpiExchangeChanged(), cfg.mpiPackDatatype(), kTagCa);
+    const bool parallelIo = cfg.mpiIoParallel();
     // 1 proces: okno = cała przestrzeń, bez wymiany i sum — kroki jak w engine.
     ca.setStrip(stripOf(plan, G, bc, ctx.size > 1 ? &halo : nullptr));
     ParallelSettings par = cfg.parallelSettings();
@@ -461,8 +607,15 @@ MpiCaRun MpiSimulation::runCa(MpiContext& ctx, const Config& cfg, TimingReport& 
     mem.allocate("caAux", ca.auxBytes() + hm.height.size() * sizeof(int));
 
     // 3. Kratery / zarodki: ta sama globalna lista na każdym procesie (to samo ziarno), w oknie — te, które w nim leżą.
+    //    mpi.bcast = "struct" (etap 11): listę wyznacza proces 0 i rozsyła jako tablicę struktur.
     t.reset();
-    r.vents = ventsOverride != nullptr ? *ventsOverride : Simulation::buildVents(cfg, hm);
+    if (ventsOverride != nullptr) {
+        r.vents = *ventsOverride;
+    } else if (cfg.mpiBcastStruct()) {
+        r.vents = bcastVents(ctx, ctx.root() ? Simulation::buildVents(cfg, hm) : std::vector<Vent>());
+    } else {
+        r.vents = Simulation::buildVents(cfg, hm);
+    }
     ca.placeSeeds(ventsInWindow(r.vents, plan, lz));
     timing.add("vents", t.elapsedMs());
 
@@ -481,12 +634,16 @@ MpiCaRun MpiSimulation::runCa(MpiContext& ctx, const Config& cfg, TimingReport& 
     const auto writeSnapshot = [&]() {
         const double s0 = MPI_Wtime();
         const Microstructure own = ownLayers(ca.state(), plan.ownLo, plan.ownHi);
-        Microstructure all;
-        gatherMicro(ctx, split, G, own, all);
-        if (ctx.root()) {
-            char name[32];
-            std::snprintf(name, sizeof(name), "step_%06d.bin", ca.steps());
-            ResultWriter::writeBin((snapDir / name).string(), all);
+        char name[32];
+        std::snprintf(name, sizeof(name), "step_%06d.bin", ca.steps());
+        if (parallelIo) {
+            MpiIo::writeCaBin(ctx.comm, (snapDir / name).string(), G, plan.lo, own);  // każdy proces swój pas
+        } else {
+            Microstructure all;
+            gatherMicro(ctx, split, G, own, all);
+            if (ctx.root()) {
+                ResultWriter::writeBin((snapDir / name).string(), all);
+            }
         }
         snapMs += (MPI_Wtime() - s0) * 1000.0;
     };
@@ -502,6 +659,9 @@ MpiCaRun MpiSimulation::runCa(MpiContext& ctx, const Config& cfg, TimingReport& 
     } else {
         if (ctx.root()) {
             fs::create_directories(snapDir);
+        }
+        if (parallelIo) {
+            MPI_Barrier(ctx.comm);  // folder musi istnieć, zanim procesy otworzą w nim plik (MPI_File_open)
         }
         writeSnapshot();
         while (!ca.finished()) {
@@ -536,7 +696,7 @@ MpiCaRun MpiSimulation::runCa(MpiContext& ctx, const Config& cfg, TimingReport& 
         timing.addDetail("caFinish", ph.finish);
     }
 
-    // 5. Wynik: pas własny (wejście MC) i cała przestrzeń na procesie 0.
+    // 5. Wynik: pas własny (wejście MC, zapis MPI-IO) i cała przestrzeń na procesie 0 (bez mpi.io = "mpiio").
     r.steps = ca.steps();
     r.stop = ca.stopReason();
     r.activeHistory = ca.activeHistory();
@@ -544,7 +704,9 @@ MpiCaRun MpiSimulation::runCa(MpiContext& ctx, const Config& cfg, TimingReport& 
     r.comm = halo.simCounters();
     const double g0 = MPI_Wtime();
     r.slab = ownLayers(ca.state(), plan.ownLo, plan.ownHi);
-    gatherMicro(ctx, split, G, r.slab, r.result);
+    if (!parallelIo) {
+        gatherMicro(ctx, split, G, r.slab, r.result);
+    }
     r.gatherMs = (MPI_Wtime() - g0) * 1000.0;
     if (ctx.root()) {
         mem.allocate("caResult", r.result.bytes());
@@ -589,8 +751,9 @@ McSummary MpiSimulation::runMc(MpiContext& ctx, const Config& cfg, const Microst
     mc.setCheckerboard(cfg.mc.checkerboard);
     ParallelSettings par = cfg.parallelSettings();
     mc.setParallel(par);
-    MpiHalo halo(ctx.comm, plan, cfg.mpiExchangeChanged(), kTagMc);
+    MpiHalo halo(ctx.comm, plan, cfg.mpiExchangeChanged(), cfg.mpiPackDatatype(), kTagMc);
     StripLink* const link = ctx.size > 1 ? &halo : nullptr;
+    const bool parallelIo = cfg.mpiIoParallel();
     mc.setStrip(stripOf(plan, G, bc, link));
     MemoryModel& mem = timing.memory();
     mem.allocate("mcGrid", mc.bytes());
@@ -663,14 +826,18 @@ McSummary MpiSimulation::runMc(MpiContext& ctx, const Config& cfg, const Microst
     }
     timing.add("mcInit", t.elapsedMs());
 
-    // Mapa kryształów całej przestrzeni na procesie 0 (pas własny z okna).
+    // Mapa kryształów własnych warstw (pas z okna) i całej przestrzeni na procesie 0.
+    const Dims ownDims = windowDims(G, plan.ownHi - plan.ownLo);
+    const auto ownCrystals = [&]() {
+        const CrystalMap win = mc.crystals();
+        return std::vector<std::int32_t>(win.crystal.begin() + static_cast<std::ptrdiff_t>(ownOff),
+                                         win.crystal.begin() + static_cast<std::ptrdiff_t>(plan.ownHi) *
+                                                                   static_cast<std::ptrdiff_t>(plane));
+    };
     double statsGatherMs = 0.0;
     const auto gatherCrystals = [&]() {
         const double g0 = MPI_Wtime();
-        const CrystalMap win = mc.crystals();
-        std::vector<std::int32_t> own(win.crystal.begin() + static_cast<std::ptrdiff_t>(ownOff),
-                                      win.crystal.begin() + static_cast<std::ptrdiff_t>(plan.ownHi) *
-                                                                static_cast<std::ptrdiff_t>(plane));
+        const std::vector<std::int32_t> own = ownCrystals();
         CrystalMap all;
         all.dims = G;
         if (ctx.root()) {
@@ -712,17 +879,24 @@ McSummary MpiSimulation::runMc(MpiContext& ctx, const Config& cfg, const Microst
     double snapMs = 0.0;
     const auto writeSnapshot = [&](int k) {
         const double s0 = MPI_Wtime();
-        const CrystalMap map = gatherCrystals();
-        if (ctx.root()) {
-            char name[32];
-            std::snprintf(name, sizeof(name), "mcs_%06d.bin", k);
-            ResultWriter::writeCrystalBin((snapDir / name).string(), map);
+        char name[32];
+        std::snprintf(name, sizeof(name), "mcs_%06d.bin", k);
+        if (parallelIo) {
+            MpiIo::writeCrystalBin(ctx.comm, (snapDir / name).string(), G, plan.lo, ownDims, ownCrystals());
+        } else {
+            const CrystalMap map = gatherCrystals();
+            if (ctx.root()) {
+                ResultWriter::writeCrystalBin((snapDir / name).string(), map);
+            }
         }
         snapMs += (MPI_Wtime() - s0) * 1000.0;
     };
     if (snapEvery > 0) {
         if (ctx.root()) {
             fs::create_directories(snapDir);
+        }
+        if (parallelIo) {
+            MPI_Barrier(ctx.comm);  // folder przed MPI_File_open
         }
         writeSnapshot(0);
     }
@@ -802,7 +976,15 @@ McSummary MpiSimulation::runMc(MpiContext& ctx, const Config& cfg, const Microst
     halo.setStatsPhase(true);
     halo.sum(counts3, 3);
     halo.setStatsPhase(false);
-    s.crystals = gatherCrystals();
+    if (parallelIo) {
+        s.crystals.dims = G;  // mapa zostaje w pasach — mc_result.* zapisuje każdy proces (MPI-IO)
+        if (info != nullptr) {
+            info->ownDims = ownDims;
+            info->ownCrystals = ownCrystals();
+        }
+    } else {
+        s.crystals = gatherCrystals();
+    }
     if (ctx.root()) {
         McStatsInput in;
         in.dims = G;
@@ -844,32 +1026,27 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
     timing.enableThreadStats(opt.threadStats && ctx.root());
     ProgressReporter progress = (opt.progress && ctx.root()) ? ProgressReporter(std::cout) : ProgressReporter();
 
-    // 1. Config: proces 0 wczytuje plik (+ --set), sprawdza i rozsyła scalony JSON; pozostałe procesy budują z niego
-    //    ten sam Config (Config::fromJson) i niczego nie czytają z dysku. --mc-from: proces 0 czyta też wynik CA.
+    // 1. Config: proces 0 wczytuje plik (+ --set), sprawdza i rozsyła scalony JSON (mpi.bcast = "struct": blok
+    //    liczbowy); pozostałe procesy budują z niego ten sam Config i niczego nie czytają z dysku. --mc-from: proces 0
+    //    czyta też wynik CA (mpi.io = "mpiio" i plik bin: tylko nagłówek).
     Timer t;
     Config cfg;
-    std::string text;
     Microstructure caInput;
+    BinHeader caHeader;
     ResultSource src;
     CoolingData cooling = CoolingData::Full;
     std::vector<std::string> warnings;
     if (ctx.root()) {
         cfg = Config::load(opt.configPath, opt.overrides);
         if (!opt.mcFrom.empty()) {
-            prepareMcFrom(cfg, opt.mcFrom, caInput, src, cooling, warnings, timing);
+            prepareMcFrom(cfg, opt.mcFrom, cfg.mpiIoParallel(), caInput, caHeader, src, cooling, warnings, timing);
         }
         checkConfig(cfg, ctx.size);
-        text = cfg.effective.dump();
     }
     const double readMs = t.elapsedMs();
-    bcastText(ctx, text);
-    if (!ctx.root()) {
-        cfg = Config::fromJson(ojson::parse(text));
-    }
-    int coolingCode = static_cast<int>(cooling);
-    MPI_Bcast(&coolingCode, 1, MPI_INT, 0, ctx.comm);
-    cooling = static_cast<CoolingData>(coolingCode);
+    bcastConfig(ctx, cfg, cooling);
     timing.add("readConfig", readMs);
+    const bool parallelIo = cfg.mpiIoParallel();
 
     // 2. Proces przed obliczeniami: priorytet, wątki, rdzenie.
     if (ctx.root()) {
@@ -894,28 +1071,78 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
         timing.addFile((out / "config_used.json").string(), tc.elapsedMs());
     }
 
-    // 3. Symulacja (wszystkie procesy), zapis plików (proces 0).
+    // 3. Symulacja (wszystkie procesy), zapis plików (proces 0; mpi.io = "mpiio" — wyniki pasami przez wszystkie).
     MpiCaRun ca;
     McSummary mcs;
     MpiMcRun mcRun;
     bool caRan = false;
     bool mcRan = false;
     ojson stats = ojson::object();
+    const bool txtOut = cfg.output.format == OutputFormat::Txt || cfg.output.format == OutputFormat::Both;
+    const bool binOut = cfg.output.format == OutputFormat::Bin || cfg.output.format == OutputFormat::Both;
+    // Zapis MC: mc_result.* (proces 0 albo pasami przez MPI-IO) i mc_stats.csv (proces 0) — czas w sekcji mcSave.
+    const auto saveMc = [&]() {
+        if (!parallelIo) {
+            if (ctx.root()) {
+                McStage::save(cfg, mcs, outDir, timing);
+            }
+            return;
+        }
+        const double s0 = MPI_Wtime();
+        const Dims& G = cfg.space;
+        const int lo = mcRun.plan.lo;
+        if (txtOut) {
+            const std::string path = (out / "mc_result.txt").string();
+            writeParallel(ctx, timing, path, [&]() {
+                return MpiIo::writeCrystalTxt(ctx.comm, path, G, lo, mcRun.ownDims, mcRun.ownCrystals);
+            });
+        }
+        if (binOut) {
+            const std::string path = (out / "mc_result.bin").string();
+            writeParallel(ctx, timing, path, [&]() {
+                return MpiIo::writeCrystalBin(ctx.comm, path, G, lo, mcRun.ownDims, mcRun.ownCrystals);
+            });
+        }
+        if (ctx.root()) {
+            const std::string statsPath = (out / "mc_stats.csv").string();
+            Timer tf;
+            ResultWriter::writeMcStatsCsv(statsPath, mcs.history);
+            timing.addFile(statsPath, tf.elapsedMs());
+        }
+        timing.add("mcSave", (MPI_Wtime() - s0) * 1000.0);
+    };
     if (!opt.mcFrom.empty()) {
         // --mc-from: proces 0 rozdziela pasy wyniku CA z pliku (MPI_Scatterv), dalej MC jak na wyniku z pamięci.
+        // mpi.io = "mpiio" i plik bin: każdy proces czyta swój pas sam (proces 0 rozsyła ścieżkę i nagłówek).
         const std::vector<int> split = splitLayers(layerCountOf(cfg.space), ctx.size);
         const std::uint64_t plane = layerPlane(cfg.space);
         Microstructure slab;
         slab.resize(windowDims(cfg.space, split[static_cast<std::size_t>(ctx.rank) + 1] -
                                               split[static_cast<std::size_t>(ctx.rank)]));
-        scatterField(ctx, split, plane, caInput.type, slab.type);
-        scatterField(ctx, split, plane, caInput.solidStep, slab.solidStep);
-        scatterField(ctx, split, plane, caInput.arrivalStep, slab.arrivalStep);
+        unsigned long long head[5] = {caHeader.version, static_cast<unsigned long long>(caHeader.dims.nx),
+                                      static_cast<unsigned long long>(caHeader.dims.ny),
+                                      static_cast<unsigned long long>(caHeader.dims.nz), caHeader.dataOffset};
+        MPI_Bcast(head, 5, MPI_UNSIGNED_LONG_LONG, 0, ctx.comm);
+        if (head[0] != 0) {
+            const double r0 = MPI_Wtime();
+            std::string path = src.path;
+            bcastText(ctx, path);  // ścieżka pliku (liczy się do bajtów rozsyłania configu)
+            caHeader.version = static_cast<std::uint32_t>(head[0]);
+            caHeader.dims = Dims{static_cast<int>(head[1]), static_cast<int>(head[2]), static_cast<int>(head[3])};
+            caHeader.dataOffset = head[4];
+            ctx.read = MpiIo::readCaStrip(ctx.comm, path, caHeader, split[static_cast<std::size_t>(ctx.rank)], slab);
+            ctx.readParallel = true;
+            timing.add("readInput", (MPI_Wtime() - r0) * 1000.0);
+        } else {
+            scatterField(ctx, split, plane, caInput.type, slab.type);
+            scatterField(ctx, split, plane, caInput.solidStep, slab.solidStep);
+            scatterField(ctx, split, plane, caInput.arrivalStep, slab.arrivalStep);
+        }
         mcs = runMc(ctx, cfg, &slab, cooling, timing, &progress, outDir, &mcRun);
         mcRan = true;
+        progress.report("save", 0, 1, true);
+        saveMc();
         if (ctx.root()) {
-            progress.report("save", 0, 1, true);
-            McStage::save(cfg, mcs, outDir, timing);
             Timer ts;
             stats["source"] = {{"folder", cfg.effective["_mcFrom"]},
                                {"file", src.path},
@@ -933,7 +1160,46 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
         }
     } else {
         RunSummary rs;
-        if (!cfg.mc.fullOnly()) {
+        if (!cfg.mc.fullOnly() && parallelIo) {
+            // mpi.io = "mpiio": ca_result.* pasami przez MPI-IO, stats.json z sum liczonych w pasach (MPI_Reduce).
+            caRan = true;
+            ca = runCa(ctx, cfg, timing, &progress, outDir);
+            progress.report("save", 0, 1, true);
+            const double s0 = MPI_Wtime();
+            if (txtOut) {
+                const std::string path = (out / "ca_result.txt").string();
+                writeParallel(ctx, timing, path,
+                              [&]() { return MpiIo::writeCaTxt(ctx.comm, path, cfg.space, ca.plan.lo, ca.slab); });
+            }
+            if (binOut) {
+                const std::string path = (out / "ca_result.bin").string();
+                writeParallel(ctx, timing, path,
+                              [&]() { return MpiIo::writeCaBin(ctx.comm, path, cfg.space, ca.plan.lo, ca.slab); });
+            }
+            // ca.gatherMs = kopia pasu okna bez ramki (ownLayers) — jak w zapisie przez proces 0, gdzie wchodzi
+            // w save razem z MPI_Gatherv; sekcja save w obu trybach liczy się od końca fazy CA.
+            timing.add("save", ca.gatherMs + (MPI_Wtime() - s0) * 1000.0);
+            const double st0 = MPI_Wtime();
+            Simulation::FlowSums sums = Simulation::flowSums(ca.slab, ca.vents, cfg.parallelSettings().threads,
+                                                             layerAxisZ(cfg.space) ? 0 : ca.plan.lo);
+            static_assert(sizeof(unsigned long long) == sizeof(std::uint64_t), "MPI_UNSIGNED_LONG_LONG = uint64");
+            const int n = static_cast<int>(sums.lava.size());
+            MPI_Reduce(ctx.root() ? MPI_IN_PLACE : sums.lava.data(), sums.lava.data(), n, MPI_UNSIGNED_LONG_LONG,
+                       MPI_SUM, 0, ctx.comm);
+            MPI_Reduce(ctx.root() ? MPI_IN_PLACE : sums.basalt.data(), sums.basalt.data(), n, MPI_UNSIGNED_LONG_LONG,
+                       MPI_SUM, 0, ctx.comm);
+            MPI_Reduce(ctx.root() ? MPI_IN_PLACE : sums.reach.data(), sums.reach.data(), n, MPI_DOUBLE, MPI_MAX, 0,
+                       ctx.comm);
+            if (ctx.root()) {
+                rs.steps = ca.steps;
+                rs.stop = ca.stop;
+                rs.vents = ca.vents;
+                rs.activeHistory = ca.activeHistory;
+                rs.changedHistory = ca.changedHistory;
+                stats = Simulation::statsFromSums(cfg, rs, sums);
+            }
+            timing.add("caStats", (MPI_Wtime() - st0) * 1000.0);
+        } else if (!cfg.mc.fullOnly()) {
             caRan = true;
             ca = runCa(ctx, cfg, timing, &progress, outDir);
             if (ctx.root()) {
@@ -970,9 +1236,9 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
         if (cfg.mc.enabled) {
             mcs = runMc(ctx, cfg, caRan ? &ca.slab : nullptr, CoolingData::Full, timing, &progress, outDir, &mcRun);
             mcRan = true;
+            progress.report("save", 0, 1, true);
+            saveMc();
             if (ctx.root()) {
-                progress.report("save", 0, 1, true);
-                McStage::save(cfg, mcs, outDir, timing);
                 stats["mc"] = mcs.stats;
             }
         }
@@ -994,12 +1260,18 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
     MPI_Get_version(&ver, &sub);
     m["standard"] = std::to_string(ver) + "." + std::to_string(sub);
     m["exchange"] = cfg.mpiExchangeChanged() ? "changed" : "always";
+    m["pack"] = cfg.mpiPackDatatype() ? "datatype" : "manual";
     m["axis"] = layerAxisZ(cfg.space) ? "z" : "y";
     m["layers"] = layerCountOf(cfg.space);
     m["split"] = splitLayers(layerCountOf(cfg.space), ctx.size);
     m["initMs"] = spread(ctx, ctx.initMs);  // MPI_Init_thread (część total, której nie ma w engine)
-    m["bcast"] = {{"configBytes", ctx.bcastConfigBytes},
+    m["bcast"] = {{"mode", ctx.bcastStruct ? "struct" : "json"},
+                  {"configBytes", ctx.bcastConfigBytes},
                   {"configMs", round3(ctx.bcastConfigMs)},
+                  {"configPrepMs", round3(ctx.configPrepMs)},
+                  {"configBuildMs", spread(ctx, ctx.configBuildMs)},  // procesy != 0 (proces 0: 0)
+                  {"ventsBytes", ctx.bcastVentsBytes},
+                  {"ventsMs", round3(ctx.bcastVentsMs)},
                   {"terrainBytes", ctx.bcastTerrainBytes},
                   {"terrainMs", round3(ctx.bcastTerrainMs)}};
     if (caRan) {
@@ -1020,6 +1292,7 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
     if (!opt.mcFrom.empty()) {
         m["scatter"] = {{"bytes", total(ctx, ctx.scatterBytes)}, {"ms", spread(ctx, ctx.scatterMs)}};
     }
+    m["io"] = ioJson(ctx, parallelIo);
     // Procesory i priorytet każdego procesu.
     const int threads = cfg.parallelSettings().threads;
     std::vector<int> mine(static_cast<std::size_t>(threads), -1);
@@ -1093,6 +1366,8 @@ int MpiSimulation::runFromCli(const CliOptions& opt, const Timer& sinceStart, do
        << layerCountOf(d) / ctx.size << (layerCountOf(d) % ctx.size != 0 ? "+" : "") << " warstw\n";
     os << "Sąsiedztwo     " << Neighborhood::name(cfg.neighborhood) << ", brzeg " << Boundary::name(cfg.boundary)
        << ", seed " << cfg.rngSeed << ", wymiana " << (cfg.mpiExchangeChanged() ? "changed" : "always") << '\n';
+    os << "Warianty MPI   pakowanie " << (cfg.mpiPackDatatype() ? "datatype" : "manual") << ", rozsyłanie "
+       << (cfg.mpiBcastStruct() ? "struct" : "json") << ", zapis " << (parallelIo ? "mpiio" : "gather") << '\n';
     if (caRan) {
         os << "Kroki          " << ca.steps << " (koniec: " << describe(ca.stop) << ")\n";
         if (m.contains("ca")) {

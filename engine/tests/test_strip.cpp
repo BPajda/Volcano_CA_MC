@@ -134,21 +134,21 @@ TEST_CASE("Pasy MPI: lawa — 17 warstw pod pasem od kilku procesów, 1 nad pase
 
 TEST_CASE("Pasy MPI: pierścień przy brzegu periodycznym") {
     // 3 warstwy na 2 procesy: [0,2) [2,3); proces 0 ma warstwę 2 pod i nad sobą (dwie kopie w oknie).
-    const StripPlan p0 = planStrip(3, 2, 0, ringSpec());
-    CHECK(p0.windowLo == -1);
-    CHECK(p0.windowLayers == 4);
-    REQUIRE(p0.ghosts.size() == 2);
-    CHECK(p0.ghosts[0].global == 2);
-    CHECK(p0.ghosts[1].global == 2);
-    REQUIRE(p0.recvs.size() == 1);
-    CHECK(p0.recvs[0].layers.size() == 2);
-    const StripPlan p1 = planStrip(3, 2, 1, ringSpec());
-    REQUIRE(p1.ghosts.size() == 2);
-    CHECK(p1.ghosts[0].global == 1);  // pod pasem
-    CHECK(p1.ghosts[1].global == 0);  // nad pasem — zawinięcie
-    REQUIRE(p0.sends.size() == 1);
-    CHECK(p0.sends[0].layers[0].local == 2);  // warstwa globalna 1 w oknie procesu 0
-    CHECK(p0.sends[0].layers[1].local == 1);  // warstwa globalna 0
+    const StripPlan rank0 = planStrip(3, 2, 0, ringSpec());
+    CHECK(rank0.windowLo == -1);
+    CHECK(rank0.windowLayers == 4);
+    REQUIRE(rank0.ghosts.size() == 2);
+    CHECK(rank0.ghosts[0].global == 2);
+    CHECK(rank0.ghosts[1].global == 2);
+    REQUIRE(rank0.recvs.size() == 1);
+    CHECK(rank0.recvs[0].layers.size() == 2);
+    const StripPlan rank1 = planStrip(3, 2, 1, ringSpec());
+    REQUIRE(rank1.ghosts.size() == 2);
+    CHECK(rank1.ghosts[0].global == 1);  // pod pasem
+    CHECK(rank1.ghosts[1].global == 0);  // nad pasem — zawinięcie
+    REQUIRE(rank0.sends.size() == 1);
+    CHECK(rank0.sends[0].layers[0].local == 2);  // warstwa globalna 1 w oknie procesu 0
+    CHECK(rank0.sends[0].layers[1].local == 1);  // warstwa globalna 0
     for (int ranks : {2, 3, 4, 5, 8}) {
         CAPTURE(ranks);
         checkConsistent(8, ranks, ringSpec());

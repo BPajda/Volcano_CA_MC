@@ -143,6 +143,13 @@ struct Config {
     bool highPriority() const;
     // mpi.exchange = "changed" — engine_mpi przesyła warstwę brzegową tylko, gdy się zmieniła ("always" — co krok).
     bool mpiExchangeChanged() const;
+    // Etap 11 (też z effective): mpi.pack = "datatype" — warstwy brzegowe opisane typem pochodnym MPI (bez pakowania
+    // do bufora; "manual" — pakowanie memcpy jak w etapie 10); mpi.bcast = "struct" — parametry i kratery / zarodki
+    // rozsyłane jako struktury (typ MPI_Type_create_struct; "json" — scalony JSON configu); mpi.io = "mpiio" — każdy
+    // proces zapisuje swój pas do wspólnego pliku (MPI-IO; "gather" — zebranie na proces 0 i zapis tam).
+    bool mpiPackDatatype() const;
+    bool mpiBcastStruct() const;
+    bool mpiIoParallel() const;
 
     // Nakłada nadpisanie "ścieżka.z.kropkami=wartość" na JSON. Wartość jest parsowana
     // jako JSON (liczby, true/false, null); jeśli się nie da — traktowana jako tekst.

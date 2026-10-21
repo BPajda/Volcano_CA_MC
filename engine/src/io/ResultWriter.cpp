@@ -154,12 +154,8 @@ void ResultWriter::writeTxt(const std::string& path, const Microstructure& m) {
 
 void ResultWriter::writeBin(const std::string& path, const Microstructure& m) {
     std::ofstream out = openOut(path, true);
-    const char magic[4] = {'V', 'O', 'L', 'C'};
-    const std::uint32_t version = kBinVersion;
-    const std::int32_t dims[3] = {m.dims.nx, m.dims.ny, m.dims.nz};
-    out.write(magic, 4);
-    out.write(reinterpret_cast<const char*>(&version), sizeof(version));
-    out.write(reinterpret_cast<const char*>(dims), sizeof(dims));
+    const std::vector<char> header = binHeader(m.dims);
+    out.write(header.data(), static_cast<std::streamsize>(header.size()));
     writeArray(out, m.type);
     writeArray(out, m.flowId);
     writeArray(out, m.temp);
@@ -197,14 +193,32 @@ void ResultWriter::writeCrystalTxt(const std::string& path, const CrystalMap& m)
 
 void ResultWriter::writeCrystalBin(const std::string& path, const CrystalMap& m) {
     std::ofstream out = openOut(path, true);
-    const char magic[4] = {'V', 'M', 'C', '1'};
-    const std::int32_t dims[3] = {m.dims.nx, m.dims.ny, m.dims.nz};
-    out.write(magic, 4);
-    out.write(reinterpret_cast<const char*>(dims), sizeof(dims));
+    const std::vector<char> header = crystalBinHeader(m.dims);
+    out.write(header.data(), static_cast<std::streamsize>(header.size()));
     writeArray(out, m.crystal);
     if (!out) {
         throw std::runtime_error("Błąd zapisu pliku: " + path);
     }
+}
+
+std::vector<char> ResultWriter::binHeader(const Dims& d) {
+    const char magic[4] = {'V', 'O', 'L', 'C'};
+    const std::uint32_t version = kBinVersion;
+    const std::int32_t dims[3] = {d.nx, d.ny, d.nz};
+    std::vector<char> h(sizeof(magic) + sizeof(version) + sizeof(dims));
+    std::memcpy(h.data(), magic, sizeof(magic));
+    std::memcpy(h.data() + sizeof(magic), &version, sizeof(version));
+    std::memcpy(h.data() + sizeof(magic) + sizeof(version), dims, sizeof(dims));
+    return h;
+}
+
+std::vector<char> ResultWriter::crystalBinHeader(const Dims& d) {
+    const char magic[4] = {'V', 'M', 'C', '1'};
+    const std::int32_t dims[3] = {d.nx, d.ny, d.nz};
+    std::vector<char> h(sizeof(magic) + sizeof(dims));
+    std::memcpy(h.data(), magic, sizeof(magic));
+    std::memcpy(h.data() + sizeof(magic), dims, sizeof(dims));
+    return h;
 }
 
 void ResultWriter::writeMcStatsCsv(const std::string& path, const std::vector<McStats>& history) {

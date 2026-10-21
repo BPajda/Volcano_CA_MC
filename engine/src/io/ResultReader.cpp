@@ -71,11 +71,10 @@ Microstructure ResultReader::readTxt(const std::string& path) {
     return m;
 }
 
-Microstructure ResultReader::readBin(const std::string& path, std::uint32_t* versionOut) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) {
-        throw std::runtime_error("Nie można otworzyć pliku: " + path);
-    }
+namespace {
+
+// Nagłówek ca_result.bin z otwartego pliku: magic, wersja, wymiary (sprawdzone).
+BinHeader readVolcHeader(std::ifstream& in, const std::string& path) {
     char magic[4] = {};
     std::uint32_t version = 0;
     std::int32_t dims[3] = {};
@@ -91,8 +90,41 @@ Microstructure ResultReader::readBin(const std::string& path, std::uint32_t* ver
     if (dims[0] < 1 || dims[1] < 1 || dims[2] < 1) {
         throw std::runtime_error("Plik " + path + ": nieprawidłowe wymiary");
     }
+    BinHeader h;
+    h.dims = Dims{dims[0], dims[1], dims[2]};
+    h.version = version;
+    h.dataOffset = sizeof(magic) + sizeof(version) + sizeof(dims);
+    return h;
+}
+
+}  // namespace
+
+BinHeader ResultReader::readBinHeader(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Nie można otworzyć pliku: " + path);
+    }
+    const BinHeader h = readVolcHeader(in, path);
+    // Tablice: type (1 B), flowId (4), temp (4), solidStep (2), arrivalStep (2, od wersji 2) na komórkę.
+    const std::uint64_t perCell = h.version >= 2 ? 13 : 11;
+    const std::uint64_t need = h.dataOffset + perCell * static_cast<std::uint64_t>(h.dims.cells());
+    in.seekg(0, std::ios::end);
+    const std::streamoff size = in.tellg();
+    if (size < 0 || static_cast<std::uint64_t>(size) < need) {
+        throw std::runtime_error("Plik " + path + " jest obcięty (za mało danych)");
+    }
+    return h;
+}
+
+Microstructure ResultReader::readBin(const std::string& path, std::uint32_t* versionOut) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error("Nie można otworzyć pliku: " + path);
+    }
+    const BinHeader h = readVolcHeader(in, path);
+    const std::uint32_t version = h.version;
     Microstructure m;
-    m.resize(Dims{dims[0], dims[1], dims[2]});
+    m.resize(h.dims);
     readArray(in, m.type, path);
     readArray(in, m.flowId, path);
     readArray(in, m.temp, path);

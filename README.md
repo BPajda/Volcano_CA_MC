@@ -131,10 +131,12 @@ Spis dokumentacji — opisy etapów 1–10, architektura, uruchamianie, wyniki i
   (dziś ~50% czasu MC przy 8 wątkach), równoległe przygotowanie terenu.
 - **MPI — zrobione** (etap 10): program `engine_mpi`, pasy warstw z warstwami brzegowymi wymienianymi przed każdym
   krokiem (w MC — po każdym kolorze szachownicy), wariant wymiany tylko zmienionych warstw, tryb hybrydowy, przypinanie
-  procesów do rdzeni wydajnościowych. Do zrobienia: typy pochodne MPI zamiast ręcznego pakowania warstw i równoległy
-  zapis wyników MPI-IO zamiast zbierania na jednym procesie (siatka 1000³ potrzebuje ~40–50 GB pamięci), pasy ważone
-  pracą albo podział w poziomie dla lawy, równoległe etykiety ziaren MC
-  ([docs/etap-10-mpi.md, punkt 11](docs/etap-10-mpi.md#11-wnioski-dla-etapu-11-typy-mpi-i-mpi-io)).
+  procesów do rdzeni wydajnościowych. Do zrobienia: pasy ważone pracą albo podział w poziomie dla lawy, równoległe
+  etykiety ziaren MC ([docs/etap-10-mpi.md, punkt 11](docs/etap-10-mpi.md#11-wnioski-dla-etapu-11-typy-mpi-i-mpi-io)).
+- **Typy pochodne MPI i MPI-IO — zrobione** (etap 11, opcje `mpi.pack`, `mpi.bcast`, `mpi.io`; pliki bajtowo te same):
+  wymiana warstw typem `MPI_Type_create_struct` bez pakowania skraca wymianę o 25–50%, a równoległy zapis MPI-IO
+  zapisuje duże wyniki do 3× szybciej przy 4× mniejszej pamięci procesu 0
+  ([docs/etap-11-mpi-typy-io.md](docs/etap-11-mpi-typy-io.md)).
 
 ## Dane terenu
 

@@ -216,3 +216,17 @@ TEST_CASE("Config: vents.positions — kratery w zadanych kolumnach (etap 6)") {
     CHECK(Config::load("", {"mc.snapshotsEvery=5"}).mc.snapshotsEvery == 5);
     CHECK(contains(errorOf({"mc.snapshotsEvery=-1"}), "mc.snapshotsEvery"));
 }
+
+TEST_CASE("Config: warianty MPI z etapu 11 — mpi.pack, mpi.bcast, mpi.io") {
+    const Config d = Config::load("", {});
+    CHECK_FALSE(d.mpiPackDatatype());  // domyślnie jak w etapie 10: manual, json, gather
+    CHECK_FALSE(d.mpiBcastStruct());
+    CHECK_FALSE(d.mpiIoParallel());
+    const Config c = Config::load("", {"mpi.pack=datatype", "mpi.bcast=struct", "mpi.io=mpiio"});
+    CHECK(c.mpiPackDatatype());
+    CHECK(c.mpiBcastStruct());
+    CHECK(c.mpiIoParallel());
+    CHECK(contains(errorOf({"mpi.pack=memcpy"}), "mpi.pack"));
+    CHECK(contains(errorOf({"mpi.bcast=text"}), "mpi.bcast"));
+    CHECK(contains(errorOf({"mpi.io=posix"}), "mpi.io"));
+}

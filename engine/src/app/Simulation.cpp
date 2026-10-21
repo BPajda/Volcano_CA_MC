@@ -402,16 +402,14 @@ McSummary Simulation::runMcFrom(const Config& cfgIn, const std::string& caFolder
 }
 
 nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary& s) {
-    using ojson = nlohmann::ordered_json;
-    const Microstructure& m = s.result;
-    const std::size_t flows = s.vents.size();
+    return statsFromSums(c, s, flowSums(s.result, s.vents, c.parallelSettings().threads));
+}
+
+Simulation::FlowSums Simulation::flowSums(const Microstructure& m, const std::vector<Vent>& vents, int threads,
+                                          int yOffset) {
+    const std::size_t flows = vents.size();
 
     // Zliczenie komórek każdego „ziarna” i zasięgu (maks. odległość pozioma od krateru) w wierszach [r0, r1) siatki.
-    struct FlowSums {
-        std::vector<std::uint64_t> lava;
-        std::vector<std::uint64_t> basalt;
-        std::vector<double> reach;
-    };
     // Wskaźniki pobrane przed pętlą: MSVC nie przeładowuje ich wtedy przy każdym zapisie licznika.
     const auto scanRows = [&](std::ptrdiff_t r0, std::ptrdiff_t r1, FlowSums& out) {
         const CellType* const type = m.type.data();
@@ -420,7 +418,7 @@ nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary&
         std::uint64_t* const bs = out.basalt.data();
         double* const rc = out.reach.data();
         for (std::ptrdiff_t r = r0; r < r1; ++r) {
-            const int y = static_cast<int>(r % m.dims.ny);
+            const int y = static_cast<int>(r % m.dims.ny) + yOffset;
             std::size_t i = static_cast<std::size_t>(r) * static_cast<std::size_t>(m.dims.nx);
             for (int x = 0; x < m.dims.nx; ++x, ++i) {
                 const CellType t = type[i];
@@ -431,7 +429,7 @@ nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary&
                 }
                 const std::size_t fi = static_cast<std::size_t>(f);
                 (t == CellType::Lava ? lv : bs)[fi] += 1;
-                const Vent& v = s.vents[fi - 1];
+                const Vent& v = vents[fi - 1];
                 rc[fi] = std::max(rc[fi], std::hypot(double(x - v.x), double(y - v.y)));
             }
         }
@@ -442,7 +440,6 @@ nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary&
     };
     const std::ptrdiff_t rows = static_cast<std::ptrdiff_t>(m.dims.ny) * m.dims.nz;
     FlowSums sum = empty();
-    const int threads = c.parallelSettings().threads;
     if (threads > 1 && flows <= 100000) {
         // Etap 9: wiersze siatki dzielone między wątki, każdy wątek ma własne sumy; łączenie: liczby całkowite
         // dodawane, zasięg — maksimum (oba nie zależą od kolejności, więc stats.json jest bitowo ten sam).
@@ -465,6 +462,12 @@ nlohmann::ordered_json Simulation::buildStats(const Config& c, const RunSummary&
     } else {
         scanRows(0, rows, sum);
     }
+    return sum;
+}
+
+nlohmann::ordered_json Simulation::statsFromSums(const Config& c, const RunSummary& s, const FlowSums& sum) {
+    using ojson = nlohmann::ordered_json;
+    const std::size_t flows = s.vents.size();
     const std::vector<std::uint64_t>& lava = sum.lava;
     const std::vector<std::uint64_t>& basalt = sum.basalt;
     const std::vector<double>& reach = sum.reach;

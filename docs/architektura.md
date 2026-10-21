@@ -52,7 +52,8 @@ volcano-ca-mc/
 │   ├── src/parallel/                   OpenMP (etap 9): Omp.hpp (ompFor, ustawienia), Affinity.* (rdzenie P), ThreadStats.*;
 │   │                                   Strip.* (etap 10): podział warstw na pasy, plan warstw brzegowych, interfejs StripLink
 │   ├── src/mpi/                        MPI (etap 10): main_mpi.cpp (program engine_mpi), MpiSimulation.* (rozsyłanie, pasy,
-│   │                                   zebranie wyników), MpiHalo.* (wymiana warstw brzegowych, MPI_Allreduce)
+│   │                                   zebranie wyników), MpiHalo.* (wymiana warstw brzegowych, MPI_Allreduce);
+│   │                                   etap 11: MpiTypes.* (typy pochodne: blok configu, kratery), MpiIo.* (zapis i odczyt MPI-IO)
 │   ├── tests/                          testy jednostkowe doctest (m.in. test_front.cpp, test_parallel.cpp, test_strip.cpp,
 │   │                                   test_replay.cpp); tests/mpi/ — testy engine_mpi pod mpiexec (1–8 procesów)
 │   └── third_party/                    json.hpp (nlohmann), doctest.h — jedyne zależności C++
@@ -79,11 +80,12 @@ volcano-ca-mc/
 │                                       etap 8: ab.py (test A/B), compare_results.py (zgodność bitowa), plot_etap8.py, results/ab/
 │                                       etap 9: scaling.py (skalowanie OpenMP), mc_validation.py, plot_etap9.py, micro/omp_overhead.cpp, results/omp/
 │                                       etap 10: scaling_mpi.py (skalowanie MPI), plot_etap10.py, compare_results.py --launch, results/mpi/
+│                                       etap 11: mpi_io.py (typy pochodne i MPI-IO), plot_etap11.py, results/mpi_io/
 ├── configs/                            przykładowe configi (test_2d, test_3d, etna_3d, classic_ref, lava_mc_*, mc_full_*, heightmap_*,
 │                                       etna_real, etna_real_boczna, wezuwiusz_real), heightmaps/ (mapy CSV + PNG + JSON, README z przypisaniem
 │                                       danych); gui/ i series/ — generowane (poza repozytorium)
 ├── results/                            wyniki (poza repozytorium); results/gui/ — zadania i serie z GUI
-└── docs/                               opisy etapów etap-1…10-*.md, przewodniki (architektura, uruchamianie), raport, img/, data/
+└── docs/                               opisy etapów etap-1…11-*.md, przewodniki (architektura, uruchamianie), raport, img/, data/
 ```
 
 ## 3. Droga jednej symulacji — od `engine --config` do pliku wynikowego
@@ -124,8 +126,10 @@ a potem kolejne `--set`. Nieznany klucz to błąd (łapie literówki), klucze za
 musi mieć `ny = 1`) i trafia do struktury `Config`. Błędy mają polskie komunikaty z nazwą parametru.
 
 **Gdzie:** `engine/src/io/Config.cpp`: `Config::defaultsJson()` (153), `Config::merge()` (178–203),
-`Config::applyOverride()` (205–235), `Config::load()` (237–266), `Config::fromJson()` (268–433),
-`Config::parallelSettings()` (434–440; sekcja `parallel` → `ParallelSettings`, `threads = 0` → `omp_get_max_threads()`).
+`Config::applyOverride()` (205–235), `Config::load()` (237–266), `Config::fromJson()` (268–437),
+`Config::parallelSettings()` (463–469; sekcja `parallel` → `ParallelSettings`, `threads = 0` → `omp_get_max_threads()`);
+warianty MPI (`mpi.exchange`, etap 11: `mpi.pack`, `mpi.bcast`, `mpi.io`) — tylko walidacja w `fromJson()`, odczyt
+metodami `mpiExchangeChanged()`, `mpiPackDatatype()`, `mpiBcastStruct()`, `mpiIoParallel()` (447–461).
 
 ```cpp
 Config Config::load(const std::string& path, const std::vector<std::string>& overrides) {
@@ -396,12 +400,24 @@ Na końcu proces 0 zbiera pasy wyniku (`MPI_Gatherv`) i zapisuje te same pliki c
 w `times.json`). Przy 1 procesie okno = cała przestrzeń, `link_ == nullptr` — kroki idą dokładnie ścieżką `engine`
 (szablon `frontStepSequential<bool Strip>`, krok 6). Opis i wyniki: [etap-10-mpi.md](etap-10-mpi.md).
 
+**Etap 11 — trzy opcje** (domyślnie jak w etapie 10, wynik bajtowo ten sam; [etap-11-mpi-typy-io.md](etap-11-mpi-typy-io.md)):
+`mpi.pack = datatype` — komunikat wymiany to typ pochodny (`MPI_Type_create_struct` z bloków „warstwa pola” pod
+adresami w siatce okna, wysyłka i odbiór od `MPI_BOTTOM`, bez bufora); `mpi.bcast = struct` — blok liczbowy configu
+i lista kraterów / zarodków jako struktury z procesu 0 (jeden `MPI_Bcast`, bez parsowania JSON); `mpi.io = mpiio` —
+każdy proces zapisuje swój pas do wspólnego pliku (widok `MPI_Type_create_subarray`, tekst — przesunięcia
+z `MPI_Exscan`) i czyta swój pas przy `--mc-from`, bez `MPI_Gatherv` / `MPI_Scatterv` na procesie 0.
+
 **Gdzie:** `engine/src/mpi/main_mpi.cpp` — `main()` (20–75: `MPI_Init_thread` z `MPI_THREAD_FUNNELED`, kody wyjścia
-przez `MPI_Abort`); `engine/src/mpi/MpiSimulation.cpp` — `bcastText()` (51–66), `bcastHeightmap()` (69–84),
-`gatherField()` / `scatterField()` (107–131), `setupProcess()` (314–343, priorytet i rdzenie P procesu),
-`MpiSimulation::checkConfig()` (385–402), `runCa()` (404–556), `runMc()` (558–836), `runFromCli()` (838–1118);
-`engine/src/mpi/MpiHalo.cpp` — `sum()` (20–26), `exchange()` (54–62), `run()` (76–180: odbiory, pakowanie, wysyłka,
-`MPI_Waitall`, rozpakowanie); `engine/src/parallel/Strip.cpp` — `splitLayers()` (8–20), `ghostsOf()` (34–67),
+przez `MPI_Abort`); `engine/src/mpi/MpiSimulation.cpp` — `bcastText()` (53–68), `bcastConfig()` (76–124, JSON albo blok
+— etap 11), `bcastVents()` (128–147), `bcastHeightmap()` (150–165), `gatherField()` / `scatterField()` (188–212),
+`ioJson()` (383–409, sekcja `mpi.io`), `setupProcess()` (446–475, priorytet i rdzenie P procesu), `prepareMcFrom()`
+(480–518), `MpiSimulation::checkConfig()` (530–547), `runCa()` (549–718), `runMc()` (720–1018), `runFromCli()`
+(1020–1393; odczyt pasów `--mc-from` przez MPI-IO 1126–1136, zapis CA przez MPI-IO 1163–1201);
+`engine/src/mpi/MpiHalo.cpp` — `sum()` (55–61), `exchange()` (89–102), `run()` (114–216: odbiory, pakowanie, wysyłka,
+`MPI_Waitall`, rozpakowanie), `messageType()` (218–265, typ komunikatu z adresów pól — etap 11), `runTyped()` (281–410);
+`engine/src/mpi/MpiTypes.cpp` — `configBlockType()` (46–70), `ventType()` (72–80), `toBlock()` / `fromBlock()` (82–186);
+`engine/src/mpi/MpiIo.cpp` — `writeStrips()` (74–144, widok pliku i typ pamięci), `writeText()` (148–166, `MPI_Exscan`),
+`readCaStrip()` (208–237); `engine/src/parallel/Strip.cpp` — `splitLayers()` (8–20), `ghostsOf()` (34–67),
 `planStrip()` (71–120); `engine/src/ca/LavaCA.hpp` — `setStrip()` (153–162), `reachBelow()` / `reachAbove()`
 (167–168), `step()` (230–249, wymiana przed krokiem), `exchangeGhosts()` (347–355), `finishStep()` (1206–1229, suma
 liczników); `engine/src/mc/PottsMC.cpp` — `setStrip()` (48–59), wymiana po kolorze w `sweepColors()` (459, 494);
@@ -539,8 +555,11 @@ Każdy etap mierzy `Timer` (`std::chrono::steady_clock`) — zegar czytany na po
 w gorącej pętli** (stoper w pętli spowalniał krok lawy o ~10%, etap 3).
 
 **Gdzie:** `engine/src/io/ResultWriter.cpp` — `writeTxt()` (126–153; bufor dopisywany wskaźnikiem, temperatura przez
-`formatTemp()` (105–124) zamiast `printf` — etap 8), `writeBin()` (155–171), `writeCrystal*()`,
-`writeMcStatsCsv()`; `engine/src/io/TimingReport.cpp` — `toJson()` (140–158), `recordMemory()` (104–138);
+`formatTemp()` (105–124) zamiast `printf` — etap 8), `writeBin()` (155–167), `writeCrystal*()`, `binHeader()` /
+`crystalBinHeader()` (204–222, nagłówki wspólne z MPI-IO — etap 11), `writeMcStatsCsv()`;
+`engine/src/io/ResultWriterSlabs.cpp` — `txtHeader()` (76–88), `appendTxtRows()` (90–116), `appendCrystalTxtRows()`
+(118–140): wiersze jednego pasa tym samym formatterem (zapis tekstu przez MPI-IO, etap 11 — osobny plik, żeby nie
+zmieniać kodu `writeTxt` generowanego przez MSVC); `engine/src/io/TimingReport.cpp` — `toJson()` (140–158), `recordMemory()` (104–138);
 `engine/src/core/Timer.hpp`; schemat pomiaru w `Simulation::runWith()`: każdy etap to `t.reset(); …; timing.add("nazwa", t.elapsedMs());`.
 
 ```cpp
@@ -748,6 +767,8 @@ narzut przy 1 wątku ≤ 3%. Narzędzia: `bench/scaling.py` (S(p), E(p), Amdahl,
 | skalowanie S(p), E(p), Amdahl, harmonogramy (etap 9) | `bench/scaling.py`, `bench/plot_etap9.py`; walidacja szachownicy `bench/mc_validation.py`; wyniki `bench/results/omp/` |
 | procesy MPI: pasy, warstwy brzegowe, wymiana, suma liczników | `engine/src/mpi/MpiSimulation.cpp`, `runCa()`, `runMc()`; `MpiHalo.cpp`, `run()`; `parallel/Strip.cpp`, `planStrip()`; `LavaCA::setStrip()`, `exchangeGhosts()` |
 | skalowanie MPI, hybryda, MPI vs OpenMP (etap 10) | `bench/scaling_mpi.py`, `bench/plot_etap10.py`; zgodność `bench/compare_results.py --launch`; wyniki `bench/results/mpi/` |
+| typy pochodne MPI: komunikat warstw z pól SoA, blok configu, tablica kraterów (etap 11) | `engine/src/mpi/MpiHalo.cpp`, `messageType()`, `runTyped()`; `engine/src/mpi/MpiTypes.cpp`, `configBlockType()`, `ventType()`; `MpiSimulation.cpp`, `bcastConfig()`, `bcastVents()` |
+| MPI-IO: pas w pliku (subarray), tekst (`MPI_Exscan`), odczyt `--mc-from` (etap 11) | `engine/src/mpi/MpiIo.cpp`, `writeStrips()`, `writeText()`, `readCaStrip()`; pomiar `bench/mpi_io.py`, wyniki `bench/results/mpi_io/` |
 | sąsiad przez przesunięcie liniowe | `engine/src/core/Storage.hpp`, `linear()`, `shifted()`, `nextX()`; `LavaCA::nbSteps_` |
 | reguła rozlewania lawy (kierunek największego spadku) | `LavaCA.hpp`, `gatherLavaCandidates()`, `computeDescent()`, `descent()` |
 | wypełnianie krateru (ponding) | `LavaCA.hpp`, `tryPonding()`; opis w `CaRules.hpp` |

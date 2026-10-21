@@ -171,7 +171,7 @@ ojson Config::defaultsJson() {
                    "snapshotsEvery": 0, "update": "random" },
       "output":  { "format": "txt", "snapshotsEvery": 0 },
       "parallel": { "threads": 1, "schedule": "static", "chunk": 0, "affinity": "none", "priority": "normal" },
-      "mpi":     { "exchange": "always" }
+      "mpi":     { "exchange": "always", "pack": "manual", "bcast": "json", "io": "gather" }
     })");
 }
 
@@ -427,6 +427,10 @@ Config Config::fromJson(const ojson& j) {
     // highPriority() i mpiExchangeChanged() z effective (bez nowych pól struktury — układ kodu MSVC, etap 6, punkt 7).
     getEnum<bool>(j, "parallel.priority", {{"normal", false}, {"high", true}});
     getEnum<bool>(j, "mpi.exchange", {{"always", false}, {"changed", true}});
+    // Etap 11: warianty typów MPI i zapisu (engine_mpi) — też tylko walidacja, odczyt przez mpiPackDatatype() itd.
+    getEnum<bool>(j, "mpi.pack", {{"manual", false}, {"datatype", true}});
+    getEnum<bool>(j, "mpi.bcast", {{"json", false}, {"struct", true}});
+    getEnum<bool>(j, "mpi.io", {{"gather", false}, {"mpiio", true}});
 
     c.effective = j;
     return c;
@@ -442,6 +446,18 @@ bool Config::highPriority() const {
 
 bool Config::mpiExchangeChanged() const {
     return getEnum<bool>(effective, "mpi.exchange", {{"always", false}, {"changed", true}});
+}
+
+bool Config::mpiPackDatatype() const {
+    return getEnum<bool>(effective, "mpi.pack", {{"manual", false}, {"datatype", true}});
+}
+
+bool Config::mpiBcastStruct() const {
+    return getEnum<bool>(effective, "mpi.bcast", {{"json", false}, {"struct", true}});
+}
+
+bool Config::mpiIoParallel() const {
+    return getEnum<bool>(effective, "mpi.io", {{"gather", false}, {"mpiio", true}});
 }
 
 ParallelSettings Config::parallelSettings() const {

@@ -87,6 +87,7 @@ add_library(volcano_engine STATIC
     src/terrain/VentPlacer.cpp
     src/io/Config.cpp
     src/io/ResultWriter.cpp
+    src/io/ResultWriterSlabs.cpp
     src/io/ResultReader.cpp
     src/io/TimingReport.cpp
     src/mc/PottsMC.cpp
@@ -210,7 +211,9 @@ set_tests_properties(cli_smoke_batch PROPERTIES PASS_REGULAR_EXPRESSION "Razem: 
 if(VOLCANO_MPI_FOUND)
     add_library(volcano_mpi STATIC
         src/mpi/MpiHalo.cpp
+        src/mpi/MpiIo.cpp
         src/mpi/MpiSimulation.cpp
+        src/mpi/MpiTypes.cpp
     )
     target_link_libraries(volcano_mpi PUBLIC volcano_engine MPI::MPI_CXX)
     add_executable(engine_mpi src/mpi/main_mpi.cpp)

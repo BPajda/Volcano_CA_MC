@@ -20,8 +20,19 @@ struct ResultSource {
     bool hasArrivalStep = false;   // tylko bin v2
 };
 
+// Nagłówek ca_result.bin (etap 11): wymiary, wersja i początek tablic w pliku.
+struct BinHeader {
+    Dims dims;
+    std::uint32_t version = 0;
+    std::uint64_t dataOffset = 0;  // bajty nagłówka — za nim tablice type, flowId, temp, solidStep, arrivalStep (v2)
+};
+
 class ResultReader {
 public:
+    // Sam nagłówek ca_result.bin (sprawdza magic, wersję, wymiary i rozmiar pliku). Etap 11: engine_mpi
+    // z mpi.io = "mpiio" czyta na procesie 0 tylko nagłówek, a pasy tablic — każdy proces swój (MPI-IO).
+    static BinHeader readBinHeader(const std::string& path);
+
     // Odczyt ca_result.txt. Pola solidStep i arrivalStep nie występują w txt — ustawiane na 0.
     static Microstructure readTxt(const std::string& path);
 

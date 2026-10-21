@@ -113,8 +113,8 @@ Program: `build-gcc-release/bin/engine`; Debug: preset `gcc-debug`.
 ## 3. Testy
 
 ```powershell
-ctest --preset msvc-release            # MSVC Release (≈ 30 s; z testami MPI ≈ 55 s)
-ctest --preset msvc-debug              # MSVC Debug (≈ 3 min; z testami MPI ≈ 5 min)
+ctest --preset msvc-release            # MSVC Release (≈ 30 s; z testami MPI ≈ 2,5 min)
+ctest --preset msvc-debug              # MSVC Debug (≈ 3,5 min; z testami MPI ≈ 13 min)
 python -m pip install --user -r gui\requirements-dev.txt   # raz: pytest, httpx, playwright + pakiety GUI
 python -m pytest gui\tests             # backend GUI z prawdziwym silnikiem (≈ 12 s)
 ```
@@ -134,7 +134,8 @@ etap 9: wyniki CA i szachownicy MC bitowo te same dla 1, 2, 3, 4 i 8 wątków i 
 szachownicy; etap 10: podział na pasy i plan warstw brzegowych) i 11 testów dymnych programu (pomoc,
 symulacja 2D, błędny config, MC, `--mc-from`, `--print-defaults`, `--validate`, `--progress`, `--batch`), a gdy jest
 MPI — 9 testów wersji rozproszonej: `mpi_np1`, `np2`, `np3`, `np4`, `np5`, `np8` (testy `engine_mpi_tests` pod
-`mpiexec -n N`: wynik bitowo ten sam co `engine`; MSVC Release ≈ 3–5 s każdy, Debug ≈ 20 s) i 3 dymne `mpi_cli_*`
+`mpiexec -n N`: wynik bitowo ten sam co `engine`; od etapu 11 także pliki wyników każdej kombinacji `mpi.pack` ×
+`mpi.bcast` × `mpi.io` bajt po bajcie — MSVC Release ≈ 20–25 s każdy, Debug ≈ 80–100 s, GCC ≈ 9–13 s) i 3 dymne `mpi_cli_*`
 (lawa + MC na 3 procesach, `--mc-from`, odrzucenie `mc.update = random` przy 2 procesach). Bez MPI wynik to
 `out of 12`.
 `pytest` (102 testy) obejmuje też `tools\fetch_dem.py` (bez internetu — sztuczne kafelki) i odtwarzanie erupcji
@@ -243,7 +244,7 @@ Kratery w zadanych miejscach w dowolnym configu: `"vents": {"placement": "positi
 
 Opis metody, wyników i ograniczeń: **[etap-6-prawdziwe-wulkany.md](etap-6-prawdziwe-wulkany.md)**.
 
-### 4.2 Wersja rozproszona — `engine_mpi` (MPI, etap 10)
+### 4.2 Wersja rozproszona — `engine_mpi` (MPI, etapy 10–11)
 
 Ta sama symulacja i te same pliki wyników co `engine`, ale przestrzeń jest podzielona na pasy warstw między procesy
 MPI (wynik bitowo ten sam przy każdej liczbie procesów). MC przy więcej niż 1 procesie tylko szachownicą
@@ -267,6 +268,24 @@ wsl -e mpiexec --allow-run-as-root --oversubscribe --bind-to none -n 3 build-gcc
   `--oversubscribe`); `--bind-to none`, bo przypina program. Ścieżki w WSL — względem katalogu projektu (z Git Bash przed
   `wsl` ustaw `MSYS_NO_PATHCONV=1`).
 - Opis: **[etap-10-mpi.md](etap-10-mpi.md)**.
+
+**Typy pochodne MPI i MPI-IO (etap 11)** — trzy opcje, każda osobno albo razem (domyślnie jak w etapie 10; pliki
+wyników bajtowo te same):
+
+```powershell
+mpiexec -n 4 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi4_dsi --set mpi.pack=datatype --set mpi.bcast=struct --set mpi.io=mpiio
+mpiexec -n 3 .\build\Release\engine_mpi.exe --mc-from results\lava_mc_2d_mpi3 --config configs\mc_basalt.json --out results\mc_from_mpi3_io --set mc.update=checkerboard --set mpi.io=mpiio
+wsl -e mpiexec --allow-run-as-root --oversubscribe --bind-to none -n 3 build-gcc-release/bin/engine_mpi --config configs/test_3d.json --out /tmp/test_3d_mpi3_io --set mpi.io=mpiio
+wsl -e cp -r /tmp/test_3d_mpi3_io results/
+```
+
+- `mpi.pack=datatype` — wymiana warstw brzegowych typem pochodnym (bez bufora); `mpi.bcast=struct` — parametry
+  i kratery jako struktury; `mpi.io=mpiio` — każdy proces zapisuje swój pas do wspólnego pliku, a przy `--mc-from`
+  (plik `ca_result.bin`) czyta swój pas. Podsumowanie procesu 0 i `times.json` (`mpi.pack`, `mpi.bcast`, `mpi.io`)
+  mówią, który wariant działał.
+- **WSL: MPI-IO tylko na ext4** (`/tmp` albo katalog w systemie plików WSL, potem kopia — jak wyżej); na dysku Windows
+  (`/mnt/<dysk>`, katalog projektu) MPI-IO działa, ale wielokrotnie wolniej. MS-MPI pisze na NTFS bez ograniczeń.
+- Opis: **[etap-11-mpi-typy-io.md](etap-11-mpi-typy-io.md)**.
 
 ## 5. GUI
 
@@ -492,7 +511,30 @@ python bench\plot_etap10.py                                             # docs\i
   `skalowanie_mpi_gcc`). Opis wyników: `docs\etap-10-mpi.md`, punkt 9.
 - `compare_results.py --launch "<etykieta>=<polecenie>"` uruchamia program przez `mpiexec`; `wsl:` przed ścieżką — build
   GCC w WSL (np. `--bin m3g=wsl:build-gcc-release/bin/engine_mpi --launch "m3g=mpiexec --allow-run-as-root
-  --oversubscribe --bind-to none -n 3"`).
+  --oversubscribe --bind-to none -n 3"`); programy WSL piszą wyniki na ext4 (`/tmp/volcano_cmp`), do porównania trafia
+  kopia (etap 11 — MPI-IO).
+
+### 7.4 Typy MPI i MPI-IO (etap 11)
+
+```powershell
+python bench\mpi_io.py --list                                            # 14 przypadków w grupach pack / bcast / io / read
+python bench\mpi_io.py --cases io_bin_classic_2000,io_txt_classic_2000 --variants m1,m1i,m4,m4i --reps 1 --min-reps 1 --name mpi_io_test --out results\mpi_io_test
+python bench\mpi_io.py --wsl --cases io_txt_classic_2000 --variants m4,m4i --reps 1 --min-reps 1 --name mpi_io_gcc_test --out results\mpi_io_test
+python bench\mpi_io.py --wsl --mpiexec "mpiexec --mca io romio321" --cases io_txt_classic_2000 --variants m4,m4i --reps 1 --min-reps 1 --name mpi_io_romio_test --out results\mpi_io_test
+python bench\mpi_io.py --from-raw results\mpi_io_test\mpi_io_test_raw.csv --name mpi_io_razem --out results\mpi_io_test
+python bench\scaling_mpi.py --cases classic_2000x2000_s400_vn --variants m1,m4,m4d,m4i --reps 1 --min-reps 1 --name skalowanie_dsi_test --out results\mpi_io_test
+```
+
+- Warianty jak w `scaling_mpi.py` (`m<p>` — p procesów) z przyrostkami etapu 11: `d` — `mpi.pack = datatype`, `s` —
+  `mpi.bcast = struct`, `i` — `mpi.io = mpiio` (dowolne razem, np. `m8dsi`, `h2x4d`). Grupy: `pack` — czas wymiany
+  i fazy, bajty i komunikaty, typy; `bcast` — `MPI_Bcast` i budowa configu; `io` — `save`, czas pliku, MB/s, udział
+  w `total`, formatowanie i MPI-IO, pamięć procesu 0; `read` — odczyt `--mc-from`. Każdy przebieg porównany bitowo
+  z pierwszym wariantem przypadku.
+- `--wsl` — GCC / OpenMPI, programy i wyniki na ext4 (`/tmp/volcano_mpi_io`); `--mpiexec "mpiexec --mca io romio321"` —
+  ROMIO zamiast domyślnego OMPIO w OpenMPI.
+- Domyślny folder to `bench\results\mpi_io\` (plan pomiaru etapu 11 `PLAN_POMIARU.md`, 9 części, ~30 min; wyniki
+  `pomiar_msvc.md`, `pomiar_gcc.md`, `pomiar_gcc_romio.md`), więc próby kieruj do `results\`. Wykresy:
+  `python bench\plot_etap11.py` (z `pomiar_*_raw.csv` → `docs\img\etap11_*.png`). Opis: `docs\etap-11-mpi-typy-io.md`.
 
 ## 8. Szybki przegląd możliwości (demo, ≈ 6–8 min)
 
@@ -550,6 +592,7 @@ przeglądarka z GUI, terminal w katalogu projektu, `docs\etap-3-profilowanie.md`
 | WSL: „nie znaleziono ścieżki” / błędy z cudzysłowami | uruchamiaj `wsl -e bash -lc "…"` z katalogu projektu, bez ścieżki i bez zagnieżdżonych cudzysłowów (2.4); jeśli w poleceniu musi być ścieżka Linuksa w Git Bash — `MSYS_NO_PATHCONV=1` przed `wsl` |
 | WSL: `cmake: command not found` / brak `g++` | w Ubuntu: `sudo apt update && sudo apt install -y build-essential cmake valgrind` |
 | WSL wolno buduje / czyta pliki | pliki na `/mnt/d` (dysk Windows) są wolniejsze; do pomiarów `run_profile.py --gcc` kopiuje dane do systemu plików WSL |
+| `engine_mpi` w WSL z `mpi.io=mpiio` zapisuje bardzo wolno | `--out` na dysku Windows (`/mnt/…`, 9p) — MPI-IO jest tam 8–16× wolniejsze; pisz do `/tmp/…` (ext4) i skopiuj wynik (punkt 4.2) |
 | Antywirus / SmartScreen blokuje `engine.exe` albo usuwa go po zbudowaniu | dodaj folder `volcano-ca-mc\build` do wyjątków Microsoft Defender (*Zabezpieczenia Windows → Ochrona przed wirusami → Wykluczenia*) i zbuduj ponownie |
 | `engine --batch` kończy się kodem 5 | któryś config ma błąd — szczegóły w tabeli w konsoli, w `<out>\batch_summary.csv` (kolumna `error`) i `<out>\<config>\engine.log` |
 | Czasy dużo dłuższe niż w raportach | build Debug, procesy w tle, zasilanie z baterii, rdzeń E — Release, 1 worker, przypięcie do rdzenia P, zamknięte programy. Stały `WmiPrvSE.exe` w Menedżerze zadań (~2 procesory) to zwykle zapytania WMI programu działającego w tle (np. narzędzia producenta laptopa) — zamknij go; najbardziej zwalnia to MC |
@@ -638,6 +681,9 @@ są pomijane (komentarze, np. `"_opis"`), dozwolone są też komentarze `//`.
 | `parallel.affinity` | `none` (domyślnie — o rdzeniach decyduje system) / `pcores` (jeden wątek na rdzeń fizyczny wydajny P; do pomiarów; w `engine_mpi` proces r z T wątkami na rdzeniach P nr r·T … r·T + T − 1) |
 | `parallel.priority` | `normal` (domyślnie) / `high` — proces sam podnosi priorytet (`--high-priority`) |
 | `mpi.exchange` | (`engine_mpi`, etap 10) `always` (domyślnie) — warstwy brzegowe pasów wymieniane co krok CA / kolor MC; `changed` — warstwa wysyłana tylko, gdy się zmieniła (wynik ten sam, mniej bajtów); `engine` to pole pomija |
+| `mpi.pack` | (`engine_mpi`, etap 11) `manual` (domyślnie) — pola warstw brzegowych kopiowane do bufora i z bufora; `datatype` — typ pochodny MPI opisuje pola w siatce (`MPI_Type_create_struct`, bez bufora); wynik ten sam |
+| `mpi.bcast` | (`engine_mpi`, etap 11) `json` (domyślnie) — proces 0 rozsyła scalony config jako tekst; `struct` — blok liczbowy configu i lista kraterów / zarodków jako struktury MPI; wynik ten sam |
+| `mpi.io` | (`engine_mpi`, etap 11) `gather` (domyślnie) — pasy zbierane na proces 0, który zapisuje pliki (i czyta `--mc-from`); `mpiio` — każdy proces zapisuje / czyta swój pas we wspólnym pliku (MPI-IO; w WSL tylko na ext4); pliki bajtowo te same |
 | `output.format` | `txt`, `bin`, `both` lub `none`; `snapshotsEvery` — migawki `snapshots/step_<k>.bin` (stan 0, co N kroków, ostatni; czas poza `caSim`) |
 
 Gotowe konfiguracje (`configs/`):
@@ -671,7 +717,11 @@ Gotowe konfiguracje (`configs/`):
 | `mc_result.txt` | linia 1: `nx ny nz`, linia 2: `x y z crystal`, potem wszystkie komórki (`crystal` = orientacja 1..Q, 0 poza domeną MC) |
 | `mc_result.bin` | `"VMC1"`, `int32 nx, ny, nz`, `int32 crystal[N]` (przy `output.format` = `bin`/`both`) |
 | `mc_stats.csv` | `mcs,grains,meanGrainSize,energy,acceptRate` co `mc.statsEvery` MCS |
-| `times.json` | czasy [ms]: `readConfig, allocate, terrain, vents, caSim, caStats, save` (+ `mcInit, mcSim, mcStats, mcSave`; przy `--mc-from` `readInput`), `total` + `steps, cells, grid, neighborhood, boundary, mode, cpu, compiler, build` (+ `mcs, domainCells, Q, mcDomain, mcMobility`). Etap 9: `threads, schedule, chunk, affinity`, `cpus` (procesory logiczne kolejnych wątków przy `affinity = pcores`), `openmp` (wersja; 0 = build bez OpenMP); z `--thread-stats` — `threadStats` (czas pracy każdego wątku w fazach kroku, `imbalance` = Σ maks / Σ średnia). W trybie `mc.domain = full` sekcji CA nie ma (`mode = mc_full`). `engine_mpi` (etap 10): czasy procesu 0 i sekcja `mpi` — procesy, wątki na proces, biblioteka, `exchange`, oś i podział warstw (`split`), `initMs` (start MPI, wliczony w `total`), `bcast` (bajty i czas rozsyłania configu i terenu), `ca` / `mc` (czas fazy, komunikacji, wymiany warstw, `MPI_Allreduce` i obliczeń — min / średnia / maks i `perRank`; wymiany, komunikaty, bajty, warstwy pominięte; MC: statystyki ziaren, zebranie mapy, etykiety na procesie 0), `gather`, `cpus`, `priority`, `peakRssBytes`. Profil (etap 3): `files` — rozmiar [B] i czas zapisu [ms] każdego pliku; `memory` — pamięć procesu na starcie, na końcu i szczytowa (`peakRssBytes`: Windows `PeakWorkingSetSize`, Linux `ru_maxrss`; `peakPrivateBytes`: Windows `PeakPagefileUsage`) oraz `model` — teoretyczne zapotrzebowanie z tablic × `sizeof` (szczyt, bajty na komórkę, skład szczytu); `detail` — tylko z `--timing-detail` |
+| `times.json` | czasy [ms]: `readConfig, allocate, terrain, vents, caSim, caStats, save` (+ `mcInit, mcSim, mcStats, mcSave`; przy `--mc-from` `readInput`), `total` + `steps, cells, grid, neighborhood, boundary, mode, cpu, compiler, build` (+ `mcs, domainCells, Q, mcDomain, mcMobility`). Etap 9: `threads, schedule, chunk, affinity`, `cpus` (procesory logiczne kolejnych wątków przy `affinity = pcores`), `openmp` (wersja; 0 = build bez OpenMP); z `--thread-stats` — `threadStats` (czas pracy każdego wątku w fazach kroku, `imbalance` = Σ maks / Σ średnia). W trybie `mc.domain = full` sekcji CA nie ma (`mode = mc_full`). `engine_mpi` (etap 10): czasy procesu 0 i sekcja `mpi` — procesy, wątki na proces, biblioteka, `exchange`, oś i podział warstw (`split`), `initMs` (start MPI, wliczony w `total`), `bcast` (bajty i czas rozsyłania configu i terenu), `ca` / `mc` (czas fazy, komunikacji, wymiany warstw, `MPI_Allreduce` i obliczeń — min / średnia / maks i `perRank`; wymiany, komunikaty, bajty, warstwy pominięte; MC: statystyki ziaren, zebranie mapy, etykiety na procesie 0), `gather`, `cpus`, `priority`, `peakRssBytes`; etap 11:
+`pack`, `bcast.mode` (+ `configPrepMs`, `configBuildMs`, `ventsBytes`, `ventsMs`), `ca` / `mc`: `typesBuilt`,
+`typeBuildMs`, `ca.gatherMs` (pas bez ramki + zebranie), `io` (`mode`; `files` — każdy plik zapisany przez MPI-IO:
+bajty, `formatMs` i `ioMs` min / średnia / maks po procesach, `ms`, `MBps`; `read` — odczyt `--mc-from`), `scatter`;
+`save` liczy się w obu trybach od końca fazy CA. Profil (etap 3): `files` — rozmiar [B] i czas zapisu [ms] każdego pliku; `memory` — pamięć procesu na starcie, na końcu i szczytowa (`peakRssBytes`: Windows `PeakWorkingSetSize`, Linux `ru_maxrss`; `peakPrivateBytes`: Windows `PeakPagefileUsage`) oraz `model` — teoretyczne zapotrzebowanie z tablic × `sizeof` (szczyt, bajty na komórkę, skład szczytu); `detail` — tylko z `--timing-detail` |
 | `stats.json` | objętość lawy na krater, zasięg (odległość pozioma od krateru), liczba komórek LAVA i zmienionych w każdym kroku; sekcja `mc`: ziarna i średnia wielkość na początku/końcu, energia, efekt mobilności (`byMobility`) |
 
 Typy komórek: 0 powietrze, 1 skała, 2 lawa (w `classic`: ziarno), 3 bazalt.

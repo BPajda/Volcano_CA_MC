@@ -16,7 +16,15 @@
 //      MPI_Gatherv mapy kryształów do procesu 0 i union-find tam (część szeregowa);
 //   6. times.json (proces 0): czasy jak w engine + sekcja "mpi" (procesy, podział, rozsyłanie, komunikacja
 //      i obliczenia każdego procesu: min / średnia / maks, bajty i komunikaty).
-// Wynik przy dowolnej liczbie procesów jest bitowo ten sam co w engine (testy engine/tests/mpi/).
+// Etap 11 — warianty (config, sekcja mpi; domyślnie jak w etapie 10):
+//   mpi.bcast = "struct" — w kroku 1 zamiast JSON blok liczbowy configu jednym MPI_Bcast typu struct, a kratery /
+//                          zarodki wyznacza proces 0 i rozsyła jako tablicę struktur (mpi/MpiTypes.hpp);
+//   mpi.pack = "datatype" — w kroku 3 komunikaty warstw brzegowych opisane typami pochodnymi (mpi/MpiHalo.hpp);
+//   mpi.io = "mpiio"     — w kroku 4 (i przy zapisie MC, migawek, odczycie --mc-from) każdy proces zapisuje / czyta
+//                          swój pas wspólnego pliku (mpi/MpiIo.hpp); statystyki CA (stats.json) liczone w pasach
+//                          i sumowane MPI_Reduce — proces 0 nie potrzebuje pamięci na cały wynik CA.
+// Wynik przy dowolnej liczbie procesów i każdej kombinacji wariantów jest bitowo ten sam co w engine (testy
+// engine/tests/mpi/).
 
 #include <mpi.h>
 
@@ -33,10 +41,18 @@
 #include "io/Config.hpp"
 #include "io/TimingReport.hpp"
 #include "mpi/MpiHalo.hpp"
+#include "mpi/MpiIo.hpp"
 #include "parallel/Strip.hpp"
 #include "terrain/VentPlacer.hpp"
 
 namespace volcano {
+
+// Plik wyników zapisany przez MPI-IO (mpi.io = "mpiio") — czasy tego procesu (sekcja mpi.io w times.json).
+struct IoRecord {
+    std::string file;   // nazwa pliku
+    IoTimes times;      // formatowanie, MPI-IO, bajty
+    double wallMs = 0;  // cały zapis pliku na tym procesie (formatowanie + MPI-IO)
+};
 
 // Proces MPI i komunikacja zbiorowa poza krokami symulacji (rozsyłanie danych wejściowych, zbieranie wyników).
 struct MpiContext {
@@ -44,14 +60,22 @@ struct MpiContext {
     int rank = 0;
     int size = 1;
     double initMs = 0.0;         // start programu -> koniec MPI_Init_thread (wliczony w sekcję total)
-    double bcastConfigMs = 0.0;  // MPI_Bcast configu (długość + JSON)
+    double bcastConfigMs = 0.0;  // MPI_Bcast configu (JSON: długość + tekst; struct: blok liczbowy)
     std::uint64_t bcastConfigBytes = 0;
+    bool bcastStruct = false;     // etap 11: mpi.bcast = "struct"
+    double configPrepMs = 0.0;    // proces 0: config -> tekst JSON / blok struktury
+    double configBuildMs = 0.0;   // procesy != 0: tekst -> Config (parsowanie + walidacja) / blok -> Config
+    double bcastVentsMs = 0.0;    // struct: MPI_Bcast tablicy kraterów / zarodków
+    std::uint64_t bcastVentsBytes = 0;
     double bcastTerrainMs = 0.0;  // MPI_Bcast mapy wysokości
     std::uint64_t bcastTerrainBytes = 0;
     double gatherMs = 0.0;  // MPI_Gatherv wyników na proces 0 (CA, MC, migawki, mapa kryształów do statystyk)
     std::uint64_t gatherBytes = 0;
     double scatterMs = 0.0;  // MPI_Scatterv wyniku CA z pliku (--mc-from)
     std::uint64_t scatterBytes = 0;
+    std::vector<IoRecord> io;  // etap 11: pliki zapisane przez MPI-IO (ta sama kolejność na każdym procesie)
+    bool readParallel = false;  // etap 11: --mc-from przez MPI-IO (każdy proces czyta swój pas)
+    IoTimes read;
 
     bool root() const { return rank == 0; }
     static MpiContext world();
@@ -64,12 +88,12 @@ struct MpiCaRun {
     std::vector<Vent> vents;                    // globalna lista kraterów / zarodków (każdy proces)
     std::vector<std::uint64_t> activeHistory;   // historia liczników — globalna, ta sama na każdym procesie
     std::vector<std::uint64_t> changedHistory;
-    Microstructure result;                      // cały wynik (tylko proces 0)
-    Microstructure slab;                        // własne warstwy wyniku (każdy proces) — wejście MC
+    Microstructure result;                      // cały wynik (tylko proces 0; mpi.io = "mpiio" — pusty)
+    Microstructure slab;                        // własne warstwy wyniku (każdy proces) — wejście MC, zapis MPI-IO
     StripPlan plan;                             // pas tego procesu (okno, warstwy brzegowe)
     CommCounters comm;                          // komunikacja w krokach
     double simMs = 0.0;                         // czas kroków na tym procesie (MPI_Wtime)
-    double gatherMs = 0.0;                      // zebranie wyniku na proces 0
+    double gatherMs = 0.0;                      // pas bez ramki (ownLayers) + zebranie wyniku na proces 0 (bez mpiio)
 };
 
 // Komunikacja i czasy części MC.
@@ -81,6 +105,8 @@ struct MpiMcRun {
     double statsMs = 0.0;       // statystyki razem: mapa kryształów do procesu 0, union-find (proces 0), energia
     double statsGatherMs = 0.0; // w tym MPI_Gatherv mapy kryształów
     double labelMs = 0.0;       // w tym etykiety ziaren na procesie 0
+    Dims ownDims;                          // mpi.io = "mpiio": wymiary pasa i mapa kryształów własnych warstw
+    std::vector<std::int32_t> ownCrystals; // (zapis mc_result.* przez MPI-IO; McSummary::crystals jest wtedy puste)
 };
 
 class MpiSimulation {
@@ -94,11 +120,13 @@ public:
     static void checkConfig(const Config& cfg, int processes);
 
     // Część CA (wszystkie procesy). ventsOverride (testy) — własna lista kraterów / zarodków zamiast z configu.
+    // mpi.io = "mpiio": wynik zostaje w pasach (MpiCaRun::slab), bez zebrania na procesie 0.
     static MpiCaRun runCa(MpiContext& ctx, const Config& cfg, TimingReport& timing, ProgressReporter* progress,
                           const std::string& outDir, const std::vector<Vent>* ventsOverride = nullptr);
 
     // Część MC (wszystkie procesy) na przestrzeni cfg.space. slab — własne warstwy wyniku CA (domena basalt), nullptr —
-    // cała przestrzeń (mc.domain = full). Statystyki, historia i mapa kryształów — na procesie 0.
+    // cała przestrzeń (mc.domain = full). Statystyki, historia i mapa kryształów — na procesie 0 (mpi.io = "mpiio":
+    // mapa zostaje w pasach — info->ownCrystals).
     static McSummary runMc(MpiContext& ctx, const Config& cfg, const Microstructure* slab, CoolingData cooling,
                            TimingReport& timing, ProgressReporter* progress, const std::string& outDir,
                            MpiMcRun* info = nullptr);

@@ -1,6 +1,7 @@
 // Testy zapisu/odczytu wyników i raportu czasów.
 #include "doctest.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -283,6 +284,87 @@ TEST_CASE("ResultWriter: ca_result.txt i mc_result.txt bajt w bajt jak zapis spr
     const std::string gotMc = fileBytes(dir / "mc_result.txt");
     CHECK(gotMc.size() > (1u << 20));
     CHECK(gotMc == fileBytes(dir / "mc_ref.txt"));
+}
+
+namespace {
+
+// Pas warstw [k0, k1) osi zewnętrznej (z; w płaszczyźnie x–y — y) jako osobna mikrostruktura (jak pas engine_mpi).
+Microstructure slabOf(const Microstructure& m, int k0, int k1) {
+    const bool lz = m.dims.nz > 1;
+    Dims d = m.dims;
+    (lz ? d.nz : d.ny) = k1 - k0;
+    Microstructure s;
+    s.resize(d);
+    const std::size_t plane = lz ? static_cast<std::size_t>(m.dims.nx) * static_cast<std::size_t>(m.dims.ny)
+                                 : static_cast<std::size_t>(m.dims.nx);
+    const auto from = static_cast<std::ptrdiff_t>(static_cast<std::size_t>(k0) * plane);
+    const auto to = static_cast<std::ptrdiff_t>(static_cast<std::size_t>(k1) * plane);
+    std::copy(m.type.begin() + from, m.type.begin() + to, s.type.begin());
+    std::copy(m.flowId.begin() + from, m.flowId.begin() + to, s.flowId.begin());
+    std::copy(m.temp.begin() + from, m.temp.begin() + to, s.temp.begin());
+    std::copy(m.solidStep.begin() + from, m.solidStep.begin() + to, s.solidStep.begin());
+    std::copy(m.arrivalStep.begin() + from, m.arrivalStep.begin() + to, s.arrivalStep.begin());
+    return s;
+}
+
+}  // namespace
+
+TEST_CASE("ResultWriter: plik tekstowy i nagłówki z pasów (etap 11, MPI-IO) = zapis całości") {
+    const auto dir = tempDir("io_slabs");
+    // 3D (pasy w z, także pas jednej warstwy), przekrój x–z (pasy w z) i płaszczyzna x–y (pasy w y).
+    for (const Dims d : {Dims{23, 9, 11}, Dims{31, 1, 17}, Dims{37, 41, 1}}) {
+        CAPTURE(d.nx);
+        Microstructure m;
+        m.resize(d);
+        CrystalMap c;
+        c.dims = d;
+        for (std::size_t i = 0; i < m.type.size(); ++i) {
+            m.type[i] = static_cast<CellType>(i % 4);
+            m.flowId[i] = static_cast<std::int32_t>(i % 3 == 0 ? i * 7919 : i % 13) - (i % 17 == 0 ? 5 : 0);
+            m.temp[i] = static_cast<float>(i % 4801) * 0.25f - 0.75f * static_cast<float>(i % 7);
+            m.solidStep[i] = static_cast<std::uint16_t>(i % 997);
+            m.arrivalStep[i] = static_cast<std::uint16_t>(i % 89);
+            c.crystal.push_back(static_cast<std::int32_t>(i % 5 == 0 ? 0 : (i * 2654435761u) % 100000));
+        }
+        ResultWriter::writeTxt((dir / "ca_result.txt").string(), m);
+        ResultWriter::writeBin((dir / "ca_result.bin").string(), m);
+        ResultWriter::writeCrystalTxt((dir / "mc_result.txt").string(), c);
+        ResultWriter::writeCrystalBin((dir / "mc_result.bin").string(), c);
+        const int layers = d.nz > 1 ? d.nz : d.ny;
+        const std::vector<int> cuts = {0, 4, 5, layers};  // pasy 4, 1 i reszta warstw
+        std::string txt = ResultWriter::txtHeader(d, false);
+        std::string crystalTxt = ResultWriter::txtHeader(d, true);
+        for (std::size_t k = 0; k + 1 < cuts.size(); ++k) {
+            const Microstructure s = slabOf(m, cuts[k], cuts[k + 1]);
+            ResultWriter::appendTxtRows(txt, s, d, cuts[k]);
+            const std::size_t plane = s.type.size() / static_cast<std::size_t>(cuts[k + 1] - cuts[k]);
+            const std::vector<std::int32_t> own(c.crystal.begin() + static_cast<std::ptrdiff_t>(cuts[k] * plane),
+                                                c.crystal.begin() + static_cast<std::ptrdiff_t>(cuts[k + 1] * plane));
+            ResultWriter::appendCrystalTxtRows(crystalTxt, s.dims, own.data(), d, cuts[k]);
+        }
+        CHECK(txt == fileBytes(dir / "ca_result.txt"));
+        CHECK(crystalTxt == fileBytes(dir / "mc_result.txt"));
+        const std::vector<char> h = ResultWriter::binHeader(d);
+        CHECK(std::string(h.begin(), h.end()) == fileBytes(dir / "ca_result.bin").substr(0, h.size()));
+        const std::vector<char> hc = ResultWriter::crystalBinHeader(d);
+        CHECK(std::string(hc.begin(), hc.end()) == fileBytes(dir / "mc_result.bin").substr(0, hc.size()));
+        const BinHeader bh = ResultReader::readBinHeader((dir / "ca_result.bin").string());
+        CHECK(bh.dims == d);
+        CHECK(bh.version == 2);
+        CHECK(bh.dataOffset == h.size());
+    }
+    // Nagłówek wersji 1 i plik obcięty.
+    const Microstructure m = sample();
+    writeBinV1(dir / "v1.bin", m);
+    const BinHeader v1 = ResultReader::readBinHeader((dir / "v1.bin").string());
+    CHECK(v1.version == 1);
+    CHECK(v1.dims == m.dims);
+    const std::string bytes = fileBytes(dir / "v1.bin");
+    {
+        std::ofstream cut(dir / "cut.bin", std::ios::binary);
+        cut.write(bytes.data(), static_cast<std::streamsize>(bytes.size() - 1));
+    }
+    CHECK_THROWS(ResultReader::readBinHeader((dir / "cut.bin").string()));
 }
 
 TEST_CASE("TimingReport: sekcje sumują się, JSON zawiera czasy i informacje") {

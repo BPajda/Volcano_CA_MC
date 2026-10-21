@@ -17,6 +17,7 @@ ograniczenia (stan z dnia etapu — późniejsze zmiany opisują kolejne etapy).
 | [Etap 8 — optymalizacja sekwencyjna](etap-8-optymalizacja-sekwencyjna.md) | Automat frontalny, MC bez skoku warunkowego, ramka i przesunięcia liniowe, tańsze statystyki i zapis; testy A/B i bitowa zgodność każdego kroku; wnioski dla OpenMP. |
 | [Etap 9 — OpenMP](etap-9-openmp.md) | Podział przestrzeni na warstwy między wątki, szachownica MC z walidacją statystyczną, przypinanie do rdzeni P; przyspieszenie, efektywność, prawo Amdahla, harmonogramy i nierównomierność obciążenia; narzut przy 1 wątku; wnioski dla MPI. |
 | [Etap 10 — MPI](etap-10-mpi.md) | Wersja rozproszona `engine_mpi`: pasy warstw między procesy, warstwy brzegowe (dla lawy 17 pod pasem), zarodkowanie z indeksem globalnym, wynik bitowo ten sam przy każdej liczbie procesów (MS-MPI i OpenMPI); przypinanie procesów do rdzeni P; skalowanie 1–8 procesów, prawo Amdahla, MPI vs OpenMP, tryb hybrydowy, koszt komunikacji, nierównomierność pasów, wymiana `always` / `changed`; wnioski dla typów MPI i MPI-IO. |
+| [Etap 11 — typy MPI i MPI-IO](etap-11-mpi-typy-io.md) | Opcje `engine_mpi`: wymiana warstw typami pochodnymi (`MPI_Type_create_struct` z pól SoA, bez pakowania), parametry i kratery jako struktury, równoległy zapis i odczyt MPI-IO (widok `MPI_Type_create_subarray`, tekst przez `MPI_Exscan`); pliki bajtowo te same co etap 10 we wszystkich kombinacjach; pomiar: wymiana typami −25–50% (faza 0–9%), MPI-IO — zapis dużych wyników ×0,40–0,80 (tekst dzięki równoległemu formatowaniu), pamięć procesu 0 ×0,25, odczyt `--mc-from` 12–27×, małe pliki bez zysku; OMPIO vs ROMIO; przewidywania dla klastra, wnioski dla etapu 12. |
 
 ## Przewodniki i wyniki
 
@@ -30,7 +31,8 @@ ograniczenia (stan z dnia etapu — późniejsze zmiany opisują kolejne etapy).
 Dane do wykresów: [`data/`](data/) (seria CA vs MC), [`../bench/results/`](../bench/results/) (profil),
 [`../bench/results/ab/`](../bench/results/ab/) (testy A/B i zgodność etapu 8, dziennik `POSTEP.md`),
 [`../bench/results/omp/`](../bench/results/omp/) (skalowanie, harmonogramy, narzut i zgodność etapu 9, dziennik `POSTEP.md`),
-[`../bench/results/mpi/`](../bench/results/mpi/) (skalowanie, zgodność, narzut, dobór przypadków i plan pomiaru etapu 10, dziennik `POSTEP.md`);
+[`../bench/results/mpi/`](../bench/results/mpi/) (skalowanie, zgodność, narzut, dobór przypadków i plan pomiaru etapu 10, dziennik `POSTEP.md`),
+[`../bench/results/mpi_io/`](../bench/results/mpi_io/) (zgodność, narzut, dobór przypadków i plan pomiaru etapu 11, dziennik `POSTEP.md`);
 obrazy: [`img/`](img/) (zrzuty GUI i wykresy), [`img/raport/`](img/raport/) (rysunki raportu: `python gui/tests/raport_shots.py`,
 `python tools/raport_wykresy.py`), [`img/readme/`](img/readme/) (zrzuty do README:
 `python gui/tests/raport_shots.py --shots 3,4 --etna etna_real --theme dark --out docs/img/readme`).
