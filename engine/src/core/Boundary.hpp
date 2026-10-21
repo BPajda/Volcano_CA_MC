@@ -26,6 +26,16 @@ public:
     bool periodicX() const { return periodic_[0]; }
     bool periodicY() const { return periodic_[1]; }
     bool periodicZ() const { return periodic_[2]; }
+    bool periodic(int axis) const { return periodic_[axis]; }
+
+    // Kopia z osią axis (0 = x, 1 = y, 2 = z) bez zawijania — okno pasa MPI (etap 10, parallel/Strip.hpp): w osi warstw
+    // warstwy brzegowe przysyła sąsiedni proces (przy brzegu periodycznym — w pierścieniu), a ramka okna za nimi jest
+    // VOID i reguły jej nie czytają.
+    Boundary withoutPeriodic(int axis) const {
+        Boundary b = *this;
+        b.periodic_[axis] = false;
+        return b;
+    }
 
     // Wypełnia ramkę bufora s. Kolejność osi x -> y -> z, przy czym każda kolejna
     // oś obejmuje już wypełnioną ramkę poprzednich, dzięki czemu krawędzie i narożniki

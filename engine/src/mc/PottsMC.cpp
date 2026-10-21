@@ -37,6 +37,25 @@ PottsMC::PottsMC(const Dims& dims, const McParams& params, const Neighborhood& n
         }
         linear_.push_back(lin);
     }
+    // Bez podziału na pasy (etap 10): okno = cała przestrzeń, wszystkie warstwy własne.
+    global_ = dims;
+    for (int a = 0; a < 3; ++a) {
+        globalPeriodic_[a] = periodic_[a];
+    }
+    ownHi_ = dims.nz > 1 ? dims.nz : dims.ny;
+}
+
+void PottsMC::setStrip(const Strip& s) {
+    global_ = s.global;
+    const int n[3] = {s.global.nx, s.global.ny, s.global.nz};
+    for (int a = 0; a < 3; ++a) {
+        globalPeriodic_[a] = s.globalPeriodic[a] && n[a] > 1;
+    }
+    ownLo_ = s.ownLo;
+    ownHi_ = s.ownHi;
+    windowLo_ = s.windowLo;
+    hashBase_ = s.hashBase;
+    link_ = s.link;
 }
 
 void PottsMC::setDomainAll() {
@@ -86,11 +105,18 @@ void PottsMC::initialize() {
     const std::uint64_t q = static_cast<std::uint64_t>(p_.Q);
     domainFrame_.clear();
     domainGlobal_.clear();
-    std::uint64_t g = 0;  // globalIndex — pętle w kolejności pamięci
+    std::uint64_t g = hashBase_;  // globalIndex — pętle w kolejności pamięci (w oknie pasa: od komórki okna (0, 0, 0))
+    const bool layerZ = dims_.nz > 1;
     for (int z = 0; z < dims_.nz; ++z) {
         for (int y = 0; y < dims_.ny; ++y) {
+            // Etap 10: warstwy brzegowe okna nie należą do domeny okna — orientacje dostaną z wymiany.
+            const int k = layerZ ? z : y;
+            const bool own = k >= ownLo_ && k < ownHi_;
             for (int x = 0; x < dims_.nx; ++x, ++g) {
                 const std::size_t i = frameIndex(x, y, z);
+                if (!own) {
+                    mask_[i] = 0;
+                }
                 if ((mask_[i] & kInDomain) == 0) {
                     spin_[i] = 0;
                     continue;
@@ -117,8 +143,8 @@ void PottsMC::initialize() {
 }
 
 int PottsMC::axisClass(int c, int a) const {
-    const int n = a == 0 ? dims_.nx : (a == 1 ? dims_.ny : dims_.nz);
-    if (periodic_[a] && (n % 2) == 1 && c == n - 1) {
+    const int n = a == 0 ? global_.nx : (a == 1 ? global_.ny : global_.nz);
+    if (globalPeriodic_[a] && (n % 2) == 1 && c == n - 1) {
         return 2;  // ostatnia warstwa nieparzystej osi periodycznej sąsiaduje przez ramkę z warstwą 0 (też parzystą)
     }
     return c & 1;
@@ -137,10 +163,11 @@ void PottsMC::buildColors() {
     // Moore'a różnią się w każdej osi najwyżej o 1 i nie są tą samą komórką. Von Neumann zmienia jedną współrzędną
     // o 1, więc zmienia parzystość x + y + z — przy parzystych osiach periodycznych wystarczą 2 kolory. Sąsiedztwa
     // losowe (pentagonal, hexagonal) są podzbiorami Moore'a. Sprawdza to test_parallel.cpp na wszystkich sąsiedztwach.
-    const int n[3] = {dims_.nx, dims_.ny, dims_.nz};
+    // Wymiary i periodyczność — całej przestrzeni (w oknie pasa MPI kolor zależy od położenia globalnego, etap 10).
+    const int n[3] = {global_.nx, global_.ny, global_.nz};
     bool oddPeriodic = false;
     for (int a = 0; a < 3; ++a) {
-        oddPeriodic = oddPeriodic || (periodic_[a] && n[a] % 2 == 1);
+        oddPeriodic = oddPeriodic || (globalPeriodic_[a] && n[a] % 2 == 1);
     }
     parityColors_ = nb_.kind() == NeighborhoodKind::VonNeumann && !oddPeriodic;
     for (int& c : colorIndex_) {
@@ -153,7 +180,7 @@ void PottsMC::buildColors() {
         // periodycznej). Kolory numerowane rosnąco wg cx + 3·cy + 9·cz.
         int classes[3];
         for (int a = 0; a < 3; ++a) {
-            classes[a] = n[a] == 1 ? 1 : (periodic_[a] && n[a] % 2 == 1 ? 3 : 2);
+            classes[a] = n[a] == 1 ? 1 : (globalPeriodic_[a] && n[a] % 2 == 1 ? 3 : 2);
         }
         colors_ = 0;
         for (int cz = 0; cz < classes[2]; ++cz) {
@@ -165,23 +192,27 @@ void PottsMC::buildColors() {
         }
     }
     // Lista domeny kolor po kolorze, w kolorze warstwa po warstwie (w warstwie globalIndex rosnąco): komórki koloru c
-    // w warstwie k to fragment [colorLayerStart_[c·L + k], colorLayerStart_[c·L + k + 1]).
+    // w warstwie k to fragment [colorLayerStart_[c·L + k], colorLayerStart_[c·L + k + 1]). Warstwy własne okna
+    // (bez podziału na pasy — wszystkie); kolor z położenia globalnego (warstwa okna + windowLo_).
     const bool layerZ = dims_.nz > 1;
-    layers_ = layerZ ? dims_.nz : dims_.ny;
+    layers_ = ownHi_ - ownLo_;
     colorLayerStart_.assign(static_cast<std::size_t>(colors_ * layers_) + 1, 0);
     domainFrame_.clear();
     domainGlobal_.clear();
     for (int c = 0; c < colors_; ++c) {
         for (int k = 0; k < layers_; ++k) {
             colorLayerStart_[static_cast<std::size_t>(c * layers_ + k)] = domainFrame_.size();
-            const int z0 = layerZ ? k : 0;
-            const int y0 = layerZ ? 0 : k;
-            const int y1 = layerZ ? dims_.ny : k + 1;
+            const int kw = ownLo_ + k;  // warstwa w oknie
+            const int z0 = layerZ ? kw : 0;
+            const int y0 = layerZ ? 0 : kw;
+            const int y1 = layerZ ? dims_.ny : kw + 1;
+            const int gz = layerZ ? z0 + windowLo_ : z0;  // współrzędne globalne (kolor)
+            const int dy = layerZ ? 0 : windowLo_;
             for (int y = y0; y < y1; ++y) {
-                std::uint64_t g = globalIndex(dims_, 0, y, z0);
+                std::uint64_t g = globalIndex(dims_, 0, y, z0) + hashBase_;
                 for (int x = 0; x < dims_.nx; ++x, ++g) {
                     const std::size_t i = frameIndex(x, y, z0);
-                    if ((mask_[i] & kInDomain) != 0 && colorOf(x, y, z0) == c) {
+                    if ((mask_[i] & kInDomain) != 0 && colorOf(x, y + dy, gz) == c) {
                         domainFrame_.push_back(i);
                         domainGlobal_.push_back(g);
                     }
@@ -420,9 +451,13 @@ template <bool kMobility, bool kRandomNb>
 std::uint64_t PottsMC::sweepColors() {
     const std::uint64_t prefix = hashPrefix(p_.seed, static_cast<std::uint64_t>(sweeps_));
     TrialCounts total;
+    StripLink* const link = link_;  // etap 10: warstwy brzegowe od sąsiednich procesów po każdym kolorze
     if (!par_.parallel()) {
         for (int c = 0; c < colors_; ++c) {
             colorTrials<kMobility, kRandomNb>(prefix, colorBegin(c), colorEnd(c), total);
+            if (link != nullptr) {
+                link->exchange(*this);
+            }
         }
     } else {
         // Jeden region na MCS: kolor po kolorze, komórki koloru dzielone między wątki po warstwach (pasach z albo y);
@@ -453,6 +488,13 @@ std::uint64_t PottsMC::sweepColors() {
                 });
                 clock.end(c);
                 ompBarrier();
+                if (link != nullptr) {
+                    // Tryb hybrydowy (MPI + OpenMP): MPI woła tylko wątek główny (MPI_THREAD_FUNNELED), reszta czeka.
+                    if (tid == 0) {
+                        link->exchange(*this);
+                    }
+                    ompBarrier();
+                }
             }
             attempts += mine.attempts;
             accepted += mine.accepted;
@@ -535,7 +577,7 @@ void PottsMC::setOrientation(int x, int y, int z, std::int32_t s) {
 
 double PottsMC::energyIf(int x, int y, int z, std::int32_t s) const {
     const std::size_t i = frameIndex(x, y, z);
-    const std::uint64_t g = globalIndex(dims_, x, y, z);
+    const std::uint64_t g = globalIndex(dims_, x, y, z) + hashBase_;
     return p_.J * unlikeNeighbors(i, s, offsetsFor(static_cast<std::uint64_t>(sweeps_), g));
 }
 
@@ -592,6 +634,11 @@ double PottsMC::totalEnergy() const {
             }
         }
         unlike = inDomain - same;
+        // Etap 10: pary „do przodu” komórek własnych — każda para raz w całej przestrzeni (para z warstwą brzegową nad
+        // pasem liczy niższy pas, para z warstwą pod pasem — pas sąsiada), suma liczb całkowitych po procesach.
+        if (link_ != nullptr) {
+            link_->sum(&unlike, 1);
+        }
         return p_.J * static_cast<double>(unlike);
     }
     if (par_.parallel()) {
@@ -604,11 +651,14 @@ double PottsMC::totalEnergy() const {
             unlike += static_cast<std::uint64_t>(
                 unlikeNeighbors(i, spin_[i], offsetsFor(t, domainGlobal_[static_cast<std::size_t>(k)])));
         }
-        return 0.5 * p_.J * static_cast<double>(unlike);
+    } else {
+        for (std::size_t k = 0; k < domainFrame_.size(); ++k) {
+            const std::size_t i = domainFrame_[k];
+            unlike += static_cast<std::uint64_t>(unlikeNeighbors(i, spin_[i], offsetsFor(t, domainGlobal_[k])));
+        }
     }
-    for (std::size_t k = 0; k < domainFrame_.size(); ++k) {
-        const std::size_t i = domainFrame_[k];
-        unlike += static_cast<std::uint64_t>(unlikeNeighbors(i, spin_[i], offsetsFor(t, domainGlobal_[k])));
+    if (link_ != nullptr) {
+        link_->sum(&unlike, 1);  // etap 10: suma po komórkach własnych wszystkich procesów
     }
     return 0.5 * p_.J * static_cast<double>(unlike);
 }

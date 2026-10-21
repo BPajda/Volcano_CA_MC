@@ -170,7 +170,8 @@ ojson Config::defaultsJson() {
                    "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10,
                    "snapshotsEvery": 0, "update": "random" },
       "output":  { "format": "txt", "snapshotsEvery": 0 },
-      "parallel": { "threads": 1, "schedule": "static", "chunk": 0, "affinity": "none" }
+      "parallel": { "threads": 1, "schedule": "static", "chunk": 0, "affinity": "none", "priority": "normal" },
+      "mpi":     { "exchange": "always" }
     })");
 }
 
@@ -422,6 +423,10 @@ Config Config::fromJson(const ojson& j) {
         c.warnings.push_back("mc.update = \"random\" jest z natury sekwencyjne (każda próba widzi wynik poprzednich) — "
                              "pętla MC idzie w jednym wątku; równoległe MC: mc.update = \"checkerboard\"");
     }
+    // Etap 10: priorytet procesu i wariant wymiany warstw brzegowych MPI — tylko walidacja; wartości czytają
+    // highPriority() i mpiExchangeChanged() z effective (bez nowych pól struktury — układ kodu MSVC, etap 6, punkt 7).
+    getEnum<bool>(j, "parallel.priority", {{"normal", false}, {"high", true}});
+    getEnum<bool>(j, "mpi.exchange", {{"always", false}, {"changed", true}});
 
     c.effective = j;
     return c;
@@ -429,6 +434,14 @@ Config Config::fromJson(const ojson& j) {
 
 std::vector<std::pair<int, int>> Config::ventColumns() const {
     return getColumns(effective, "vents.positions", space);
+}
+
+bool Config::highPriority() const {
+    return getEnum<bool>(effective, "parallel.priority", {{"normal", false}, {"high", true}});
+}
+
+bool Config::mpiExchangeChanged() const {
+    return getEnum<bool>(effective, "mpi.exchange", {{"always", false}, {"changed", true}});
 }
 
 ParallelSettings Config::parallelSettings() const {

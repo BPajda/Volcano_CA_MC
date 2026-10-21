@@ -70,6 +70,9 @@ CliOptions Cli::parse(int argc, const char* const* argv) {
             opt.overrides.push_back("parallel.threads=" + n);
         } else if (arg == "--thread-stats") {
             opt.threadStats = true;
+        } else if (arg == "--high-priority") {
+            // Skrót dla --set parallel.priority=high (etap 10): mpiexec uruchamia procesy z priorytetem normalnym.
+            opt.overrides.push_back("parallel.priority=high");
         } else if (arg == "--benchmark") {
             opt.benchmark = true;
         } else if (arg == "--repeats") {
@@ -132,7 +135,7 @@ std::string Cli::usage() {
         "\n"
         "Użycie:\n"
         "  engine --config <plik.json> --out <folder> [--set klucz=wartość]... [--grid vector|matrix]\n"
-        "         [--threads N] [--timing-detail] [--thread-stats] [--progress]\n"
+        "         [--threads N] [--high-priority] [--timing-detail] [--thread-stats] [--progress]\n"
         "  engine --mc-from <folder_wyniku_CA> --config <mc.json> --out <folder> [--set klucz=wartość]...\n"
         "         [--progress]\n"
         "  engine --batch <folder_z_configami> --out <folder_wyników> [--set klucz=wartość]... [--progress]\n"
@@ -152,6 +155,9 @@ std::string Cli::usage() {
         "  --threads N        liczba wątków OpenMP (skrót dla --set parallel.threads=N; 0 = wszystkie,\n"
         "                     1 = jeden wątek); harmonogram i przypinanie: parallel.schedule, parallel.chunk,\n"
         "                     parallel.affinity (pcores — jeden wątek na rdzeń fizyczny P)\n"
+        "  --high-priority    proces z wysokim priorytetem (skrót dla --set parallel.priority=high; pomiary\n"
+        "                     wielowątkowe i engine_mpi pod mpiexec — inaczej program w tle zatrzymuje\n"
+        "                     wątki i procesy na barierach)\n"
         "  --mc-from <f>      samo Monte Carlo na wyniku CA z folderu f (ca_result.bin lub .txt);\n"
         "                     parametry MC z sekcji mc configu (mc.domain = basalt), wymiary z pliku\n"
         "  --batch <f>        seria: po kolei wszystkie configi *.json z folderu f (kolejność nazw,\n"

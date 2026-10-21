@@ -138,6 +138,12 @@ struct Config {
     // Ustawienia równoległości do obliczeń (etap 9): threads = 0 -> omp_get_max_threads(), bez OpenMP zawsze 1.
     ParallelSettings parallelSettings() const;
 
+    // Etap 10 (wartości z effective, sprawdzone przez fromJson — bez nowych pól struktury):
+    // parallel.priority = "high" — proces z wysokim priorytetem (pomiary wielowątkowe i MPI; --high-priority);
+    bool highPriority() const;
+    // mpi.exchange = "changed" — engine_mpi przesyła warstwę brzegową tylko, gdy się zmieniła ("always" — co krok).
+    bool mpiExchangeChanged() const;
+
     // Nakłada nadpisanie "ścieżka.z.kropkami=wartość" na JSON. Wartość jest parsowana
     // jako JSON (liczby, true/false, null); jeśli się nie da — traktowana jako tekst.
     static void applyOverride(nlohmann::ordered_json& j, const std::string& keyValue);

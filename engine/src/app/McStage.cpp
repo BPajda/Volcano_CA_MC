@@ -271,61 +271,24 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
 
     // --- statystyki końcowe do stats.json (też mcStats) ---
     t.reset();
-    const McStats& first = s.history.front();
-    const McStats& last = s.history.back();
-    nlohmann::ordered_json j;
-    j["domain"] = nameOf(s.domain);
-    j["domainCells"] = s.domainCells;
-    j["space"] = {dims.nx, dims.ny, dims.nz};
-    j["Q"] = cfg.mc.Q;
-    j["mcs"] = cfg.mc.mcs;
-    j["J"] = cfg.mc.J;
-    j["kT"] = cfg.mc.kT;
-    j["update"] = mcUpdateName(cfg.mc.checkerboard);  // etap 9: random albo checkerboard
-    if (mc.checkerboard()) {
-        j["colors"] = mc.colorCount();
-    }
-    j["neighborhood"] = Neighborhood::name(cfg.neighborhood);
-    j["boundary"] = Boundary::name(cfg.boundary);
-    j["grainConnectivity"] = mc.mooreConnectivity() ? "moore" : "von_neumann";
-    j["mobility"] = s.mobilityUsed ? "cooling" : "off";
-    if (s.mobilityUsed) {
-        j["mobilityMin"] = cfg.mc.mobilityMin;
-    }
-    j["grainsStart"] = first.grains;
-    j["grainsEnd"] = last.grains;
-    j["meanGrainSizeStart"] = rounded(first.meanGrainSize, 3);
-    j["meanGrainSizeEnd"] = rounded(last.meanGrainSize, 3);
-    j["largestGrainEnd"] = largestGrain(endLabels);
-    j["energyStart"] = first.energy;
-    j["energyEnd"] = last.energy;
-    j["attempts"] = mc.attempts();
-    j["accepted"] = mc.accepted();
-    j["acceptedUphill"] = mc.acceptedUphill();
+    McStatsInput in;
+    in.dims = dims;
+    in.checkerboard = mc.checkerboard();
+    in.colors = mc.colorCount();
+    in.mooreConnectivity = mc.mooreConnectivity();
+    in.attempts = mc.attempts();
+    in.accepted = mc.accepted();
+    in.acceptedUphill = mc.acceptedUphill();
+    in.startLabels = &startLabels;
+    in.endLabels = &endLabels;
+    in.cellMobility = &cellMobility;
     if (!cellMobility.empty()) {
-        // Efekt „duże ziarna w długo płynnej lawie, drobne w szybko zastygłej”. Klasy liczone
-        // zawsze, gdy są dane o stygnięciu — także bez mobilności w dynamice (do porównania).
-        ClassGrains hiStart;
-        ClassGrains loStart;
-        ClassGrains hiEnd;
-        ClassGrains loEnd;
         mem.allocate("mcClassifyTemp", startLabels.root.size() * sizeof(std::uint32_t));  // licznik w classify
-        classify(startLabels, cellMobility, kMobilityThreshold, hiStart, loStart);
-        classify(endLabels, cellMobility, kMobilityThreshold, hiEnd, loEnd);
-        mem.release("mcClassifyTemp");
-        std::uint64_t hiCells = 0;
-        for (std::size_t i = 0; i < cellMobility.size(); ++i) {
-            hiCells += (startLabels.root[i] != GrainLabels::kNone && cellMobility[i] >= kMobilityThreshold) ? 1 : 0;
-        }
-        nlohmann::ordered_json bm;
-        bm["threshold"] = kMobilityThreshold;
-        bm["mobilityMin"] = cfg.mc.mobilityMin;
-        bm["rule"] = "ziarno należy do klasy, w której jest większość jego komórek";
-        bm["high"] = classJson(hiCells, hiStart, hiEnd);
-        bm["low"] = classJson(s.domainCells - hiCells, loStart, loEnd);
-        j["byMobility"] = bm;
     }
-    s.stats = j;
+    s.stats = statsJson(cfg, s, in);
+    if (!cellMobility.empty()) {
+        mem.release("mcClassifyTemp");
+    }
     s.crystals = mc.crystals();
     mem.allocate("mcCrystals", s.crystals.bytes());
     timing.add("mcStats", statsMs + t.elapsedMs());
@@ -358,6 +321,65 @@ void McStage::save(const Config& cfg, const McSummary& s, const std::string& out
     ResultWriter::writeMcStatsCsv(statsPath, s.history);
     timing.addFile(statsPath, tf.elapsedMs());
     timing.add("mcSave", t.elapsedMs());
+}
+
+nlohmann::ordered_json McStage::statsJson(const Config& cfg, const McSummary& s, const McStatsInput& in) {
+    const McStats& first = s.history.front();
+    const McStats& last = s.history.back();
+    const Dims& dims = in.dims;
+    nlohmann::ordered_json j;
+    j["domain"] = nameOf(s.domain);
+    j["domainCells"] = s.domainCells;
+    j["space"] = {dims.nx, dims.ny, dims.nz};
+    j["Q"] = cfg.mc.Q;
+    j["mcs"] = cfg.mc.mcs;
+    j["J"] = cfg.mc.J;
+    j["kT"] = cfg.mc.kT;
+    j["update"] = mcUpdateName(cfg.mc.checkerboard);  // etap 9: random albo checkerboard
+    if (in.checkerboard) {
+        j["colors"] = in.colors;
+    }
+    j["neighborhood"] = Neighborhood::name(cfg.neighborhood);
+    j["boundary"] = Boundary::name(cfg.boundary);
+    j["grainConnectivity"] = in.mooreConnectivity ? "moore" : "von_neumann";
+    j["mobility"] = s.mobilityUsed ? "cooling" : "off";
+    if (s.mobilityUsed) {
+        j["mobilityMin"] = cfg.mc.mobilityMin;
+    }
+    j["grainsStart"] = first.grains;
+    j["grainsEnd"] = last.grains;
+    j["meanGrainSizeStart"] = rounded(first.meanGrainSize, 3);
+    j["meanGrainSizeEnd"] = rounded(last.meanGrainSize, 3);
+    j["largestGrainEnd"] = largestGrain(*in.endLabels);
+    j["energyStart"] = first.energy;
+    j["energyEnd"] = last.energy;
+    j["attempts"] = in.attempts;
+    j["accepted"] = in.accepted;
+    j["acceptedUphill"] = in.acceptedUphill;
+    const std::vector<float>& cellMobility = *in.cellMobility;
+    if (!cellMobility.empty()) {
+        // Efekt „duże ziarna w długo płynnej lawie, drobne w szybko zastygłej”. Klasy liczone
+        // zawsze, gdy są dane o stygnięciu — także bez mobilności w dynamice (do porównania).
+        const GrainLabels& startLabels = *in.startLabels;
+        ClassGrains hiStart;
+        ClassGrains loStart;
+        ClassGrains hiEnd;
+        ClassGrains loEnd;
+        classify(startLabels, cellMobility, kMobilityThreshold, hiStart, loStart);
+        classify(*in.endLabels, cellMobility, kMobilityThreshold, hiEnd, loEnd);
+        std::uint64_t hiCells = 0;
+        for (std::size_t i = 0; i < cellMobility.size(); ++i) {
+            hiCells += (startLabels.root[i] != GrainLabels::kNone && cellMobility[i] >= kMobilityThreshold) ? 1 : 0;
+        }
+        nlohmann::ordered_json bm;
+        bm["threshold"] = kMobilityThreshold;
+        bm["mobilityMin"] = cfg.mc.mobilityMin;
+        bm["rule"] = "ziarno należy do klasy, w której jest większość jego komórek";
+        bm["high"] = classJson(hiCells, hiStart, hiEnd);
+        bm["low"] = classJson(s.domainCells - hiCells, loStart, loEnd);
+        j["byMobility"] = bm;
+    }
+    return j;
 }
 
 std::string McStage::describe(const McSummary& s) {

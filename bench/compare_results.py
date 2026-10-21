@@ -10,6 +10,9 @@ uruchamiane w WSL z katalogu projektu — dzięki temu ta sama tabela sprawdza z
     python bench/compare_results.py --bin przed=bench/baseline/engine_przed_msvc.exe \\
         --bin msvc=build/Release/engine.exe --bin gcc=wsl:build-gcc-release/bin/engine --name zgodnosc_po
     python bench/compare_results.py ... --set ca.sweep=full      # nadpisanie dla wszystkich programów
+    python bench/compare_results.py --bin e9=wsl:bench/baseline/engine_e9_gcc \\
+        --bin m3=wsl:build-gcc-release/bin/engine_mpi \\
+        --launch "m3=mpiexec -n 3 --allow-run-as-root --oversubscribe --bind-to none" --name zgodnosc_mpi   # etap 10
 
 Wynik: tabela Markdown na ekranie i w bench/results/ab/<nazwa>.md; kod wyjścia 1 przy jakiejkolwiek różnicy.
 """
@@ -39,15 +42,17 @@ def shown(exe: str) -> str:
     return exe
 
 
-def run(exe: str, args: list[str], out: Path) -> tuple[bool, str, float]:
-    """Jeden przebieg (Windows albo WSL); zwraca (ok, komunikat błędu, czas [s])."""
+def run(exe: str, args: list[str], out: Path, launch: list[str] | None = None) -> tuple[bool, str, float]:
+    """Jeden przebieg (Windows albo WSL); zwraca (ok, komunikat błędu, czas [s]). launch — polecenie uruchamiające
+    program (etap 10: mpiexec -n N …) wstawiane przed ścieżkę programu."""
     shutil.rmtree(out, ignore_errors=True)
     t0 = time.perf_counter()
+    launch = launch or []
     if exe.startswith("wsl:"):
         conv = [wsl_path(Path(a)) if (Path(a).is_absolute() and Path(a).drive) else a for a in args]
-        cmd = ["wsl", "-e", exe[4:], *conv, "--out", wsl_path(out)]
+        cmd = ["wsl", "-e", *launch, exe[4:], *conv, "--out", wsl_path(out)]
     else:
-        cmd = [exe, *args, "--out", str(out)]
+        cmd = [*launch, exe, *args, "--out", str(out)]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
     return r.returncode == 0, r.stderr[-300:], time.perf_counter() - t0
 
@@ -61,6 +66,8 @@ def main() -> int:
                     help="nadpisanie configu dla wszystkich programów")
     ap.add_argument("--args", action="append", default=[], metavar="ETYKIETA=ARGUMENTY",
                     help='dodatkowe argumenty jednego programu, np. "full=--set ca.sweep=full"')
+    ap.add_argument("--launch", action="append", default=[], metavar="ETYKIETA=POLECENIE",
+                    help='polecenie uruchamiające program (etap 10, MPI), np. "m3=mpiexec -n 3"')
     ap.add_argument("--configs", help="tylko wybrane configi (nazwy bez .json, po przecinku)")
     ap.add_argument("--name", default="zgodnosc", help="nazwa pliku wyniku (<nazwa>.md)")
     ap.add_argument("--out", default=str(ROOT / "bench" / "results" / "ab"), help="folder wyniku (domyślnie bench/results/ab)")
@@ -80,6 +87,10 @@ def main() -> int:
     for a in args.args:
         label, rest = a.split("=", 1)
         extra[label] = rest.split()
+    launch = {l: [] for l in labels}
+    for a in args.launch:
+        label, rest = a.split("=", 1)
+        launch[label] = rest.split()
     sets = [x for s in args.set_values for x in ("--set", s)]
     names = sorted(p.stem for p in (ROOT / "configs").glob("*.json"))
     if args.configs:
@@ -93,7 +104,7 @@ def main() -> int:
         outs = {}
         for l in labels:
             out = tmp / f"{name}__{l}"
-            ok, err, sec = run(exes[l], ["--config", f"configs/{name}.json", *sets, *extra[l]], out)
+            ok, err, sec = run(exes[l], ["--config", f"configs/{name}.json", *sets, *extra[l]], out, launch[l])
             if not ok:
                 print(f"BŁĄD {name} {l}: {err}", file=sys.stderr)
                 failures += 1
@@ -103,7 +114,7 @@ def main() -> int:
             for l in labels:
                 out = tmp / f"{MC_FROM[0]}__{l}"
                 ok, err, _ = run(exes[l], ["--mc-from", str(outs[l]), "--config", f"configs/{MC_FROM[0]}.json",
-                                           *sets, *extra[l]], out)
+                                           *sets, *extra[l]], out, launch[l])
                 if not ok:
                     print(f"BŁĄD {MC_FROM[0]} {l}: {err}", file=sys.stderr)
                     failures += 1
@@ -124,7 +135,8 @@ def main() -> int:
             rows.append(f"| `{case}` | {', '.join(files)} | " + " | ".join(cells) + " |")
             print(rows[-1], flush=True)
     head = [f"# Zgodność wyników `{args.name}`", "",
-            "Programy: " + ", ".join(f"`{l}` = `{shown(exes[l])}`" + (f" `{' '.join(extra[l])}`" if extra[l] else "")
+            "Programy: " + ", ".join(f"`{l}` = " + (f"`{' '.join(launch[l])}` " if launch[l] else "") +
+                                     f"`{shown(exes[l])}`" + (f" `{' '.join(extra[l])}`" if extra[l] else "")
                                      for l in labels) + (f"; nadpisania: {', '.join(args.set_values)}" if sets else ""),
             f"Porównanie bajt po bajcie z `{labels[0]}` (bez times.json i config_used.json; stats.json bez ścieżki "
             "folderu wejściowego --mc-from; MSVC ↔ GCC: txt/csv bez różnicy końców linii CRLF/LF).", "",

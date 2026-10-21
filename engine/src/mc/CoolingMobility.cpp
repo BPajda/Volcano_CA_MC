@@ -13,15 +13,24 @@ std::vector<std::uint8_t> CoolingMobility::basaltDomain(const Microstructure& m)
     return domain;
 }
 
-std::vector<std::uint32_t> CoolingMobility::liquidTime(const Microstructure& m,
-                                                       const std::vector<std::uint8_t>& domain) {
+std::uint32_t CoolingMobility::endStep(const Microstructure& m, const std::vector<std::uint8_t>& domain) {
     // Koniec CA dla lawy, która nie zastygła: największy zapisany krok.
-    std::uint32_t endStep = 0;
+    std::uint32_t end = 0;
     for (std::size_t i = 0; i < m.type.size(); ++i) {
         if (domain[i] != 0) {
-            endStep = std::max<std::uint32_t>(endStep, std::max(m.solidStep[i], m.arrivalStep[i]));
+            end = std::max<std::uint32_t>(end, std::max(m.solidStep[i], m.arrivalStep[i]));
         }
     }
+    return end;
+}
+
+std::vector<std::uint32_t> CoolingMobility::liquidTime(const Microstructure& m,
+                                                       const std::vector<std::uint8_t>& domain) {
+    return liquidTime(m, domain, endStep(m, domain));
+}
+
+std::vector<std::uint32_t> CoolingMobility::liquidTime(const Microstructure& m, const std::vector<std::uint8_t>& domain,
+                                                       std::uint32_t endStep) {
     std::vector<std::uint32_t> time(m.type.size(), 0);
     for (std::size_t i = 0; i < m.type.size(); ++i) {
         if (domain[i] == 0) {
@@ -34,17 +43,21 @@ std::vector<std::uint32_t> CoolingMobility::liquidTime(const Microstructure& m,
     return time;
 }
 
-std::vector<float> CoolingMobility::fromCooling(const Microstructure& m, const std::vector<std::uint8_t>& domain,
-                                                double mobilityMin) {
-    const std::vector<std::uint32_t> time = liquidTime(m, domain);
-    std::uint32_t tMin = std::numeric_limits<std::uint32_t>::max();
-    std::uint32_t tMax = 0;
+void CoolingMobility::timeRange(const std::vector<std::uint32_t>& time, const std::vector<std::uint8_t>& domain,
+                                std::uint32_t& tMin, std::uint32_t& tMax) {
+    tMin = std::numeric_limits<std::uint32_t>::max();
+    tMax = 0;
     for (std::size_t i = 0; i < time.size(); ++i) {
         if (domain[i] != 0) {
             tMin = std::min(tMin, time[i]);
             tMax = std::max(tMax, time[i]);
         }
     }
+}
+
+std::vector<float> CoolingMobility::normalize(const std::vector<std::uint32_t>& time,
+                                              const std::vector<std::uint8_t>& domain, std::uint32_t tMin,
+                                              std::uint32_t tMax, double mobilityMin) {
     std::vector<float> mobility(time.size(), 0.0f);
     for (std::size_t i = 0; i < time.size(); ++i) {
         if (domain[i] == 0) {
@@ -58,6 +71,15 @@ std::vector<float> CoolingMobility::fromCooling(const Microstructure& m, const s
         mobility[i] = static_cast<float>(mobilityMin + (1.0 - mobilityMin) * norm);
     }
     return mobility;
+}
+
+std::vector<float> CoolingMobility::fromCooling(const Microstructure& m, const std::vector<std::uint8_t>& domain,
+                                                double mobilityMin) {
+    const std::vector<std::uint32_t> time = liquidTime(m, domain);
+    std::uint32_t tMin = 0;
+    std::uint32_t tMax = 0;
+    timeRange(time, domain, tMin, tMax);
+    return normalize(time, domain, tMin, tMax, mobilityMin);
 }
 
 }  // namespace volcano

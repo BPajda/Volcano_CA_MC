@@ -20,6 +20,12 @@
 // każda komórka domeny dokładnie raz, losowość z hashRand(seed, MCS, globalIndex, sól). Próba komórki czyta tylko
 // sąsiadów (innych kolorów — w tej fazie niezmiennych), więc kolejność prób w kolorze nie ma znaczenia: komórki koloru
 // dzielone są między wątki po warstwach (z, w płaszczyźnie x–y — y), a wynik jest ten sam dla każdej liczby wątków.
+//
+// Wersja rozproszona (MPI, etap 10; setStrip, parallel/Strip.hpp): siatka MC jest oknem pasa — warstwy własne
+// [ownLo_, ownHi_) i po jednej warstwie brzegowej z każdej strony. Próby dotyczą tylko komórek domeny w warstwach
+// własnych, kolory i losowość liczone są we współrzędnych / indeksach globalnych (kolor zależy od globalnej
+// parzystości, hash — od globalIndex), a po każdym kolorze link_->exchange() przysyła warstwy brzegowe (komórki tego
+// koloru zmieniły się u sąsiadów, a następny kolor ich sąsiaduje). Energię całkowitą sumuje link_->sum().
 
 #include <cstddef>
 #include <cstdint>
@@ -32,6 +38,7 @@
 #include "mc/Grains.hpp"
 #include "mc/McRules.hpp"
 #include "parallel/Omp.hpp"
+#include "parallel/Strip.hpp"
 
 namespace volcano {
 
@@ -64,6 +71,10 @@ public:
     // Ustawienia równoległości (etap 9): szachownica, energia i mapa kryształów w wielu wątkach; tryb random —
     // pętla prób zawsze w jednym wątku (każda próba widzi wynik poprzednich).
     void setParallel(const ParallelSettings& par) { par_ = par; }
+    // Pas procesu w wersji rozproszonej (MPI, etap 10) — przed initialize(). dims z konstruktora to wymiary okna,
+    // bc — warunki brzegowe okna (oś warstw bez zawijania przy kilku procesach). Komórki warstw brzegowych nie należą
+    // do domeny okna (orientacje dostają z wymiany), mobilność i domena dotyczą warstw własnych.
+    void setStrip(const Strip& s);
 
     // Inicjalizacja: każda komórka domeny dostaje orientację 1 + hashRand(seed, 0, idx, kSaltMcInit) mod Q
     // (poza domeną 0), powstaje lista komórek domeny, ramka jest wypełniana wg warunków brzegowych.
@@ -124,7 +135,17 @@ public:
     // (2 kolory); inaczej (Moore, pentagonal, hexagonal albo nieparzysta oś periodyczna) — iloczyn klas osi
     // (parzystość współrzędnej, a w osi periodycznej o nieparzystej długości ostatnia warstwa jako trzecia klasa):
     // 4 kolory w 2D, 8 w 3D (do 27 z nieparzystymi osiami periodycznymi). Kolory numerowane 0..colorCount()-1.
+    // Współrzędne i wymiary — całej przestrzeni (w oknie pasa MPI: globalne, etap 10).
     int colorOf(int x, int y, int z) const;
+
+    // --- warstwy osi zewnętrznej (etap 10: wymiana warstw brzegowych MPI) ---
+    // Warstwa k okna (z, w płaszczyźnie x–y — y) z ramką w pozostałych osiach: ciągły fragment tablicy orientacji
+    // [layerStart(k), layerStart(k) + layerCells()).
+    std::size_t layerCells() const { return dims_.nz > 1 ? sx_ * sy_ : sx_; }
+    std::size_t layerStart(int k) const {
+        return dims_.nz > 1 ? frameIndex(-frame_[0], -frame_[1], k) : frameIndex(-frame_[0], k, 0);
+    }
+    std::int32_t* spinData() { return spin_.data(); }
     // Zakres listy komórek domeny dla koloru c (begin, end) — testy.
     std::size_t colorBegin(int c) const { return colorLayerStart_[static_cast<std::size_t>(c * layers_)]; }
     std::size_t colorEnd(int c) const { return colorLayerStart_[static_cast<std::size_t>((c + 1) * layers_)]; }
@@ -236,6 +257,14 @@ private:
     int colorIndex_[27] = {};                   // kolor iloczynowy cx + 3·cy + 9·cz -> numer koloru 0..colors_-1
     std::vector<std::size_t> colorLayerStart_;  // początek (kolor c, warstwa k) w liście domeny: [c·layers_ + k]
     ParallelSettings par_;
+    // --- pas w wersji rozproszonej (MPI, etap 10; setStrip) — bez podziału: okno = cała przestrzeń ---
+    Dims global_;                 // wymiary całej przestrzeni (kolory)
+    bool globalPeriodic_[3];      // periodyczność osi całej przestrzeni (kolory przy nieparzystej osi)
+    int ownLo_ = 0;               // własne warstwy okna [ownLo_, ownHi_)
+    int ownHi_ = 0;
+    int windowLo_ = 0;            // globalny numer warstwy okna 0
+    std::uint64_t hashBase_ = 0;  // globalIndex komórki okna (0, 0, 0)
+    StripLink* link_ = nullptr;   // wymiana warstw brzegowych i sumy (nullptr — jeden proces)
 };
 
 }  // namespace volcano

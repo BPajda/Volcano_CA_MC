@@ -26,6 +26,21 @@ public:
     // Mobilność komórek domeny z [mobilityMin, 1] (0 poza domeną).
     static std::vector<float> fromCooling(const Microstructure& m, const std::vector<std::uint8_t>& domain,
                                           double mobilityMin);
+
+    // --- składniki fromCooling (etap 10: w wersji MPI każdy proces ma tylko swój pas wyniku CA, a koniec CA i zakres
+    // czasów są maksimum / minimum po wszystkich procesach — MPI_Allreduce między krokami) ---
+
+    // Koniec CA dla lawy, która nie zastygła: największy solidStep / arrivalStep komórek domeny.
+    static std::uint32_t endStep(const Microstructure& m, const std::vector<std::uint8_t>& domain);
+    // Czas w stanie płynnym przy podanym końcu CA.
+    static std::vector<std::uint32_t> liquidTime(const Microstructure& m, const std::vector<std::uint8_t>& domain,
+                                                 std::uint32_t endStep);
+    // Najmniejszy i największy czas w domenie (tMin = UINT32_MAX, tMax = 0 przy pustej domenie).
+    static void timeRange(const std::vector<std::uint32_t>& time, const std::vector<std::uint8_t>& domain,
+                          std::uint32_t& tMin, std::uint32_t& tMax);
+    // Normalizacja min–max czasów do mobilności (tMin, tMax — zakres po całej domenie).
+    static std::vector<float> normalize(const std::vector<std::uint32_t>& time, const std::vector<std::uint8_t>& domain,
+                                        std::uint32_t tMin, std::uint32_t tMax, double mobilityMin);
 };
 
 }  // namespace volcano

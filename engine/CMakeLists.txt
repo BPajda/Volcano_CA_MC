@@ -34,6 +34,21 @@ if(VOLCANO_OPENMP)
         endif()
     endif()
 endif()
+# ---- MPI (etap 10) ----
+# VOLCANO_MPI — program engine_mpi (wersja rozproszona: pasy warstw między procesy MPI, src/mpi/) i jego testy pod
+#   mpiexec. Powstaje tylko, gdy find_package(MPI) znajdzie MPI (Windows: MS-MPI z SDK — nagłówki i msmpi.lib;
+#   Linux/WSL: OpenMPI, pakiet libopenmpi-dev). Biblioteka silnika i program engine nie zależą od MPI.
+option(VOLCANO_MPI "Wersja rozproszona engine_mpi (MPI, etap 10)" ON)
+set(VOLCANO_MPI_FOUND OFF)
+if(VOLCANO_MPI)
+    find_package(MPI COMPONENTS CXX)
+    if(MPI_CXX_FOUND)
+        set(VOLCANO_MPI_FOUND ON)
+    else()
+        message(STATUS "VOLCANO_MPI=ON, ale nie znaleziono MPI (Windows: SDK MS-MPI, Linux: libopenmpi-dev) — "
+                       "bez programu engine_mpi")
+    endif()
+endif()
 if(VOLCANO_OPT_FLAG)
     set(VOLCANO_RELEASE_OPT ${VOLCANO_OPT_FLAG})
 elseif(MSVC)
@@ -85,6 +100,7 @@ add_library(volcano_engine STATIC
     src/app/Batch.cpp
     src/parallel/Affinity.cpp
     src/parallel/ThreadStats.cpp
+    src/parallel/Strip.cpp
 )
 target_include_directories(volcano_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # Nagłówki zewnętrzne jako SYSTEM — ich ostrzeżenia nie zaśmiecają wyniku /W4.
@@ -127,6 +143,7 @@ add_executable(engine_tests
     tests/test_ca.cpp
     tests/test_front.cpp
     tests/test_parallel.cpp
+    tests/test_strip.cpp
     tests/test_io.cpp
     tests/test_mc.cpp
     tests/test_profile.cpp
@@ -188,3 +205,51 @@ file(WRITE ${CMAKE_BINARY_DIR}/smoke/batch_in/series.json "{ \"opis\": \"pomijan
 add_test(NAME cli_smoke_batch
     COMMAND engine --batch ${CMAKE_BINARY_DIR}/smoke/batch_in --out ${CMAKE_BINARY_DIR}/smoke/batch_out)
 set_tests_properties(cli_smoke_batch PROPERTIES PASS_REGULAR_EXPRESSION "Razem: 2 przebiegi: 1 ok, 1 z błędem")
+
+# ---- wersja rozproszona engine_mpi (etap 10) ----
+if(VOLCANO_MPI_FOUND)
+    add_library(volcano_mpi STATIC
+        src/mpi/MpiHalo.cpp
+        src/mpi/MpiSimulation.cpp
+    )
+    target_link_libraries(volcano_mpi PUBLIC volcano_engine MPI::MPI_CXX)
+    add_executable(engine_mpi src/mpi/main_mpi.cpp)
+    target_link_libraries(engine_mpi PRIVATE volcano_mpi)
+
+    # Testy: ten sam program testów pod mpiexec dla 1, 2, 3, 4, 5 i 8 procesów (wynik = engine bitowo).
+    add_executable(engine_mpi_tests tests/mpi/test_mpi_main.cpp tests/mpi/test_mpi.cpp)
+    target_link_libraries(engine_mpi_tests PRIVATE volcano_mpi)
+    # OpenMPI: --oversubscribe (WSL zgłasza 4 rdzenie, a testy uruchamiają do 8 procesów), --bind-to none (tryb
+    # hybrydowy: domyślne wiązanie procesu z jednym rdzeniem ścisnęłoby jego 4 wątki na tym rdzeniu), --allow-run-as-root
+    # (WSL domyślnie pracuje jako root, a OpenMPI bez tej opcji odmawia startu).
+    set(VOLCANO_MPIEXEC_FLAGS "")
+    execute_process(COMMAND ${MPIEXEC_EXECUTABLE} --version OUTPUT_VARIABLE VOLCANO_MPIEXEC_VERSION
+                    ERROR_VARIABLE VOLCANO_MPIEXEC_VERSION TIMEOUT 30)
+    if(VOLCANO_MPIEXEC_VERSION MATCHES "Open MPI|OpenRTE")
+        set(VOLCANO_MPIEXEC_FLAGS --oversubscribe --bind-to none --allow-run-as-root)
+    endif()
+    foreach(np 1 2 3 4 5 8)
+        add_test(NAME mpi_np${np}
+            COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${np} ${VOLCANO_MPIEXEC_FLAGS} ${MPIEXEC_PREFLAGS}
+                    $<TARGET_FILE:engine_mpi_tests> ${MPIEXEC_POSTFLAGS})
+    endforeach()
+    # Test dymny programu: lawa 2D na 3 procesach, MC szachownica z pliku wyniku CA (--mc-from) na 3 procesach,
+    # i czytelny błąd mc.update = random przy > 1 procesie.
+    add_test(NAME mpi_cli_smoke_lava_mc
+        COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 3 ${VOLCANO_MPIEXEC_FLAGS} ${MPIEXEC_PREFLAGS}
+                $<TARGET_FILE:engine_mpi> --config ${PROJECT_SOURCE_DIR}/configs/lava_mc_2d.json
+                --out ${CMAKE_BINARY_DIR}/smoke/mpi_lava_mc_2d --set mc.mcs=10 --set mc.update=checkerboard
+                ${MPIEXEC_POSTFLAGS})
+    add_test(NAME mpi_cli_smoke_mc_from
+        COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 3 ${VOLCANO_MPIEXEC_FLAGS} ${MPIEXEC_PREFLAGS}
+                $<TARGET_FILE:engine_mpi> --mc-from ${CMAKE_BINARY_DIR}/smoke/mpi_lava_mc_2d
+                --config ${PROJECT_SOURCE_DIR}/configs/mc_basalt.json --out ${CMAKE_BINARY_DIR}/smoke/mpi_mc_from
+                --set mc.mcs=10 --set mc.update=checkerboard ${MPIEXEC_POSTFLAGS})
+    set_tests_properties(mpi_cli_smoke_lava_mc PROPERTIES FIXTURES_SETUP mpi_lava_mc_result)
+    set_tests_properties(mpi_cli_smoke_mc_from PROPERTIES FIXTURES_REQUIRED mpi_lava_mc_result)
+    add_test(NAME mpi_cli_random_rejected
+        COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${VOLCANO_MPIEXEC_FLAGS} ${MPIEXEC_PREFLAGS}
+                $<TARGET_FILE:engine_mpi> --config ${PROJECT_SOURCE_DIR}/configs/mc_full_2d.json
+                --out ${CMAKE_BINARY_DIR}/smoke/mpi_random ${MPIEXEC_POSTFLAGS})
+    set_tests_properties(mpi_cli_random_rejected PROPERTIES WILL_FAIL TRUE)
+endif()

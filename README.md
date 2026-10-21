@@ -29,7 +29,9 @@ są po polsku.
   wymagania sprzętowe i analiza różnic między kompilatorami.
 - **Deterministyczne wyniki:** losowość pochodzi z funkcji skrótu położenia komórki, więc wynik jest bitowo
   identyczny dla obu reprezentacji siatki (płaska tablica i `vector<vector<vector>>`), dla MSVC i GCC oraz dla każdej
-  liczby wątków OpenMP (`--threads`).
+  liczby wątków OpenMP (`--threads`) i procesów MPI.
+- **Wersja rozproszona (MPI):** `mpiexec -n 8 engine_mpi …` dzieli przestrzeń na pasy warstw między procesy
+  z wymianą warstw brzegowych (MS-MPI na Windows, OpenMPI na Linuksie), także w trybie hybrydowym procesy × wątki.
 
 | Kratery na mapie (Etna) | Kryształy MC na przekroju wulkanu | Kolejka zadań z serią |
 |---|---|---|
@@ -45,7 +47,7 @@ WebGL2. Zależności C++ (nlohmann/json, doctest) i biblioteki frontendu (three.
 # Windows, MSVC (bez środowiska vcvars)
 cmake --preset msvc-release
 cmake --build --preset msvc-release
-ctest --preset msvc-release                    # 12 testów (doctest + testy dymne programu)
+ctest --preset msvc-release                    # 12 testów (doctest + testy dymne programu; 21 z MPI)
 
 # Pierwsza symulacja: przekrój 2D wulkanu -> results\test_2d\ (ca_result.*, times.json, stats.json)
 .\build\Release\engine.exe --config configs\test_2d.json --out results\test_2d
@@ -77,9 +79,10 @@ GCC w WSL, rozwiązywanie problemów) oraz pełny opis opcji silnika, parametró
 | `engine/src/core` | typy komórek, dwie reprezentacje siatki z ramką, sąsiedztwa, warunki brzegowe, `hashRand`, pomiar czasu i pamięci |
 | `engine/src/terrain`, `ca`, `mc` | teren (stożek, mapa wysokości, poziomy przelewu), automat `LavaCA<Storage>`, Monte Carlo `PottsMC` |
 | `engine/src/io`, `app` | config z walidacją, zapis/odczyt wyników; przebieg symulacji, `--batch`, `--benchmark`, CLI |
-| `engine/src/parallel` | OpenMP: pętla z harmonogramem z configu, przypinanie wątków do rdzeni wydajnościowych, czas pracy wątków |
+| `engine/src/parallel` | OpenMP: pętla z harmonogramem z configu, przypinanie wątków do rdzeni wydajnościowych, czas pracy wątków; podział na pasy warstw dla MPI |
+| `engine/src/mpi` | program `engine_mpi`: rozsyłanie configu, wymiana warstw brzegowych, sumy liczników, zebranie wyniku |
 | `gui/` | backend (kolejka zadań, serie, odczyt wyników, eksport) i frontend bez kroku budowania |
-| `tools/`, `bench/` | podgląd PNG, seria bez GUI, pobieranie terenu, eksport VTK; pomiary profilu, testy A/B, skalowanie OpenMP |
+| `tools/`, `bench/` | podgląd PNG, seria bez GUI, pobieranie terenu, eksport VTK; pomiary profilu, testy A/B, skalowanie OpenMP i MPI |
 | `configs/` | gotowe konfiguracje (m.in. `test_2d`, `lava_mc_3d`, `etna_real`, `wezuwiusz_real`) i mapy wysokości |
 
 Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie i słowniczek:
@@ -102,6 +105,10 @@ Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie
   **4,8–6,7×** przy 8 wątkach (pełny przebieg lawy 6,3×, MC w nowym trybie szachownicy 6,1–6,2×), a wynik jest bitowo
   ten sam dla każdej liczby wątków. Cały przebieg — 2,1–6,2×, bo przygotowanie terenu, statystyki ziaren i zapis są
   sekwencyjne (prawo Amdahla) ([docs/etap-9-openmp.md](docs/etap-9-openmp.md)).
+- **MPI** (pasy warstw między procesy, ten sam wynik bitowo): MC szachownicą i CA classic 2D przyspieszają prawie
+  liniowo — **6,7× na 7 procesach**, szybciej niż OpenMP na 8 wątkach; lawa skupia się w kilku warstwach, więc stałe
+  pasy mają nierówną pracę (pełny przebieg 5,4×, automat frontalny ≤ 2,6×), a małą Etnę MPI wręcz spowalnia — wymiana
+  warstw trwa dłużej niż krok ([docs/etap-10-mpi.md](docs/etap-10-mpi.md)).
 - Model pamięci z kodu (~40 B na komórkę w CA 3D) zgadza się z pomiarem szczytu procesu z dokładnością 0–4%.
 
 ![Czas symulacji CA i MC vs liczba komórek, 2D i 3D, z krotnością MC/CA](docs/img/raport/ca_vs_mc.png)
@@ -111,7 +118,7 @@ Zestawienie wyników przykładowych przypadków: [docs/wyniki.md](docs/wyniki.md
 
 ## Dokumentacja
 
-Spis dokumentacji — opisy etapów 1–9, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
+Spis dokumentacji — opisy etapów 1–10, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
 
 ## Dalszy rozwój
 
@@ -122,10 +129,12 @@ Spis dokumentacji — opisy etapów 1–9, architektura, uruchamianie, wyniki i 
 - **OpenMP — zrobione** (etap 9): automat (frontalny i pełny przebieg) i MC w trybie szachownicy na 1–8 wątkach,
   przypinanie do rdzeni wydajnościowych, `--threads`, `--thread-stats`. Do zrobienia: równoległe etykiety ziaren MC
   (dziś ~50% czasu MC przy 8 wątkach), równoległe przygotowanie terenu.
-- **MPI:** ten sam podział na pasy, ramka jako komórki nadmiarowe (ghost cells) wymieniane po każdym kroku (w MC — po
-  każdym kolorze szachownicy), dla lawy podział w poziomie zamiast pasów z (lawa skupia się w kilku warstwach),
-  równoległy zapis wyników — siatka 1000³ potrzebuje ~40–50 GB pamięci
-  ([docs/etap-9-openmp.md, punkt 10](docs/etap-9-openmp.md#10-wnioski-dla-etapu-10-mpi)).
+- **MPI — zrobione** (etap 10): program `engine_mpi`, pasy warstw z warstwami brzegowymi wymienianymi przed każdym
+  krokiem (w MC — po każdym kolorze szachownicy), wariant wymiany tylko zmienionych warstw, tryb hybrydowy, przypinanie
+  procesów do rdzeni wydajnościowych. Do zrobienia: typy pochodne MPI zamiast ręcznego pakowania warstw i równoległy
+  zapis wyników MPI-IO zamiast zbierania na jednym procesie (siatka 1000³ potrzebuje ~40–50 GB pamięci), pasy ważone
+  pracą albo podział w poziomie dla lawy, równoległe etykiety ziaren MC
+  ([docs/etap-10-mpi.md, punkt 11](docs/etap-10-mpi.md#11-wnioski-dla-etapu-11-typy-mpi-i-mpi-io)).
 
 ## Dane terenu
 

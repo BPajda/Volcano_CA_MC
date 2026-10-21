@@ -28,8 +28,8 @@
 // (seed, t, globalnyIndeksKomórki) — wariant jest cechą komórki w danym kroku MCS, jak w CA.
 //
 // UWAGA: MC jest z natury SEKWENCYJNE — każda próba widzi wynik poprzednich (asynchroniczna
-// aktualizacja), w przeciwieństwie do synchronicznego CA. Zrównoleglenie (planowany rozwój) wymaga
-// podziału domeny na podzbiory niesąsiadujących komórek (szachownica) albo przetwarzania pasów.
+// aktualizacja), w przeciwieństwie do synchronicznego CA. Zrównoleglenie wymaga podziału domeny na podzbiory
+// niesąsiadujących komórek: tryb szachownicy mc.update = checkerboard (wątki — etap 9, pasy MPI — etap 10).
 //
 // ===== Domena (mc.domain) =====
 //   basalt — komórki BASALT (i ewentualnie pozostała płynna LAVA, np. krater otoczony

@@ -16,6 +16,7 @@
 #include "io/Config.hpp"
 #include "io/TimingReport.hpp"
 #include "json.hpp"
+#include "mc/Grains.hpp"
 #include "mc/McRules.hpp"
 
 namespace volcano {
@@ -40,6 +41,20 @@ struct McSummary {
     std::vector<std::string> warnings;    // ostrzeżenia do wypisania użytkownikowi
 };
 
+// Dane przebiegu MC do sekcji "mc" pliku stats.json (McStage::statsJson — wspólne dla engine i engine_mpi, etap 10).
+struct McStatsInput {
+    Dims dims;                                    // wymiary siatki MC
+    bool checkerboard = false;                    // mc.update = checkerboard
+    int colors = 0;                               // liczba kolorów szachownicy
+    bool mooreConnectivity = false;               // spójność ziaren Moore'a (inaczej von Neumanna)
+    std::uint64_t attempts = 0;                   // próby, zaakceptowane, zaakceptowane z ΔE > 0 (całe MC)
+    std::uint64_t accepted = 0;
+    std::uint64_t acceptedUphill = 0;
+    const GrainLabels* startLabels = nullptr;     // etykiety ziaren w MCS 0 i na końcu
+    const GrainLabels* endLabels = nullptr;
+    const std::vector<float>* cellMobility = nullptr;  // mobilność ze stygnięcia (pusta — brak danych o stygnięciu)
+};
+
 class McStage {
 public:
     // Próg mobilności dzielący komórki na „długo płynne” (>= próg) i „szybko zastygłe”.
@@ -60,6 +75,10 @@ public:
 
     // Kilka linii podsumowania do konsoli.
     static std::string describe(const McSummary& s);
+
+    // Sekcja "mc" w stats.json (s: domena, liczba komórek, historia, mobilność) — engine_mpi woła ją na procesie 0
+    // z danymi zebranymi ze wszystkich procesów (etap 10), więc stats.json jest bitowo ten sam.
+    static nlohmann::ordered_json statsJson(const Config& cfg, const McSummary& s, const McStatsInput& in);
 };
 
 }  // namespace volcano

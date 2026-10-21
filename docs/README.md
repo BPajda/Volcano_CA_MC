@@ -16,6 +16,7 @@ ograniczenia (stan z dnia etapu — późniejsze zmiany opisują kolejne etapy).
 | [Etap 7 — wygląd GUI](etap-7-wyglad-gui.md) | Motyw „Bazalt i lawa” (ciemny i jasny), paleta danych sprawdzona pod kątem kontrastu i daltonizmu, płynność odtwarzania. |
 | [Etap 8 — optymalizacja sekwencyjna](etap-8-optymalizacja-sekwencyjna.md) | Automat frontalny, MC bez skoku warunkowego, ramka i przesunięcia liniowe, tańsze statystyki i zapis; testy A/B i bitowa zgodność każdego kroku; wnioski dla OpenMP. |
 | [Etap 9 — OpenMP](etap-9-openmp.md) | Podział przestrzeni na warstwy między wątki, szachownica MC z walidacją statystyczną, przypinanie do rdzeni P; przyspieszenie, efektywność, prawo Amdahla, harmonogramy i nierównomierność obciążenia; narzut przy 1 wątku; wnioski dla MPI. |
+| [Etap 10 — MPI](etap-10-mpi.md) | Wersja rozproszona `engine_mpi`: pasy warstw między procesy, warstwy brzegowe (dla lawy 17 pod pasem), zarodkowanie z indeksem globalnym, wynik bitowo ten sam przy każdej liczbie procesów (MS-MPI i OpenMPI); przypinanie procesów do rdzeni P; skalowanie 1–8 procesów, prawo Amdahla, MPI vs OpenMP, tryb hybrydowy, koszt komunikacji, nierównomierność pasów, wymiana `always` / `changed`; wnioski dla typów MPI i MPI-IO. |
 
 ## Przewodniki i wyniki
 
@@ -28,7 +29,8 @@ ograniczenia (stan z dnia etapu — późniejsze zmiany opisują kolejne etapy).
 
 Dane do wykresów: [`data/`](data/) (seria CA vs MC), [`../bench/results/`](../bench/results/) (profil),
 [`../bench/results/ab/`](../bench/results/ab/) (testy A/B i zgodność etapu 8, dziennik `POSTEP.md`),
-[`../bench/results/omp/`](../bench/results/omp/) (skalowanie, harmonogramy, narzut i zgodność etapu 9, dziennik `POSTEP.md`);
+[`../bench/results/omp/`](../bench/results/omp/) (skalowanie, harmonogramy, narzut i zgodność etapu 9, dziennik `POSTEP.md`),
+[`../bench/results/mpi/`](../bench/results/mpi/) (skalowanie, zgodność, narzut, dobór przypadków i plan pomiaru etapu 10, dziennik `POSTEP.md`);
 obrazy: [`img/`](img/) (zrzuty GUI i wykresy), [`img/raport/`](img/raport/) (rysunki raportu: `python gui/tests/raport_shots.py`,
 `python tools/raport_wykresy.py`), [`img/readme/`](img/readme/) (zrzuty do README:
 `python gui/tests/raport_shots.py --shots 3,4 --etna etna_real --theme dark --out docs/img/readme`).

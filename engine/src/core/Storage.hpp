@@ -7,8 +7,9 @@
 //                    dostęp [z+fz][y+fy][x+fx].
 //
 // Obie mają ramkę 1 komórki dookoła (współrzędne -1 i n są poprawne) — warunki
-// brzegowe to wypełnienie ramki przed krokiem, a w wersji równoległej ramka stanie się
-// komórkami nadmiarowymi (ghost cells) przy podziale MPI. Od etapu 8 ramka jest tylko w osiach
+// brzegowe to wypełnienie ramki przed krokiem. W wersji MPI (etap 10) w osi podziału na pasy rolę
+// komórek nadmiarowych (ghost cells) pełnią warstwy brzegowe okna pasa (parallel/Strip.hpp), a ramka okna
+// leży za nimi. Od etapu 8 ramka jest tylko w osiach
 // o rozmiarze > 1 (fx, fy, fz = Dims::frameX/Y/Z): w nieużywanej osi przestrzeni 2D jej nie ma
 // (OPTYMALIZACJA: pamięć siatki 2D 3× mniejsza, brak kopiowania dwóch pełnych warstw co krok).
 //
@@ -138,6 +139,20 @@ public:
         return type_.size() * (sizeof(CellType) + sizeof(std::int32_t) + sizeof(float) +
                                2 * sizeof(std::uint16_t));
     }
+
+    // --- warstwy osi zewnętrznej (etap 10: wymiana warstw brzegowych MPI, parallel/Strip.hpp) ---
+    // Oś warstw: z (nz > 1), w płaszczyźnie x–y — y. Warstwa k razem z ramką w pozostałych osiach to ciągły fragment
+    // każdej tablicy pola: [layerStart(k), layerStart(k) + layerCells()) — wymiana kopiuje go bez przepakowywania.
+    std::size_t layerCells() const { return dims_.nz > 1 ? sx_ * sy_ : sx_; }
+    std::size_t layerStart(int k) const {
+        return dims_.nz > 1 ? index(-dims_.frameX(), -dims_.frameY(), k) : index(-dims_.frameX(), k, 0);
+    }
+    // Surowe tablice pól (z ramką, indeks pos()).
+    CellType* typeData() { return type_.data(); }
+    std::int32_t* flowIdData() { return flowId_.data(); }
+    float* tempData() { return temp_.data(); }
+    std::uint16_t* solidStepData() { return solidStep_.data(); }
+    std::uint16_t* arrivalStepData() { return arrivalStep_.data(); }
 
 private:
     // Indeks w płaskiej tablicy z ramką; asercja łapie wyjście poza ramkę (Debug).

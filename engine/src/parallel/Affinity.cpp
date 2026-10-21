@@ -16,7 +16,9 @@
 #  endif
 #  include <windows.h>
 #else
+#  include <cerrno>
 #  include <sched.h>
+#  include <sys/resource.h>
 #  include <unistd.h>
 #endif
 
@@ -176,6 +178,58 @@ std::vector<int> CpuAffinity::pinThreads(const CpuPlan& plan, int threads) {
         used[static_cast<std::size_t>(tid)] = ok ? cpu : -1;
     }
     return used;
+}
+
+std::vector<int> CpuAffinity::pinThreadsFrom(const CpuPlan& plan, int threads, int first) {
+    std::vector<int> used;
+    if (plan.cpus.empty() || threads < 1 || first < 0) {
+        return used;
+    }
+    const std::size_t n = plan.cpus.size();
+    std::vector<int> cpus;
+    for (int i = 0; i < threads; ++i) {
+        cpus.push_back(plan.cpus[(static_cast<std::size_t>(first) + static_cast<std::size_t>(i)) % n]);
+    }
+    used.assign(static_cast<std::size_t>(threads), -1);
+#ifdef _WIN32
+    DWORD_PTR processMask = 0;
+    for (const int c : cpus) {
+        processMask |= DWORD_PTR(1) << c;
+    }
+    if (!SetProcessAffinityMask(GetCurrentProcess(), processMask)) {
+        return {};
+    }
+#endif
+#ifdef _OPENMP
+#  pragma omp parallel num_threads(threads)
+#endif
+    {
+        const int tid = omp_get_thread_num();
+        const int cpu = cpus[static_cast<std::size_t>(tid)];
+#ifdef _WIN32
+        const bool ok = SetThreadAffinityMask(GetCurrentThread(), DWORD_PTR(1) << cpu) != 0;
+#else
+        cpu_set_t set;
+        CPU_ZERO(&set);
+        CPU_SET(cpu, &set);
+        const bool ok = sched_setaffinity(0, sizeof(set), &set) == 0;
+#endif
+        used[static_cast<std::size_t>(tid)] = ok ? cpu : -1;
+    }
+    return used;
+}
+
+bool CpuAffinity::raisePriority(std::string& method) {
+#ifdef _WIN32
+    const bool ok = SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS) != 0;
+    method = ok ? "HIGH_PRIORITY_CLASS" : "SetPriorityClass odmówił";
+    return ok;
+#else
+    errno = 0;
+    const bool ok = setpriority(PRIO_PROCESS, 0, -5) == 0;
+    method = ok ? "nice -5" : "setpriority(-5) odmówił (brak uprawnień) — priorytet normalny";
+    return ok;
+#endif
 }
 
 int CpuAffinity::currentCpu() {

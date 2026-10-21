@@ -39,6 +39,15 @@ public:
     // Zwraca procesory przypisane kolejnym wątkom (pusta lista, gdy system odmówił).
     static std::vector<int> pinThreads(const CpuPlan& plan, int threads);
 
+    // To samo od pozycji first planu i z maską procesu tylko na użyte procesory: wątek i -> cpus[(first + i) mod n]
+    // (etap 10: proces MPI nr r z T wątkami dostaje rdzenie P nr r·T … r·T + T − 1, więc procesy nie dzielą rdzeni).
+    static std::vector<int> pinThreadsFrom(const CpuPlan& plan, int threads, int first);
+
+    // Wysoki priorytet procesu (parallel.priority = "high", etap 10): Windows — HIGH_PRIORITY_CLASS (jak bench/ab.py
+    // i scaling.py z etapów 8–9), Linux — nice −5 (zwykle wymaga uprawnień; bez nich false i proces zostaje przy
+    // priorytecie normalnym). method — opis do times.json.
+    static bool raisePriority(std::string& method);
+
     // Procesor logiczny, na którym pracuje wywołujący wątek (-1, gdy nieznany).
     static int currentCpu();
 };

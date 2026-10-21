@@ -3,7 +3,7 @@
 Ten przewodnik prowadzi przez cały projekt od strony „jak to jest zrobione i dlaczego”: co symulujemy,
 gdzie co leży, jak jedna symulacja przechodzi od pliku konfiguracyjnego do pliku z wynikiem, jak działa GUI
 i automatyzacja, co pokazał profil i odpowiedzi na najczęstsze pytania. Numery linii dotyczą stanu
-z 20.10.2026 (po etapie 9 — OpenMP) — przy zmianach kodu mogą się przesunąć o kilka linii, nazwy funkcji zostają.
+z 21.10.2026 (po etapie 10 — MPI) — przy zmianach kodu mogą się przesunąć o kilka linii, nazwy funkcji zostają.
 Jak wszystko uruchomić: **[uruchamianie.md](uruchamianie.md)**.
 
 ## 1. Co symuluje projekt (w jednym akapicie)
@@ -49,8 +49,12 @@ volcano-ca-mc/
 │   ├── src/ca/                         automat: LavaCA.hpp (szablon po Storage), CaRules.hpp (opis reguł!)
 │   ├── src/mc/                         Monte Carlo: PottsMC.*, Grains.* (liczenie ziaren), CoolingMobility.*, McRules.hpp
 │   ├── src/io/                         Config (wczytanie + walidacja), ResultWriter/Reader (txt, bin), TimingReport (times.json)
-│   ├── src/parallel/                   OpenMP (etap 9): Omp.hpp (ompFor, ustawienia), Affinity.* (rdzenie P), ThreadStats.*
-│   ├── tests/                          testy jednostkowe doctest (m.in. test_front.cpp, test_parallel.cpp, test_replay.cpp)
+│   ├── src/parallel/                   OpenMP (etap 9): Omp.hpp (ompFor, ustawienia), Affinity.* (rdzenie P), ThreadStats.*;
+│   │                                   Strip.* (etap 10): podział warstw na pasy, plan warstw brzegowych, interfejs StripLink
+│   ├── src/mpi/                        MPI (etap 10): main_mpi.cpp (program engine_mpi), MpiSimulation.* (rozsyłanie, pasy,
+│   │                                   zebranie wyników), MpiHalo.* (wymiana warstw brzegowych, MPI_Allreduce)
+│   ├── tests/                          testy jednostkowe doctest (m.in. test_front.cpp, test_parallel.cpp, test_strip.cpp,
+│   │                                   test_replay.cpp); tests/mpi/ — testy engine_mpi pod mpiexec (1–8 procesów)
 │   └── third_party/                    json.hpp (nlohmann), doctest.h — jedyne zależności C++
 ├── gui/                                GUI web: backend Python/FastAPI + frontend HTML/JS
 │   ├── __main__.py                     python -m gui — start serwera na 127.0.0.1:8000 i przeglądarki
@@ -74,11 +78,12 @@ volcano-ca-mc/
 ├── bench/                              profil i pomiary (etap 3): run_profile.py, plot_profile.py, profile_gcc.sh, profile_msvc.py, results/, profiles/
 │                                       etap 8: ab.py (test A/B), compare_results.py (zgodność bitowa), plot_etap8.py, results/ab/
 │                                       etap 9: scaling.py (skalowanie OpenMP), mc_validation.py, plot_etap9.py, micro/omp_overhead.cpp, results/omp/
+│                                       etap 10: scaling_mpi.py (skalowanie MPI), plot_etap10.py, compare_results.py --launch, results/mpi/
 ├── configs/                            przykładowe configi (test_2d, test_3d, etna_3d, classic_ref, lava_mc_*, mc_full_*, heightmap_*,
 │                                       etna_real, etna_real_boczna, wezuwiusz_real), heightmaps/ (mapy CSV + PNG + JSON, README z przypisaniem
 │                                       danych); gui/ i series/ — generowane (poza repozytorium)
 ├── results/                            wyniki (poza repozytorium); results/gui/ — zadania i serie z GUI
-└── docs/                               opisy etapów etap-1…9-*.md, przewodniki (architektura, uruchamianie), raport, img/, data/
+└── docs/                               opisy etapów etap-1…10-*.md, przewodniki (architektura, uruchamianie), raport, img/, data/
 ```
 
 ## 3. Droga jednej symulacji — od `engine --config` do pliku wynikowego
@@ -91,7 +96,7 @@ Przykład: `build\Release\engine.exe --config configs\lava_mc_3d.json --out resu
 domyślny config, walidacja, benchmark, seria (`--batch`) albo zwykła symulacja. Wyjątki zamienia na kody
 wyjścia (1 — błąd configu, 2 — błąd argumentów, 3 — inny błąd, 5 — seria z błędem).
 
-**Gdzie:** `engine/src/main.cpp`, `main()` (linie 20–56); parser `engine/src/app/Cli.cpp`, `Cli::parse()` (linie 40–126):
+**Gdzie:** `engine/src/main.cpp`, `main()` (linie 20–56); parser `engine/src/app/Cli.cpp`, `Cli::parse()` (linie 40–129):
 każda opcja to gałąź `if`, a na końcu sprawdzane są niedozwolone połączenia (np. `--batch` z `--config`).
 
 ```cpp
@@ -118,8 +123,8 @@ a potem kolejne `--set`. Nieznany klucz to błąd (łapie literówki), klucze za
 (komentarze). Potem każdy parametr jest sprawdzany (zakres, typ, dozwolone wartości, połączenia — np. lawa 2D
 musi mieć `ny = 1`) i trafia do struktury `Config`. Błędy mają polskie komunikaty z nazwą parametru.
 
-**Gdzie:** `engine/src/io/Config.cpp`: `Config::defaultsJson()` (153), `Config::merge()` (177–202),
-`Config::applyOverride()` (204–234), `Config::load()` (236–265), `Config::fromJson()` (267–428),
+**Gdzie:** `engine/src/io/Config.cpp`: `Config::defaultsJson()` (153), `Config::merge()` (178–203),
+`Config::applyOverride()` (205–235), `Config::load()` (237–266), `Config::fromJson()` (268–433),
 `Config::parallelSettings()` (434–440; sekcja `parallel` → `ParallelSettings`, `threads = 0` → `omp_get_max_threads()`).
 
 ```cpp
@@ -136,7 +141,7 @@ Config Config::load(const std::string& path, const std::vector<std::string>& ove
 ```
 
 Pełny config po scaleniu (`cfg.effective`) zapisujemy jako `config_used.json` — wiadomo dokładnie, z czym
-liczył przebieg. Czas tego etapu to sekcja `readConfig` w `times.json` (`Simulation::runFromCli`, linia ~527).
+liczył przebieg. Czas tego etapu to sekcja `readConfig` w `times.json` (`Simulation::runFromCli`, linia ~536).
 
 ### Krok 3. Alokacja siatki: VectorStorage vs MatrixStorage, ramka, SoA
 
@@ -152,9 +157,9 @@ współrzędne): sąsiad = pozycja + przesunięcie liniowe `linear(o) = dx + sx�
 automatu, następna komórka w osi x = `nextX(p)`. Obie reprezentacje mają ten sam interfejs, a automat jest **szablonem**
 `LavaCA<Storage>` — wybór następuje raz, bez funkcji wirtualnych w gorącej pętli.
 
-**Gdzie:** `engine/src/core/Storage.hpp` — `VectorStorage` (42–161), `linear()` (99–103), `index()` (145–150),
-`MatrixStorage` (168–276); wybór w `engine/src/app/Simulation.cpp`, `Simulation::run()` (285–323), alokacja
-w `Simulation::runWith()` (150–283).
+**Gdzie:** `engine/src/core/Storage.hpp` — `VectorStorage` (43–176), `linear()` (100–104), `index()` (160–165),
+`MatrixStorage` (183–291); wybór w `engine/src/app/Simulation.cpp`, `Simulation::run()` (294–332), alokacja
+w `Simulation::runWith()` (159–292).
 
 ```cpp
 // VectorStorage: indeks w płaskiej tablicy z ramką (tylko w osiach używanych); base_ = indeks komórki (0, 0, 0).
@@ -188,7 +193,7 @@ punkt krawędzi — z tego korzysta reguła wypełniania zagłębień (krok 6).
 
 **Gdzie:** `engine/src/terrain/TerrainGenerator.cpp` — `TerrainGenerator::cone()` (61–84), `smoothNoise()`,
 `fillDepressions()` (86–161, kolejka priorytetowa); `engine/src/terrain/HeightmapLoader.cpp`, `loadCsv()` (37–83);
-wywołanie: `Simulation::buildTerrain()` (129–137) i `LavaCA::applyTerrain()` (`engine/src/ca/LavaCA.hpp`, 151–172;
+wywołanie: `Simulation::buildTerrain()` (138–146) i `LavaCA::applyTerrain()` (`engine/src/ca/LavaCA.hpp`, 185–211;
 wpisanie skały do siatki — w wielu wątkach po warstwach, etap 9).
 
 ```cpp
@@ -215,8 +220,8 @@ w MSVC i GCC, a wyniki mają być identyczne na obu kompilatorach. Kratery dosta
 i temperaturę erupcji.
 
 **Gdzie:** `engine/src/terrain/VentPlacer.cpp` — `placeVents()` (11–58), `placeAt()` (60–81, lista kolumn), `placeSeeds()` (83–102);
-`Simulation::buildVents()` (`Simulation.cpp`, 139–147) wybiera wariant;
-`LavaCA::placeSeeds()` (`LavaCA.hpp`, 176–188); `uniformBelow()` w `core/Rng.hpp`.
+`Simulation::buildVents()` (`Simulation.cpp`, 148–156) wybiera wariant;
+`LavaCA::placeSeeds()` (`LavaCA.hpp`, 215–227); `uniformBelow()` w `core/Rng.hpp`.
 
 ```cpp
 std::mt19937_64 gen(splitmix64(seed ^ kSaltVents));
@@ -272,14 +277,14 @@ przebiegiem (`ca.sweep = full`, wersja referencyjna; testy `engine/tests/test_fr
 [etap-8-optymalizacja-sekwencyjna.md](etap-8-optymalizacja-sekwencyjna.md), punkt 3.4.
 
 **Gdzie:** pełny opis reguł z uzasadnieniem każdej zmiany — `engine/src/ca/CaRules.hpp` (początek pliku);
-kod — `engine/src/ca/LavaCA.hpp`: `step()` (191–205), `stepLava()` (498–509), `stepClassic()` (512–522),
-`stepFront()` (603–608), `initFront()` (613–632), `frontStepSequential()` (660–677), `frontDescent()` (765–776),
-`frontCandidatesLayer()` (800–828; kandydaci jednej warstwy), `frontCandidatesRules()` (833–842; kandydaci i reguły
-zakresu warstw), `frontApply()` (932–946), `computeDescent()` (473–488), `updateLava()` (987–1038),
-`gatherLavaCandidates()` (387–441), `tryPonding()` (365–383), `hasSupport()` (312–321), `dropDepth()` (326–336),
-`updateClassic()` (1041–1078), `finishStep()` (1081–1099); głosowanie `CandidateVote` (`CaRules.hpp`, 127–183); ramka
-`Boundary::apply()` (`engine/src/core/Boundary.hpp`, 56–63; wypełnianie — `applyWith()`, 65–121), `Boundary::syncCell()`
-(123–159); sąsiedztwa `engine/src/core/Neighborhood.cpp` (konstruktor, 55–119). Wersje wielowątkowe kroków — krok 6a.
+kod — `engine/src/ca/LavaCA.hpp`: `step()` (230–247), `stepLava()` (577–588), `stepClassic()` (591–601),
+`stepFront()` (685–692), `initFront()` (698–730), `frontStepSequential()` (761–781), `frontDescent()` (877–888),
+`frontCandidatesLayer()` (912–940; kandydaci jednej warstwy), `frontCandidatesRules()` (945–955; kandydaci i reguły
+zakresu warstw), `frontApply()` (1052–1066), `computeDescent()` (551–566), `updateLava()` (1109–1161),
+`gatherLavaCandidates()` (465–519), `tryPonding()` (443–461), `hasSupport()` (390–399), `dropDepth()` (404–414),
+`updateClassic()` (1164–1201), `finishStep()` (1206–1229); głosowanie `CandidateVote` (`CaRules.hpp`, 127–183); ramka
+`Boundary::apply()` (`engine/src/core/Boundary.hpp`, 66–73; wypełnianie — `applyWith()`, 75–131), `Boundary::syncCell()`
+(133–169); sąsiedztwa `engine/src/core/Neighborhood.cpp` (konstruktor, 55–119). Wersje wielowątkowe kroków — krok 6a.
 
 ```cpp
 // LavaCA::stepLava — jeden krok: ramka -> D(n) -> reguły (cur -> next) -> zamiana buforów
@@ -298,13 +303,14 @@ VOLCANO_NOINLINE void stepLava() {
 ```
 
 ```cpp
-// LavaCA::frontStepSequential — automat frontalny (domyślny) w jednym wątku: tylko komórki, które mogą się zmienić
-// (fragment; pełna wersja z pomiarem faz w LavaCA.hpp)
+// LavaCA::frontStepSequential<Strip> — automat frontalny (domyślny) w jednym wątku: tylko komórki, które mogą się
+// zmienić (fragment; pełna wersja z pomiarem faz w LavaCA.hpp). Strip = false (engine): lo = 0, hi = nl — kod etapu 9;
+// Strip = true (pas MPI, etap 10): warstwy własne [ownLo_, ownHi_), losowość z indeksem globalnym
 if (p_.mode == CaMode::Lava) {
-    frontDescent(0, nl);                                     // D(n) tylko dla lawy
+    frontDescent(lo, Strip ? descHi_ : nl);                  // D(n) tylko dla lawy (w pasie MPI także warstwa nad pasem)
 }
-frontCandidatesRules(0, nl, ctx, vote, sums);                // kandydaci warstwy + reguły (czytają cur_, piszą listy warstwy)
-return frontCounts(sums, frontApply(0, nl, periodic));       // zmiany do cur_ + kopie w ramce periodycznej
+frontCandidatesRules<Strip>(lo, hi, ctx, vote, sums);        // kandydaci warstwy + reguły (czytają cur_, piszą listy warstwy)
+return frontCounts(sums, frontApply(lo, hi, periodic));      // zmiany do cur_ + kopie w ramce periodycznej
 ```
 
 ```cpp
@@ -347,9 +353,9 @@ z wnętrza regionu. MSVC ma OpenMP 2.0 (bez `omp_set_schedule`), więc wariant d
 działania. Przypinanie (`parallel.affinity = pcores`) ustawia przed obliczeniami jeden wątek na rdzeń fizyczny P
 (procesory logiczne 2, 4, …, 14, 0). Wyniki i pomiary: [etap-9-openmp.md](etap-9-openmp.md).
 
-**Gdzie:** `engine/src/ca/LavaCA.hpp` — `fullStepParallel()` (527–591), `frontStepParallel()` (686–749), opis podziału
-na początku pliku (31–43); `engine/src/parallel/Omp.hpp` — `ParallelSettings` (80–87), `ompFor()` (93–143);
-`engine/src/parallel/Affinity.cpp` — `performanceCores()` (63–143), `pinThreads()` (145–179);
+**Gdzie:** `engine/src/ca/LavaCA.hpp` — `fullStepParallel()` (606–673), `frontStepParallel()` (790–861), opis podziału
+na początku pliku (31–41; wersja MPI — 43–48); `engine/src/parallel/Omp.hpp` — `ParallelSettings` (80–87), `ompFor()` (93–143);
+`engine/src/parallel/Affinity.cpp` — `performanceCores()` (65–145), `pinThreads()` (147–181);
 `engine/src/parallel/ThreadStats.cpp` — `endStep()` (40–70, nierówność obciążenia), `toJson()` (72–121);
 `engine/src/core/Boundary.hpp` — `applyWith()` (65–121, ramka w pętli podanej przez wywołującego);
 testy `engine/tests/test_parallel.cpp`.
@@ -370,6 +376,56 @@ testy `engine/tests/test_parallel.cpp`.
 ```
 
 (Fragment uproszczony — bez rzutowań `k` na `int` i pomiaru czasu pracy wątków `--thread-stats`.)
+
+### Krok 6b. Procesy MPI — program `engine_mpi` (etap 10)
+
+**Co się dzieje:** `mpiexec -n p engine_mpi --config …` startuje p kopii programu. Proces 0 wczytuje config (i teren)
+i rozsyła je pozostałym (`MPI_Bcast`), a każdy proces liczy **pas warstw** (te same warstwy z / y co wątki w kroku 6a)
+w swoim **oknie**: pas + warstwy brzegowe pod i nad nim (lawa 17 pod + 1 nad, classic i MC po 1). `LavaCA` i `PottsMC`
+dostają okno zamiast całej przestrzeni (`setStrip`) i liczą je tym samym kodem; różnice to trzy miejsca:
+
+1. **przed każdym krokiem CA / po każdym kolorze MC** — `link_->exchange()`: warstwy brzegowe okna dostają aktualny stan
+   warstw sąsiednich procesów (`MPI_Isend` / `MPI_Irecv` + `MPI_Waitall`, pakowanie pól warstwy do bufora; wariant
+   `mpi.exchange = changed` wysyła tylko warstwy zmienione od ostatniej wysyłki);
+2. **liczniki kroku** (lawa, powietrze, zmiany — reguła końca) — `link_->sum()` = `MPI_Allreduce`, więc wszystkie procesy
+   kończą w tym samym kroku z tą samą historią;
+3. **losowość** — indeks globalny = indeks w oknie + `hashBase_` (pas jest ciągłym fragmentem tablic), więc
+   `hashRand` daje te same liczby co w `engine` i wynik jest bitowo ten sam przy każdej liczbie procesów.
+
+Na końcu proces 0 zbiera pasy wyniku (`MPI_Gatherv`) i zapisuje te same pliki co `engine` (+ sekcja `mpi`
+w `times.json`). Przy 1 procesie okno = cała przestrzeń, `link_ == nullptr` — kroki idą dokładnie ścieżką `engine`
+(szablon `frontStepSequential<bool Strip>`, krok 6). Opis i wyniki: [etap-10-mpi.md](etap-10-mpi.md).
+
+**Gdzie:** `engine/src/mpi/main_mpi.cpp` — `main()` (20–75: `MPI_Init_thread` z `MPI_THREAD_FUNNELED`, kody wyjścia
+przez `MPI_Abort`); `engine/src/mpi/MpiSimulation.cpp` — `bcastText()` (51–66), `bcastHeightmap()` (69–84),
+`gatherField()` / `scatterField()` (107–131), `setupProcess()` (314–343, priorytet i rdzenie P procesu),
+`MpiSimulation::checkConfig()` (385–402), `runCa()` (404–556), `runMc()` (558–836), `runFromCli()` (838–1118);
+`engine/src/mpi/MpiHalo.cpp` — `sum()` (20–26), `exchange()` (54–62), `run()` (76–180: odbiory, pakowanie, wysyłka,
+`MPI_Waitall`, rozpakowanie); `engine/src/parallel/Strip.cpp` — `splitLayers()` (8–20), `ghostsOf()` (34–67),
+`planStrip()` (71–120); `engine/src/ca/LavaCA.hpp` — `setStrip()` (153–162), `reachBelow()` / `reachAbove()`
+(167–168), `step()` (230–249, wymiana przed krokiem), `exchangeGhosts()` (347–355), `finishStep()` (1206–1229, suma
+liczników); `engine/src/mc/PottsMC.cpp` — `setStrip()` (48–59), wymiana po kolorze w `sweepColors()` (459, 494);
+testy `engine/tests/test_strip.cpp`, `engine/tests/mpi/test_mpi.cpp`.
+
+```cpp
+// LavaCA::step — wersja rozproszona: warstwy brzegowe okna = stan sąsiednich procesów z początku kroku (fragment)
+if (link_ != nullptr) {
+    exchangeGhosts();  // link_->exchange(cur_, …) + listy src warstw brzegowych dla automatu frontalnego
+}
+...                    // krok jak w engine, tylko na warstwach własnych [ownLo_, ownHi_)
+// finishStep: liczniki kroku sumowane po procesach — reguła końca jest globalna
+if (link_ != nullptr) {
+    link_->sum(v, 3);  // MPI_Allreduce(MPI_SUM)
+}
+```
+
+```cpp
+// MpiHalo::run — wymiana warstw brzegowych (fragment)
+MPI_Irecv(recvBuf_[i].data(), cap, MPI_BYTE, m.peer, tag_, comm_, &requests_[i]);       // od każdego dostawcy warstw
+...                                                                                      // pakowanie: pola warstwy memcpy
+MPI_Isend(buf.data(), size, MPI_BYTE, m.peer, tag_, comm_, &requests_[nr + j]);          // do każdego odbiorcy
+MPI_Waitall(nr + ns, requests_.data(), MPI_STATUSES_IGNORE);                             // potem rozpakowanie do okna
+```
 
 ### Krok 7. Losowość z hasha — dlaczego wynik nie zależy od reprezentacji siatki
 
@@ -433,14 +489,14 @@ kolory po kolei, w kolorze każda komórka domeny dokładnie raz (bez kroku 1 �
 wynik nie zależy od liczby wątków. To inny proces losowy niż wariant naiwny: walidacja statystyczna (ta sama kinetyka,
 różnice 1–2,4%) — [etap-9-openmp.md](etap-9-openmp.md), punkt 3.
 
-**Gdzie:** opis reguł — `engine/src/mc/McRules.hpp`; `engine/src/mc/PottsMC.cpp`: `initialize()` (85–117),
-`colorOf()` (127–132) i `buildColors()` (134–193; kolory i lista domeny kolor po kolorze, warstwa po warstwie),
-`fillFrame()` (195–246), `syncFrame()` (248–279), **`sweepTrials()` (282–360; pętla prób)**, `colorTrials()` (363–417)
-i `sweepColors()` (420–472; szachownica), `sweep()` (474–491), `measure()` (493–511), `totalEnergy()` (548–614);
-`unlikeNeighbors()` (153–165) i `unlikeBeforeAfter()` (170–183, energia przed i po zmianie w jednym przejściu, bez
-skoku warunkowego — etap 8) w `PottsMC.hpp`; etap: `engine/src/app/McStage.cpp`, `McStage::run()` (93–338),
-`McStage::save()` (340–361); mobilność `engine/src/mc/CoolingMobility.cpp`, `fromCooling()` (37–61); ziarna
-`engine/src/mc/Grains.cpp`, `Grains::label()` (33–150); samo MC z pliku — `Simulation::runMcFrom()` (325–393).
+**Gdzie:** opis reguł — `engine/src/mc/McRules.hpp`; `engine/src/mc/PottsMC.cpp`: `initialize()` (104–143),
+`colorOf()` (153–158) i `buildColors()` (160–224; kolory i lista domeny kolor po kolorze, warstwa po warstwie),
+`fillFrame()` (226–277), `syncFrame()` (279–310), **`sweepTrials()` (313–391; pętla prób)**, `colorTrials()` (394–448)
+i `sweepColors()` (451–514; szachownica), `sweep()` (516–533), `measure()` (535–553), `totalEnergy()` (590–664);
+`unlikeNeighbors()` (174–186) i `unlikeBeforeAfter()` (191–204, energia przed i po zmianie w jednym przejściu, bez
+skoku warunkowego — etap 8) w `PottsMC.hpp`; etap: `engine/src/app/McStage.cpp`, `McStage::run()` (93–301),
+`McStage::save()` (303–324); mobilność `engine/src/mc/CoolingMobility.cpp`, `fromCooling()` (76–83); ziarna
+`engine/src/mc/Grains.cpp`, `Grains::label()` (33–150); samo MC z pliku — `Simulation::runMcFrom()` (334–402).
 
 ```cpp
 const std::uint64_t prefix = hashPrefix(p_.seed, t);       // stała część hashRand(seed, krok) — raz na MCS
@@ -589,7 +645,7 @@ mapę (`HeightmapLoader::loadCsv`) — prawdziwy teren nie wymagał zmian w siln
 
 **Kratery w zadanych kolumnach:** `vents.placement = "positions"`, `vents.positions = [[x, y], …]`. Walidacja w
 `Config::fromJson()` (lista: `getColumns()` w `Config.cpp`, 111; liczba = `vents.count`), lista dla symulacji —
-`Config::ventColumns()` (430), rozmieszczenie — `VentPlacer::placeAt()` z `Simulation::buildVents()` (139).
+`Config::ventColumns()` (435), rozmieszczenie — `VentPlacer::placeAt()` z `Simulation::buildVents()` (148).
 Lista celowo **nie jest polem struktury `Config`**: pole-wektor przesuwało w pliku wykonywalnym MSVC gorącą pętlę
 automatu (inne wyrównanie → CA wolniejsze o 6–9% przy identycznym kodzie automatu; analiza mapą linkera
 w `etap-6-prawdziwe-wulkany.md`, punkt 7). GUI: panel „Kratery na mapie” (`gui/static/js/ventpicker.js`).
@@ -634,7 +690,7 @@ export function stateAt(k, t, appear, solidFrom) {
 ```
 
 **Migawki** (narzędzie weryfikacji, domyślnie wyłączone): `output.snapshotsEvery` → `snapshots/step_<k>.bin` (stan 0,
-co N kroków, ostatni; `Simulation::runWith()`, 189–233 — czas w sekcji `snapshots`, poza `caSim`) i `mc.snapshotsEvery` →
+co N kroków, ostatni; `Simulation::runWith()`, 198–242 — czas w sekcji `snapshots`, poza `caSim`) i `mc.snapshotsEvery` →
 `mc_snapshots/mcs_<k>.bin` (`McStage::run()`, 186–260 — sekcja `mcSnapshots`, poza `mcSim`). Testy:
 `engine/tests/test_replay.cpp` (odtworzenie = stan automatu po każdym kroku, = migawki; migawki nie zmieniają wyniku),
 `gui/tests/test_replay.py`.
@@ -659,7 +715,7 @@ Główne wnioski:
 4. **MC: 60–67% czasu to liczenie sąsiadów o innej orientacji;** MSVC jest 2–3× wolniejszy od GCC przez jeden
    skok warunkowy w tej pętli (błędne przewidywania skoków) — jedna linia kodu wyrównuje kompilatory.
 5. **Model pamięci z kodu przewiduje szczyt procesu z dokładnością 0–4%:** ~40 B/komórkę (CA 3D), 91 B (CA 2D —
-   ramka w nieużywanej osi), ~42 B (MC 3D); 1000³ wymagałoby ~40 GB → argument za MPI (planowany dalszy rozwój).
+   ramka w nieużywanej osi), ~42 B (MC 3D); 1000³ wymagałoby ~40 GB → argument za MPI (etap 10: każdy proces trzyma tylko swój pas).
 
 **Etap 8** zrealizował większość tej listy (automat frontalny, MC bez skoku warunkowego, ramka tylko w używanych osiach,
 przesunięcia liniowe, tańsze statystyki MC, szybszy zapis txt): `etna_real` ×0,005, CA classic ×0,06–0,14, MC ×0,50–0,70,
@@ -690,6 +746,8 @@ narzut przy 1 wątku ≤ 3%. Narzędzia: `bench/scaling.py` (S(p), E(p), Amdahl,
 | szachownica MC (kolory, MCS w wątkach) | `engine/src/mc/PottsMC.cpp`, `buildColors()`, `sweepColors()`, `colorTrials()` |
 | przypinanie wątków do rdzeni P, czas pracy wątków | `engine/src/parallel/Affinity.cpp`, `performanceCores()`, `pinThreads()`; `ThreadStats.cpp` |
 | skalowanie S(p), E(p), Amdahl, harmonogramy (etap 9) | `bench/scaling.py`, `bench/plot_etap9.py`; walidacja szachownicy `bench/mc_validation.py`; wyniki `bench/results/omp/` |
+| procesy MPI: pasy, warstwy brzegowe, wymiana, suma liczników | `engine/src/mpi/MpiSimulation.cpp`, `runCa()`, `runMc()`; `MpiHalo.cpp`, `run()`; `parallel/Strip.cpp`, `planStrip()`; `LavaCA::setStrip()`, `exchangeGhosts()` |
+| skalowanie MPI, hybryda, MPI vs OpenMP (etap 10) | `bench/scaling_mpi.py`, `bench/plot_etap10.py`; zgodność `bench/compare_results.py --launch`; wyniki `bench/results/mpi/` |
 | sąsiad przez przesunięcie liniowe | `engine/src/core/Storage.hpp`, `linear()`, `shifted()`, `nextX()`; `LavaCA::nbSteps_` |
 | reguła rozlewania lawy (kierunek największego spadku) | `LavaCA.hpp`, `gatherLavaCandidates()`, `computeDescent()`, `descent()` |
 | wypełnianie krateru (ponding) | `LavaCA.hpp`, `tryPonding()`; opis w `CaRules.hpp` |
@@ -725,7 +783,8 @@ narzut przy 1 wątku ≤ 3%. Narzędzia: `bench/scaling.py` (S(p), E(p), Amdahl,
 | zarodek / ziarno | w CA: krater (lawa) albo zarodek (classic) z własnym `flowId`; ziarno = komórki o tym samym `flowId` / orientacji |
 | sąsiedztwo | które komórki są „obok”: von Neumann (przez ściany: 4 w 2D / 6 w 3D), Moore (także krawędzie i narożniki: 8 / 26), losowe pentagonalne (5 / 17), losowe heksagonalne (6, tylko 2D) |
 | warunki brzegowe | co jest za brzegiem: absorbujące (nic — lawa znika), periodyczne (przeciwległy brzeg, „torus”) |
-| ramka / ghost cells | dodatkowa warstwa 1 komórki dookoła siatki; brzeg = wypełnienie ramki; w MPI te same komórki będą kopiami od sąsiedniego procesu |
+| ramka / ghost cells | dodatkowa warstwa 1 komórki dookoła siatki; brzeg = wypełnienie ramki; w MPI (etap 10) — warstwy brzegowe okna procesu, kopie warstw sąsiednich procesów (lawa: 17 pod pasem, 1 nad) |
+| pas, okno (MPI) | pas = ciągły zakres warstw z / y liczony przez jeden proces; okno = pas + warstwy brzegowe, z własną ramką |
 | SoA | *structure of arrays* — osobna tablica na każde pole zamiast tablicy struktur; lepsze wykorzystanie pamięci podręcznej |
 | synchroniczny CA, podwójny bufor | nowy stan wszystkich komórek liczony z kopii starego (`cur` → `next`), potem zamiana — kolejność komórek nie ma znaczenia |
 | hashRand | „losowość bez stanu”: liczba z funkcji mieszającej (ziarno, krok, indeks komórki, sól) — ten sam wynik niezależnie od kolejności i podziału pracy |
@@ -795,8 +854,15 @@ prób (akceptacja 13%). Losowy dostęp do pamięci sprawia też, że MC dużo mo
 **Jak to jest zrównoleglone?** CA jest synchroniczny (czyta `cur`, pisze `next` albo listy zmian) i ma losowość z hasha
 położenia — warstwy z dzielimy między wątki OpenMP bez zmiany wyniku (etap 9, krok 6a). MC w wariancie naiwnym jest
 sekwencyjne (każda próba widzi poprzednie), więc wątki liczą tryb szachownicy (kolory bez sąsiadów tego samego koloru),
-statystycznie równoważny wariantowi naiwnemu. W MPI (etap 10) te same pasy przejdą na procesy, a ramka stanie się
-komórkami nadmiarowymi wymienianymi po każdym kroku ([etap-9-openmp.md](etap-9-openmp.md), punkt 10).
+statystycznie równoważny wariantowi naiwnemu. W MPI (etap 10, krok 6b) te same warstwy dostają procesy jako ciągłe
+pasy, a warstwy brzegowe okna są wymieniane przed każdym krokiem CA i po każdym kolorze MC — wynik jest bitowo ten sam
+przy każdej liczbie procesów ([etap-10-mpi.md](etap-10-mpi.md)).
+
+**Co szybsze: MPI czy OpenMP?** Na jednym komputerze z 8 rdzeniami P — zwykle OpenMP: wątki dzielą warstwy
+dynamicznie i nie kopiują warstw brzegowych. MPI dorównuje mu tam, gdzie praca na warstwę jest równa (MC szachownicą,
+classic 2D: 7 procesów S = 6,7), a przegrywa w lawie (skupiona w kilku warstwach — stałe pasy mają nierówną pracę;
+Etna jest w MPI wręcz wolniejsza). Zaletą MPI jest pamięć: każdy proces trzyma tylko swój pas, więc siatka może być
+większa niż pamięć jednego komputera ([etap-10-mpi.md](etap-10-mpi.md), punkt 9).
 
 **Dlaczego 8 wątków przyspiesza mniej niż 8×?** Faza obliczeń przyspiesza 4,8–6,7×: bariery między fazami kroku,
 nierówny podział (lawa skupia się w kilku warstwach), a ósmy wątek pracuje na procesorze 0 obsługującym przerwania
@@ -804,7 +870,7 @@ systemu. Cały przebieg ograniczają części sekwencyjne (teren, etykiety ziare
 ([etap-9-openmp.md](etap-9-openmp.md), punkt 5).
 
 **Po co ramka?** Żeby w gorącej pętli nie było `if`-ów na brzegach: sąsiad zawsze istnieje, a warunek brzegowy
-to tylko inne wypełnienie ramki. W MPI ramka = ghost cells.
+to tylko inne wypełnienie ramki. W MPI ramka w osi warstw = warstwy brzegowe okna (ghost cells).
 
 **Dlaczego `engine --batch` uruchamia osobne procesy?** Szczyt pamięci procesu jest monotoniczny (w jednym
 procesie kolejny przebieg „widziałby” szczyt poprzedniego), awaria jednego przebiegu nie kończy serii, a czasy

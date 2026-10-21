@@ -21,6 +21,8 @@ const ENUMS = {
   'mc.update': [['random', 'random — losowe komórki po kolei (wariant naiwny)'], ['checkerboard', 'checkerboard — szachownica (równolegle)']],
   'parallel.schedule': [['static', 'static — równe pasy warstw'], ['dynamic', 'dynamic — porcje na żądanie'], ['guided', 'guided — malejące porcje']],
   'parallel.affinity': [['none', 'none — o rdzeniach decyduje system'], ['pcores', 'pcores — jeden wątek na rdzeń P']],
+  'parallel.priority': [['normal', 'normal — zwykły'], ['high', 'high — wysoki (pomiary)']],
+  'mpi.exchange': [['always', 'always — warstwy brzegowe co krok'], ['changed', 'changed — tylko zmienione warstwy']],
 };
 
 // Grupy formularza (kolejność i podpisy jak w configu). keys — ścieżki z kropkami.
@@ -37,8 +39,11 @@ export const GROUPS = [
   { id: 'mc', title: 'Monte Carlo (krystalizacja, model Pottsa)', keys: ['mc.enabled', 'mc.domain', 'mc.Q', 'mc.mcs', 'mc.J',
     'mc.kT', 'mc.mobilityFromCooling', 'mc.mobilityMin', 'mc.statsEvery', 'mc.snapshotsEvery', 'mc.update'] },
   { id: 'output', title: 'Wyjście', keys: ['output.format', 'output.snapshotsEvery'] },
-  { id: 'parallel', title: 'Równoległość (OpenMP)', keys: ['parallel.threads', 'parallel.schedule', 'parallel.chunk', 'parallel.affinity'],
+  { id: 'parallel', title: 'Równoległość (OpenMP)', keys: ['parallel.threads', 'parallel.schedule', 'parallel.chunk', 'parallel.affinity',
+    'parallel.priority'],
     note: 'Wynik nie zależy od liczby wątków ani harmonogramu (poza mc.update: random i checkerboard to różne procesy losowe). Pomiary: rdzenie P, najwyżej 8 wątków.' },
+  { id: 'mpi', title: 'MPI (program engine_mpi)', keys: ['mpi.exchange'],
+    note: 'Dotyczy tylko wersji rozproszonej (mpiexec -n N engine_mpi); GUI uruchamia engine — wynik od tego pola nie zależy.' },
 ];
 
 // Opis pól: label, unit, hint, int (liczba całkowita), min, step.
@@ -87,6 +92,8 @@ const SCHEMA = {
   'parallel.schedule': { label: 'Harmonogram', hint: 'podział warstw (pasów z) między wątki; lawa (front): static z porcją 1, pełny przebieg: guided' },
   'parallel.chunk': { label: 'Porcja harmonogramu', unit: 'warstw', int: true, min: 0, hint: '0 = domyślna OpenMP (static: równe bloki, dynamic/guided: 1)' },
   'parallel.affinity': { label: 'Przypinanie wątków', hint: 'pcores — wątek i na i-tym rdzeniu wydajnym (P), bez drugiego wątku SMT' },
+  'parallel.priority': { label: 'Priorytet procesu', hint: 'high — silnik sam podnosi priorytet (pomiary wielowątkowe i MPI; jak --high-priority); GUI i tak uruchamia zadania wielowątkowe z wysokim priorytetem' },
+  'mpi.exchange': { label: 'Wymiana warstw brzegowych', hint: 'always — co krok CA / kolor MC; changed — warstwa tylko, gdy się zmieniła (mniej bajtów, ten sam wynik)' },
   'output.format': { label: 'Format mikrostruktury', hint: 'bin czyta się w GUI szybciej; txt — czytelny tekst x y z type flowId temp' },
   'output.snapshotsEvery': { label: 'Migawki co', unit: 'kroków', int: true, min: 0, hint: '0 = wyłączone; pliki snapshots/step_*.bin' },
 };

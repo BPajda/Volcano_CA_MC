@@ -20,6 +20,10 @@ zadania i pokazuje wyniki w 2D i 3D (także odtwarzanie erupcji krok po kroku).
   narzędzia (`numpy`, `matplotlib`). Przeglądarka z obsługą WebGL2.
 - Zależności C++ (nlohmann/json, doctest) i biblioteki frontendu (three.js, Chart.js, fonty) są w repozytorium —
   GUI działa bez internetu.
+- **Opcjonalnie MPI** (wersja rozproszona `engine_mpi`): **Windows** — Microsoft MPI v10.1.3, **oba** pliki ze strony
+  Microsoft: `msmpisetup.exe` (środowisko uruchomieniowe, `mpiexec`) i `msmpisdk.msi` (nagłówki i `msmpi.lib`); po
+  instalacji otwórz nowy terminal (zmienne `MSMPI_INC`, `MSMPI_LIB64`). **Linux** — OpenMPI:
+  `sudo apt install openmpi-bin libopenmpi-dev`. Bez MPI buduje się wszystko poza `engine_mpi`.
 
 ## Budowanie
 
@@ -41,6 +45,10 @@ cmake --build --preset gcc-release -j
 
 Program: `build-gcc-release/bin/engine`.
 
+Gdy CMake znajdzie MPI (opcja `VOLCANO_MPI`, domyślnie włączona; konfiguracja wypisuje `Found MPI_CXX`), powstaje też
+program **`engine_mpi`** (`build\Release\engine_mpi.exe`, `build-gcc-release/bin/engine_mpi`) i jego testy pod
+`mpiexec`. Build bez MPI: `cmake --preset msvc-release -DVOLCANO_MPI=OFF`.
+
 ## Uruchomienie
 
 Silnik na przykładowym configu (wyniki w `results/test_2d/`: `ca_result.txt`/`.bin`, `times.json`, `stats.json`):
@@ -53,6 +61,20 @@ Silnik na przykładowym configu (wyniki w `results/test_2d/`: `ca_result.txt`/`.
 
 (Linux: `build-gcc-release/bin/engine --config configs/test_2d.json --out results/test_2d`.) Gotowe konfiguracje
 są w `configs/` — m.in. `etna_real.json` i `wezuwiusz_real.json` (prawdziwy teren), `mc_full_2d.json` (samo MC).
+
+Wersja rozproszona (MPI) — przestrzeń dzielona na pasy warstw między procesy, wynik bitowo ten sam co `engine`
+(Monte Carlo przy więcej niż 1 procesie tylko w trybie szachownicy):
+
+```
+mpiexec -n 4 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi4
+mpiexec -n 3 .\build\Release\engine_mpi.exe --config configs\lava_mc_2d.json --out results\lava_mc_2d_mpi3 --set mc.update=checkerboard
+mpiexec -n 2 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi2x4 --threads 4 --high-priority
+```
+
+(Linux: `mpiexec -n 4 build-gcc-release/bin/engine_mpi --config configs/test_3d.json --out results/test_3d_mpi4`;
+jako `root` OpenMPI wymaga `--allow-run-as-root`.) `times.json` ma wtedy sekcję `mpi` (czas komunikacji i obliczeń
+każdego procesu, bajty wymiany warstw brzegowych); `--set mpi.exchange=changed` wysyła tylko zmienione warstwy.
+Pomiar skalowania: `python bench/scaling_mpi.py --list`.
 
 GUI (http://127.0.0.1:8000, otwiera przeglądarkę):
 
@@ -72,10 +94,11 @@ python -m pytest gui/tests                   # wymaga zbudowanego silnika
 ## Struktura katalogów
 
 ```
-engine/      silnik C++17: src/ (core, terrain, ca, mc, io, app), tests/ (doctest), third_party/
+engine/      silnik C++17: src/ (core, terrain, ca, mc, io, app, parallel — OpenMP i pasy, mpi — engine_mpi),
+             tests/ (doctest; mpi/ — testy pod mpiexec), third_party/
 gui/         GUI: backend Python (FastAPI, tylko 127.0.0.1), frontend HTML/JS (static/), testy pytest (tests/)
 tools/       podgląd wyników (PNG), seria bez GUI, mapy wysokości, prawdziwy teren, eksport VTK
-bench/       skrypty pomiarów profilu, mikrobenchmark, dane pomiarowe cytowane w raporcie (results/)
+bench/       skrypty pomiarów (profil, testy A/B, skalowanie OpenMP i MPI), mikrobenchmarki, dane cytowane w raporcie (results/)
 configs/     przykładowe konfiguracje JSON i mapy wysokości (heightmaps/)
 raport.pdf   raport techniczny
 ```

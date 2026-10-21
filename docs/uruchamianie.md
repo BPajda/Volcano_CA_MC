@@ -18,6 +18,8 @@ i plików wynikowych: punkt 10.
 | VS Code (opcjonalnie) | code.visualstudio.com | rozszerzenia: **C/C++**, **CMake Tools**, **Python** | — |
 | WSL + Ubuntu (opcjonalnie, GCC i valgrind) | PowerShell jako administrator: `wsl --install -d Ubuntu-22.04`, restart | w Ubuntu: `sudo apt update && sudo apt install -y build-essential cmake valgrind` | `wsl -l -v` (Ubuntu, wersja 2); w Ubuntu `g++ --version` |
 | ParaView (opcjonalnie, pliki VTK) | paraview.org/download | domyślne | otwiera pliki `.vti` |
+| MS-MPI 10.1 (opcjonalnie, wersja MPI — etap 10) | strona Microsoft „Microsoft MPI v10.1.3” — **oba pliki**: `msmpisetup.exe` (`mpiexec`) i `msmpisdk.msi` (nagłówki, `msmpi.lib`) | domyślne; potem zamknij i otwórz terminal / VS Code (nowe zmienne `MSMPI_*`) | `mpiexec -help`; `echo %MSMPI_INC%` pokazuje ścieżkę |
+| OpenMPI w WSL (opcjonalnie, etap 10) | w Ubuntu: `sudo apt install -y openmpi-bin libopenmpi-dev` | — | w Ubuntu `mpicxx --version`, `mpirun --version` |
 
 Uwagi:
 - Jeśli CMake instalowało tylko Visual Studio (bez osobnego instalatora), `cmake` nie jest w `PATH` — wtedy
@@ -89,6 +91,11 @@ cmake --build build-noomp --config Release --parallel 4
 To ten sam program w jednym wątku: `--threads` wypisuje wtedy ostrzeżenie „program zbudowano bez OpenMP”. Cel
 `omp_overhead` (mikrotest narzutu OpenMP, punkt 7.2) buduje się razem z silnikiem, gdy OpenMP jest włączone.
 
+**MPI (etap 10):** program `engine_mpi` (wersja rozproszona, punkt 4.2) i jego testy budują się razem z silnikiem,
+gdy CMake znajdzie MPI (opcja `VOLCANO_MPI=ON`, domyślnie): na Windows potrzebne jest **SDK** MS-MPI (konfiguracja
+wypisuje `Found MPI_CXX: …/msmpi.lib`), w WSL — `libopenmpi-dev`. Bez MPI konfiguracja wypisuje komunikat i buduje
+resztę bez zmian; build z wyłączonym MPI: `-DVOLCANO_MPI=OFF` (program `engine` jest ten sam).
+
 ### 2.4 GCC w WSL
 
 Z **PowerShell**, `cmd` albo Git Bash — **z katalogu projektu** (`wsl` startuje w bieżącym katalogu Windows,
@@ -106,8 +113,8 @@ Program: `build-gcc-release/bin/engine`; Debug: preset `gcc-debug`.
 ## 3. Testy
 
 ```powershell
-ctest --preset msvc-release            # MSVC Release (≈ 10 s)
-ctest --preset msvc-debug              # MSVC Debug (≈ 35 s)
+ctest --preset msvc-release            # MSVC Release (≈ 30 s; z testami MPI ≈ 55 s)
+ctest --preset msvc-debug              # MSVC Debug (≈ 3 min; z testami MPI ≈ 5 min)
 python -m pip install --user -r gui\requirements-dev.txt   # raz: pytest, httpx, playwright + pakiety GUI
 python -m pytest gui\tests             # backend GUI z prawdziwym silnikiem (≈ 12 s)
 ```
@@ -115,17 +122,21 @@ python -m pytest gui\tests             # backend GUI z prawdziwym silnikiem (≈
 GCC: `ctest --preset gcc-release` / `gcc-debug` (w WSL, jak w 2.4). Poprawny wynik:
 
 ```
-100% tests passed, 0 tests failed out of 12
+100% tests passed, 0 tests failed out of 21
 ...
 102 passed in 11.44s
 ```
 
-`ctest` to 12 testów: `unit_tests` (119 przypadków doctest, ~315 tys. asercji — sąsiedztwa, brzegi, zgodność
+`ctest` to 12 testów: `unit_tests` (123 przypadki doctest, ~318 tys. asercji — sąsiedztwa, brzegi, zgodność
 vector/macierz, reguły lawy, MC, config, zapis/odczyt, `--batch`, etap 6: kratery z listy `vents.positions`,
 odtwarzanie erupcji = stan automatu w każdym kroku, migawki CA i MC; etap 8: automat frontalny = pełny przebieg;
 etap 9: wyniki CA i szachownicy MC bitowo te same dla 1, 2, 3, 4 i 8 wątków i każdego harmonogramu, kolory
-szachownicy) i 11 testów dymnych programu (pomoc,
-symulacja 2D, błędny config, MC, `--mc-from`, `--print-defaults`, `--validate`, `--progress`, `--batch`).
+szachownicy; etap 10: podział na pasy i plan warstw brzegowych) i 11 testów dymnych programu (pomoc,
+symulacja 2D, błędny config, MC, `--mc-from`, `--print-defaults`, `--validate`, `--progress`, `--batch`), a gdy jest
+MPI — 9 testów wersji rozproszonej: `mpi_np1`, `np2`, `np3`, `np4`, `np5`, `np8` (testy `engine_mpi_tests` pod
+`mpiexec -n N`: wynik bitowo ten sam co `engine`; MSVC Release ≈ 3–5 s każdy, Debug ≈ 20 s) i 3 dymne `mpi_cli_*`
+(lawa + MC na 3 procesach, `--mc-from`, odrzucenie `mc.update = random` przy 2 procesach). Bez MPI wynik to
+`out of 12`.
 `pytest` (102 testy) obejmuje też `tools\fetch_dem.py` (bez internetu — sztuczne kafelki) i odtwarzanie erupcji
 (migawki silnika, endpointy, ta sama reguła w JS przez `node`, jeśli jest zainstalowany).
 Jeśli `pytest` pisze „skipped” — silnik nie jest zbudowany (testy z silnikiem są wtedy pomijane).
@@ -231,6 +242,31 @@ Kratery w zadanych miejscach w dowolnym configu: `"vents": {"placement": "positi
 ```
 
 Opis metody, wyników i ograniczeń: **[etap-6-prawdziwe-wulkany.md](etap-6-prawdziwe-wulkany.md)**.
+
+### 4.2 Wersja rozproszona — `engine_mpi` (MPI, etap 10)
+
+Ta sama symulacja i te same pliki wyników co `engine`, ale przestrzeń jest podzielona na pasy warstw między procesy
+MPI (wynik bitowo ten sam przy każdej liczbie procesów). MC przy więcej niż 1 procesie tylko szachownicą
+(`mc.update = checkerboard` — wariant naiwny jest sekwencyjny; program odmawia z komunikatem).
+
+```powershell
+mpiexec -n 4 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi4
+mpiexec -n 3 .\build\Release\engine_mpi.exe --config configs\lava_mc_2d.json --out results\lava_mc_2d_mpi3 --set mc.update=checkerboard
+mpiexec -n 8 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi8 --high-priority --set parallel.affinity=pcores
+mpiexec -n 2 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi2x4 --threads 4 --high-priority --set parallel.affinity=pcores
+mpiexec -n 3 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi3c --set mpi.exchange=changed
+wsl -e mpiexec --allow-run-as-root --oversubscribe --bind-to none -n 3 build-gcc-release/bin/engine_mpi --config configs/test_3d.json --out results/test_3d_mpi3_gcc
+```
+
+- Na końcu proces 0 wypisuje podsumowanie z liczbą komunikatów i bajtów wymiany; `times.json` ma sekcję `mpi`
+  (podział warstw, czasy komunikacji i obliczeń każdego procesu, bajty, procesory i priorytet procesów).
+- **Do pomiarów** `--high-priority` (`mpiexec` uruchamia procesy z priorytetem normalnym) i `parallel.affinity = pcores`
+  — przypina sam program: proces r z T wątkami na rdzeniach P nr r·T … r·T + T − 1 (procesory logiczne 2, 4, …, 14,
+  0). `mpiexec -affinity` MS-MPI nie rozróżnia rdzeni P i E — nie używać. Łącznie najwyżej 8 procesów × wątków.
+- WSL: OpenMPI w maszynie wirtualnej pracuje jako `root` (`--allow-run-as-root`) i widzi 4 rdzenie (8 procesów —
+  `--oversubscribe`); `--bind-to none`, bo przypina program. Ścieżki w WSL — względem katalogu projektu (z Git Bash przed
+  `wsl` ustaw `MSYS_NO_PATHCONV=1`).
+- Opis: **[etap-10-mpi.md](etap-10-mpi.md)**.
 
 ## 5. GUI
 
@@ -431,6 +467,33 @@ python bench\mc_validation.py --from-csv bench\results\omp\mc_walidacja.csv   # 
   dla każdego harmonogramu; `--pin` przypina wątki jak `pcores`, `--reps N`.
 - Opis metodyki i wyników: `docs\etap-9-openmp.md`.
 
+### 7.3 Skalowanie MPI (etap 10)
+
+```powershell
+python bench\scaling_mpi.py --list                                       # przypadki (te same co w etapie 9, bez MC random)
+python bench\scaling_mpi.py --cases lava_etna_real --variants m1,m3 --reps 1 --min-reps 1 --name skalowanie_mpi_test --out results\skalowanie_mpi_test
+python bench\scaling_mpi.py --wsl --cases lava_etna_real --variants m1,m3 --reps 1 --min-reps 1 --name skalowanie_mpi_gcc_test --out results\skalowanie_mpi_test
+python bench\scaling_mpi.py --from-raw results\skalowanie_mpi_test\skalowanie_mpi_test_raw.csv --name skalowanie_mpi_razem --out results\skalowanie_mpi_test
+python bench\compare_results.py --set mc.update=checkerboard --bin e=build\Release\engine.exe --bin m3=build\Release\engine_mpi.exe --launch "m3=mpiexec -n 3" --configs test_3d,lava_mc_2d --name zgodnosc_mpi_test --out results\zgodnosc_mpi_test
+python bench\plot_etap10.py                                             # docs\img\etap10_*.png z bench\results\mpi\ (i OpenMP z bench\results\omp\)
+```
+
+- Warianty (`--variants`, pierwszy = odniesienie zgodności): `m<p>` — p procesów po 1 wątku, `h<p>x<t>` — p procesów
+  po t wątków (tryb hybrydowy), `c<p>` — p procesów z `mpi.exchange = changed`, `o<t>` — `engine` z t wątkami OpenMP
+  (porównanie przy tej samej liczbie rdzeni). Każdy przebieg z `--high-priority` i `parallel.affinity = pcores`,
+  warianty naprzemiennie, ≥ 5 powtórzeń, zgodność bitowa każdego przebiegu z pierwszym wariantem; tabela: S(p), E(p),
+  udział komunikacji, nierównomierność pasów, bajty na wymianę, Amdahl.
+- Domyślny folder to `bench\results\mpi\` — tam są wyniki etapu 10 (`skalowanie_mpi_msvc*`, `skalowanie_mpi_gcc*`),
+  więc próby kieruj do `results\`. Plan pełnego pomiaru (6 części ≤ 6 min, ~30 min razem):
+  `bench\results\mpi\PLAN_POMIARU.md`. Do pomiaru — zamknięte inne programy: przy 8 procesach na 8 rdzeniach P każdy
+  program w tle opóźnia cały krok (pasy czekają na najwolniejszy).
+- `plot_etap10.py` rysuje schemat podziału, S(p) / E(p), Amdahla, MPI vs OpenMP, tryb hybrydowy, udział komunikacji,
+  czas obliczeń procesów i `changed` vs `always` (`--msvc`, `--gcc` — nazwy pomiarów, domyślnie `skalowanie_mpi_msvc`,
+  `skalowanie_mpi_gcc`). Opis wyników: `docs\etap-10-mpi.md`, punkt 9.
+- `compare_results.py --launch "<etykieta>=<polecenie>"` uruchamia program przez `mpiexec`; `wsl:` przed ścieżką — build
+  GCC w WSL (np. `--bin m3g=wsl:build-gcc-release/bin/engine_mpi --launch "m3g=mpiexec --allow-run-as-root
+  --oversubscribe --bind-to none -n 3"`).
+
 ## 8. Szybki przegląd możliwości (demo, ≈ 6–8 min)
 
 **Przygotowanie:** zbudowany silnik (2.3), `python -m gui` uruchomione, policzone:
@@ -511,6 +574,7 @@ przeglądarka z GUI, terminal w katalogu projektu, `docs\etap-3-profilowanie.md`
 | `--benchmark [--repeats N] [--quick]` | porównanie vector vs macierz (patrz niżej) |
 | `--timing-detail` | dodatkowo czasy faz wewnątrz CA (ramka, D(n), reguły, zamiana buforów) i MC (rozrzut czasu MCS, składniki statystyk) — sekcja `detail` w `times.json`; domyślnie wyłączone, żeby nie zaburzać pomiaru |
 | `--progress` | (dla GUI) co ~0,5 s linia na stdout: `PROGRESS ca <krok>/<maxSteps> active=<komórki lawy>`, `PROGRESS mc <MCS>/<mcs>`, `PROGRESS save 0/1`; narzut ≤ ~1%, wynik bez zmian |
+| `--high-priority` | proces z wysokim priorytetem (skrót `--set parallel.priority=high`; Windows `HIGH_PRIORITY_CLASS`, Linux nice −5) — do pomiarów wieloprocesowych, bo `mpiexec` uruchamia procesy z priorytetem normalnym |
 | `--validate` | (dla GUI) tylko walidacja configu (`--config`, `--set`, `--mc-from`), bez symulacji: JSON `{"ok", "errors", "warnings"}` na stdout, kod 0 lub 1 |
 | `--print-defaults` | (dla GUI) pełny domyślny config JSON — wszystkie dozwolone klucze |
 
@@ -571,7 +635,9 @@ są pomijane (komentarze, np. `"_opis"`), dozwolone są też komentarze `//`.
 | `mc.update` | `random` (domyślnie) — wariant naiwny: N prób w losowych komórkach (sekwencyjny); `checkerboard` — szachownica: kolory bez sąsiadów tego samego koloru, w MCS każda komórka raz, liczona w wątkach (etap 9; wynik ten sam dla każdej liczby wątków, statystycznie równoważny `random`) |
 | `parallel.threads` | liczba wątków OpenMP (domyślnie 1 — kod jak przed etapem 9; 0 = `omp_get_max_threads()`); `--threads N` nadpisuje |
 | `parallel.schedule`, `parallel.chunk` | harmonogram pętli po warstwach: `static` / `dynamic` / `guided`; porcja (0 = domyślna OpenMP). Najlepsze wg pomiarów: front lawy `static` z porcją 1, pełny przebieg `dynamic` / `guided`, classic 2D `static` |
-| `parallel.affinity` | `none` (domyślnie — o rdzeniach decyduje system) / `pcores` (jeden wątek na rdzeń fizyczny wydajny P; do pomiarów) |
+| `parallel.affinity` | `none` (domyślnie — o rdzeniach decyduje system) / `pcores` (jeden wątek na rdzeń fizyczny wydajny P; do pomiarów; w `engine_mpi` proces r z T wątkami na rdzeniach P nr r·T … r·T + T − 1) |
+| `parallel.priority` | `normal` (domyślnie) / `high` — proces sam podnosi priorytet (`--high-priority`) |
+| `mpi.exchange` | (`engine_mpi`, etap 10) `always` (domyślnie) — warstwy brzegowe pasów wymieniane co krok CA / kolor MC; `changed` — warstwa wysyłana tylko, gdy się zmieniła (wynik ten sam, mniej bajtów); `engine` to pole pomija |
 | `output.format` | `txt`, `bin`, `both` lub `none`; `snapshotsEvery` — migawki `snapshots/step_<k>.bin` (stan 0, co N kroków, ostatni; czas poza `caSim`) |
 
 Gotowe konfiguracje (`configs/`):
@@ -605,7 +671,7 @@ Gotowe konfiguracje (`configs/`):
 | `mc_result.txt` | linia 1: `nx ny nz`, linia 2: `x y z crystal`, potem wszystkie komórki (`crystal` = orientacja 1..Q, 0 poza domeną MC) |
 | `mc_result.bin` | `"VMC1"`, `int32 nx, ny, nz`, `int32 crystal[N]` (przy `output.format` = `bin`/`both`) |
 | `mc_stats.csv` | `mcs,grains,meanGrainSize,energy,acceptRate` co `mc.statsEvery` MCS |
-| `times.json` | czasy [ms]: `readConfig, allocate, terrain, vents, caSim, caStats, save` (+ `mcInit, mcSim, mcStats, mcSave`; przy `--mc-from` `readInput`), `total` + `steps, cells, grid, neighborhood, boundary, mode, cpu, compiler, build` (+ `mcs, domainCells, Q, mcDomain, mcMobility`). Etap 9: `threads, schedule, chunk, affinity`, `cpus` (procesory logiczne kolejnych wątków przy `affinity = pcores`), `openmp` (wersja; 0 = build bez OpenMP); z `--thread-stats` — `threadStats` (czas pracy każdego wątku w fazach kroku, `imbalance` = Σ maks / Σ średnia). W trybie `mc.domain = full` sekcji CA nie ma (`mode = mc_full`). Profil (etap 3): `files` — rozmiar [B] i czas zapisu [ms] każdego pliku; `memory` — pamięć procesu na starcie, na końcu i szczytowa (`peakRssBytes`: Windows `PeakWorkingSetSize`, Linux `ru_maxrss`; `peakPrivateBytes`: Windows `PeakPagefileUsage`) oraz `model` — teoretyczne zapotrzebowanie z tablic × `sizeof` (szczyt, bajty na komórkę, skład szczytu); `detail` — tylko z `--timing-detail` |
+| `times.json` | czasy [ms]: `readConfig, allocate, terrain, vents, caSim, caStats, save` (+ `mcInit, mcSim, mcStats, mcSave`; przy `--mc-from` `readInput`), `total` + `steps, cells, grid, neighborhood, boundary, mode, cpu, compiler, build` (+ `mcs, domainCells, Q, mcDomain, mcMobility`). Etap 9: `threads, schedule, chunk, affinity`, `cpus` (procesory logiczne kolejnych wątków przy `affinity = pcores`), `openmp` (wersja; 0 = build bez OpenMP); z `--thread-stats` — `threadStats` (czas pracy każdego wątku w fazach kroku, `imbalance` = Σ maks / Σ średnia). W trybie `mc.domain = full` sekcji CA nie ma (`mode = mc_full`). `engine_mpi` (etap 10): czasy procesu 0 i sekcja `mpi` — procesy, wątki na proces, biblioteka, `exchange`, oś i podział warstw (`split`), `initMs` (start MPI, wliczony w `total`), `bcast` (bajty i czas rozsyłania configu i terenu), `ca` / `mc` (czas fazy, komunikacji, wymiany warstw, `MPI_Allreduce` i obliczeń — min / średnia / maks i `perRank`; wymiany, komunikaty, bajty, warstwy pominięte; MC: statystyki ziaren, zebranie mapy, etykiety na procesie 0), `gather`, `cpus`, `priority`, `peakRssBytes`. Profil (etap 3): `files` — rozmiar [B] i czas zapisu [ms] każdego pliku; `memory` — pamięć procesu na starcie, na końcu i szczytowa (`peakRssBytes`: Windows `PeakWorkingSetSize`, Linux `ru_maxrss`; `peakPrivateBytes`: Windows `PeakPagefileUsage`) oraz `model` — teoretyczne zapotrzebowanie z tablic × `sizeof` (szczyt, bajty na komórkę, skład szczytu); `detail` — tylko z `--timing-detail` |
 | `stats.json` | objętość lawy na krater, zasięg (odległość pozioma od krateru), liczba komórek LAVA i zmienionych w każdym kroku; sekcja `mc`: ziarna i średnia wielkość na początku/końcu, energia, efekt mobilności (`byMobility`) |
 
 Typy komórek: 0 powietrze, 1 skała, 2 lawa (w `classic`: ziarno), 3 bazalt.

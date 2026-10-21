@@ -87,6 +87,15 @@ void setupParallel(const Config& c, TimingReport& timing, std::vector<std::strin
     timing.setInfo("chunk", par.chunk);
     timing.setInfo("affinity", nameOf(c.parallel.affinity));
     timing.setInfo("openmp", openmpVersion());
+    // Etap 10: parallel.priority = "high" (--high-priority) — wysoki priorytet procesu ustawia sam silnik.
+    if (c.highPriority()) {
+        std::string method;
+        const bool raised = CpuAffinity::raisePriority(method);
+        timing.setInfo("priority", raised ? "high" : "normal");
+        if (!raised) {
+            warnings.push_back("nie udało się podnieść priorytetu procesu (" + method + ")");
+        }
+    }
     if (par.threads > 1) {
         omp_set_num_threads(par.threads);
     }

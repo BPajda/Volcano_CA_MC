@@ -9,7 +9,7 @@ Opis metody i wyników: [`../docs/etap-3-profilowanie.md`](../docs/etap-3-profil
 | `run_profile.py` | macierz pomiarów: generuje configi, uruchamia `engine` (MSVC, opcjonalnie GCC przez WSL), 3 powtórzenia, przypięcie do rdzenia P, zbiera `times.json` -> `results/profile_<data>.csv` (+ `_raw.csv`, `_meta.json`, `_benchmark.csv`); `--cases` — wybrane warianty |
 | `plot_profile.py` | wykresy `../docs/img/profile_*.png` z najnowszego (lub wskazanego `--csv`) zestawu |
 | `ab.py` | test A/B dwóch lub więcej programów `engine` na stałym zestawie 13 przypadków: naprzemiennie, przypięte, mediana [min–max], zgodność bitowa wyników po każdym powtórzeniu -> `results/ab/<nazwa>.md/.csv/_raw.csv`; `--wsl` (GCC), `--from-raw` (tabela z pomiaru w częściach) |
-| `compare_results.py` | zgodność bitowa wszystkich `configs/*.json` liczonych kilkoma programami (MSVC i GCC przez WSL) -> `results/ab/zgodnosc_*.md` |
+| `compare_results.py` | zgodność bitowa wszystkich `configs/*.json` liczonych kilkoma programami (MSVC i GCC przez WSL) -> `results/ab/zgodnosc_*.md`; `--launch "<etykieta>=mpiexec -n 3"` — program pod `mpiexec` (etap 10) |
 | `plot_etap8.py` | wykresy `../docs/img/etap8_*.png`: przed/po (profil `_przed2`/`_po`), przyspieszenie każdego kroku, automat frontalny vs pełny przebieg |
 | `baseline/` | programy odniesienia do testów A/B (`engine_przed_*`, `engine_kN_*`) — lokalne, w `.gitignore` |
 | `profile_gcc.sh` | profilowanie GCC w WSL: gprof (`gcc-profile`, `gcc-profile-noinline`) i callgrind (`gcc-o2`, `gcc-o2-noinline`) -> `profiles/` (`SKIP_GPROF=1` — sam callgrind; `ETAP8=1` — krótki profil gprof po etapie 8 -> `profiles/etap8_gprof_*`) |
@@ -17,10 +17,12 @@ Opis metody i wyników: [`../docs/etap-3-profilowanie.md`](../docs/etap-3-profil
 | `micro/mc_kernels.cpp` | mikrobenchmark składników próby MC i indeksowania (cel CMake `mc_kernels`, te same flagi co silnik) — wyjaśnienie różnicy GCC vs MSVC |
 | `scaling.py` | skalowanie OpenMP (etap 9): przypadki × p ∈ {1, 2, 4, 6, 8} wątków naprzemiennie, rdzenie P (`pcores`), wysoki priorytet, ≥ 5 powtórzeń, zgodność bitowa z p = 1 po każdym powtórzeniu; S(p), E(p), część szeregowa f z prawa Amdahla -> `results/omp/<nazwa>.md/.csv/_raw.csv/_threads.json`; `--schedules` (6 harmonogramów przy 8 wątkach), `--wsl` (GCC), `--from-raw` |
 | `mc_validation.py` | walidacja statystyczna szachownicy MC względem wariantu naiwnego (12 ziaren generatora, liczba ziaren, wielkość, wykładnik wzrostu, t Welcha) -> `results/omp/mc_walidacja.*`, `../docs/img/etap9_mc_walidacja.png`; `--from-csv` — bez pomiaru |
+| `scaling_mpi.py` | skalowanie MPI (etap 10): przypadki z `scaling.py` × warianty `m<p>` (procesy), `h<p>x<t>` (procesy × wątki), `c<p>` (`mpi.exchange = changed`), `o<t>` (OpenMP) naprzemiennie, `--high-priority`, rdzenie P, ≥ 5 powtórzeń, zgodność bitowa z pierwszym wariantem; S(p), E(p), Amdahl, udział komunikacji, nierównomierność pasów, bajty na wymianę -> `results/mpi/<nazwa>.md/.csv/_raw.csv`; `--wsl` (GCC/OpenMPI), `--from-raw`; plan pomiaru `results/mpi/PLAN_POMIARU.md` |
 | `plot_etap9.py` | wykresy `../docs/img/etap9_*.png`: schemat podziału, S(p) i E(p), Amdahl, harmonogramy, praca wątków, części szeregowe, MSVC vs GCC |
+| `plot_etap10.py` | wykresy `../docs/img/etap10_*.png` (etap 10, MPI): schemat pasów z warstwami brzegowymi, S(p) i E(p), Amdahl, MPI vs OpenMP, tryb hybrydowy, udział komunikacji, czas obliczeń procesów, `changed` vs `always` |
 | `micro/omp_overhead.cpp` | mikrotest narzutu OpenMP (cel CMake `omp_overhead`): region, bariera, krok „3 fazy × 64 warstwy” dla każdego harmonogramu, trwałość wątków puli; `--pin` |
 | `ab_progress.py` | test A/B narzutu opcji `--progress` (stary program, nowy bez flagi, nowy z flagą; przemiennie, przypięte) |
-| `results/` | dane pomiarowe (CSV, meta); **`profile_2026-10-09*` = punkt odniesienia etapu 3 — nie nadpisywać**; etap 8: `profile_2026-10-17_przed*`, `_po*`, `ab/` (testy A/B, zgodność, dziennik `POSTEP.md`); etap 9: `omp/` (skalowanie, harmonogramy, narzut przy 1 wątku, zgodność, walidacja szachownicy, dziennik `POSTEP.md`) |
+| `results/` | dane pomiarowe (CSV, meta); **`profile_2026-10-09*` = punkt odniesienia etapu 3 — nie nadpisywać**; etap 8: `profile_2026-10-17_przed*`, `_po*`, `ab/` (testy A/B, zgodność, dziennik `POSTEP.md`); etap 9: `omp/` (skalowanie, harmonogramy, narzut przy 1 wątku, zgodność, walidacja szachownicy, dziennik `POSTEP.md`); etap 10: `mpi/` (skalowanie `skalowanie_mpi_{msvc,gcc}*`, zgodność MPI, narzut `engine`, dobór przypadków, plan pomiaru, dziennik `POSTEP.md`) |
 | `profiles/` | raporty gprof (profile płaskie) i callgrind (tekst), profil MSVC (xperf), mikrobenchmark, analiza GCC vs MSVC (`gcc_vs_msvc_mc.txt`, `asm/`), rdzeń P vs E; pełne grafy wywołań gprof odtwarza `profile_gcc.sh` |
 
 Szybki start (z katalogu projektu):
@@ -41,5 +43,5 @@ jako zaszumione. Pomiar czasu faz wewnątrz CA/MC tylko z `--timing-detail` — 
 kod generowany przez MSVC (krok lawy +10%), dlatego krok z pomiarem faz ma osobną ścieżkę (`LavaCA::stepTimed`).
 
 Pomiary wielowątkowe (etap 9): tylko rdzenie P, jeden wątek na rdzeń fizyczny, najwyżej 8 wątków, wysoki priorytet
-procesu; pomiar dłuższy niż ~10 min w częściach (`--cases`) scalanych `--from-raw`. Planowany dalszy rozwój: pomiar
-przyspieszenia wersji MPI (1–8 procesów) w ten sam sposób.
+procesu; pomiar dłuższy niż ~10 min w częściach (`--cases`) scalanych `--from-raw`. Pomiary MPI (etap 10,
+`scaling_mpi.py`) — tak samo: 1–8 procesów (× wątki ≤ 8), każdy na swoim rdzeniu P, `--high-priority`.
