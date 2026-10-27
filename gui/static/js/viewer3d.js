@@ -236,7 +236,7 @@ export class Viewer3D {
     this.legend = legendFor(this.field, this.meta, present);
     this.el.status.textContent = `Ściany zewnętrzne bloku ${nx}×${ny}×${nz} (proporcje jak nx:ny:nz)`
       + (top === 'surface' ? ' · górna ściana: rzut z góry (najwyższa niepusta komórka kolumny)' : ' · górna ściana: warstwa z = nz−1')
-      + ' · lewy przycisk — obrót, prawy — przesuwanie, kółko — powiększenie';
+      + ' · lewy przycisk: obrót, prawy: przesuwanie, kółko: powiększenie';
     return meshes;
   }
 
@@ -555,15 +555,15 @@ export class Viewer3D {
     const sampled = d.step > 1 ? ` · kolumny co ${d.step} (${d.n.toLocaleString('pl-PL')} z ${d.total.toLocaleString('pl-PL')} komórek lawy)` : '';
     const vox = rv.kind === 'voxels' && rv.step > 1 ? ` · woksele co ${rv.step}.` : '';
     const names = { surface: 'powierzchnia (najwyższa niepusta komórka kolumny w tym kroku)', voxels: 'woksele lawy i bazaltu', faces: 'ściany zewnętrzne' };
-    setText(this.el.status, `Odtwarzanie erupcji — ${names[rv.kind]} · ${nx}×${ny}×${nz}${sampled}${vox}`
-      + (info.ventsExact ? '' : ' · kratery nieznane (stats.json) — komórki z arrivalStep = 0 już w kroku 0'));
+    setText(this.el.status, `Odtwarzanie erupcji: ${names[rv.kind]} · ${nx}×${ny}×${nz}${sampled}${vox}`
+      + (info.ventsExact ? '' : ' · kratery nieznane (stats.json): komórki z arrivalStep = 0 już w kroku 0'));
   }
 
   mcStatus() {
     const [nx, ny, nz] = this.meta.dims;
-    this.el.status.textContent = `Odtwarzanie krystalizacji MC — migawka MCS ${this.mcsParam} · ${nx}×${ny}×${nz}`
+    this.el.status.textContent = `Odtwarzanie krystalizacji MC: migawka MCS ${this.mcsParam} · ${nx}×${ny}×${nz}`
       + (this.mode === 'voxels' ? ' · woksele pokazują stan końcowy (migawki tylko dla ścian i powierzchni)' : '');
-    if (this.legend) this.legend.title = `Kryształ (MC) — MCS ${this.mcsParam}`;
+    if (this.legend) this.legend.title = `Kryształ (MC), MCS ${this.mcsParam}`;
     showLegend(this.el.legend, this.legend);
   }
 
@@ -586,7 +586,7 @@ export class Viewer3D {
       g.fillStyle = themeColors().panel; g.fillRect(0, 0, r.width + legendW, r.height + head);
       g.fillStyle = skyGradient(g, 0, head, r.width, r.height); g.fillRect(0, head, r.width, r.height);
       const label = bar.source === 'ca' ? `krok ${k} / ${bar.info.steps}` : `MCS ${bar.mcs[k]}`;
-      frameTitle(g, `${this.meta.name}: 3D — ${names[this.mode]} — ${label}`);
+      frameTitle(g, `${this.meta.name}: 3D, ${names[this.mode]}, ${label}`);
       g.drawImage(src, 0, head, r.width, r.height);
       drawLegend(g, this.legend, r.width + 16, head + 8, legendW - 28);
     };
@@ -655,7 +655,7 @@ export class Viewer3D {
     g.fillStyle = th.ink; g.font = `600 14px ${th.font}`; g.textBaseline = 'top';
     const names = { faces: 'ściany zewnętrzne', surface: 'powierzchnia', voxels: 'woksele lawy' };
     const [nx, ny, nz] = this.meta.dims;
-    g.fillText(`${this.meta.name}: 3D — ${names[this.mode]} (${nx}×${ny}×${nz}), kolor: ${FIELD_LABELS[this.field]}`, 12, 10);
+    g.fillText(`${this.meta.name}: 3D, ${names[this.mode]} (${nx}×${ny}×${nz}), kolor: ${FIELD_LABELS[this.field]}`, 12, 10);
     g.drawImage(src, 0, head, r.width, r.height);
     drawLegend(g, this.legend, r.width + 16, head + 8, legendW - 28);
     download(out, `${this.meta.name}_3d_${this.mode}_${this.field}.png`);

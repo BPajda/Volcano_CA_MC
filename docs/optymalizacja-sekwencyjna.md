@@ -26,7 +26,7 @@ z tego, że lawa zajmuje ułamek siatki**: pełny przebieg sprawdzał w każdym 
 w kroku zmienić może się kilkaset. Dowodem poprawności jest bitowa zgodność w obu trybach (`ca.sweep = front`
 i `full`), a pełny przebieg zostaje w kodzie jako wersja referencyjna.
 
-![Czas przed i po optymalizacji, MSVC i GCC](img/etap8_przed_po.png)
+![Czas przed i po optymalizacji, MSVC i GCC](img/optymalizacja_przed_po.png)
 
 ## 1. Metodyka
 
@@ -101,7 +101,7 @@ grupy; miara główna: `caSim` (CA) i `mcSim` (MC), dla k5 i k7 miara, której d
 Wszystkie przebiegi A/B były bitowo zgodne z programem odniesienia. Pliki: `bench/results/ab/` (tabele `.md`, mediany
 `.csv`, surowe przebiegi `_raw.csv`), dziennik z tłem każdego pomiaru: `POSTEP.md`.
 
-![Przyspieszenie każdego kroku: czas po kroku / przed krokiem, każdy przypadek zestawu A/B](img/etap8_kroki.png)
+![Przyspieszenie każdego kroku: czas przed krokiem / po kroku, każdy przypadek zestawu A/B](img/optymalizacja_kroki.png)
 
 Na wykresie miarą jest `total` (cały przebieg), więc widać też, ile z zysku kroku zostaje w czasie całego programu
 (np. k5 skraca statystyki o połowę, ale w dużych MC dominuje `mcSim`).
@@ -117,7 +117,7 @@ energii (nie zależy od niej). Stała część kaskady `hashRand(seed, krok, …
 w próbie zostaje jedno ogniwo numeru próby. Decyzje stałe w czasie kroku (mobilność, sąsiedztwo losowe) wybiera szablon
 `sweepTrials<kMobility, kRandomNb>` raz przed pętlą.
 
-**Asembler** (`bench/profiles/asm/PottsMC_unlike_msvc_O2_etap8.asm`): w MSVC pętla po sąsiadach liczy przez
+**Asembler** (`bench/profiles/asm/PottsMC_unlike_msvc_O2.asm`): w MSVC pętla po sąsiadach liczy przez
 `setne`/`sete`, a jedynym skokiem jest powrót pętli; przed zmianą był tam skok `je` po porównaniu orientacji, trudny do
 przewidzenia (dokument „Profil aplikacji”, punkt 2.4). GCC: `cmp`/`sbb` + dwa `sete`, skok tylko na końcu pętli. Stąd zysk MSVC ×2–4, a GCC
 (który już wcześniej nie miał skoku) ×1,2–2,3, z jednego przejścia zamiast dwóch.
@@ -186,7 +186,7 @@ referencyjna: `ca.sweep = "full"` (config, `--set`, formularz GUI).
 | classic 100³, Moore | 318 | 88,5 | ×0,28 | 229 | 77,2 | ×0,34 |
 | classic 300³, VN | 9 690 | 1 946 | ×0,20 | 8 371 | 1 946 | ×0,23 |
 
-![Automat frontalny vs pełny przebieg](img/etap8_front_full.png)
+![Automat frontalny vs pełny przebieg](img/optymalizacja_front_full.png)
 
 Zysk zależy od tego, jaka część siatki jest „aktywna”: w lawie to ułamek procenta (stąd ×0,004), w classic front obejmuje
 wszystkie granice rosnących ziaren, które pod koniec wypełniają całą przestrzeń (×0,10–0,34; więcej dla Moore, bo suma
@@ -281,7 +281,7 @@ Szczyt pamięci procesu: classic 1000² 93 → 34 MB, 300³ 1024 → 755 MB, `et
 ## 5. Profil po zmianach: co dominuje teraz
 
 gprof, build `gcc-profile-noinline` (kluczowe funkcje bez wstawiania: podział czasu między funkcje, nie czasy),
-`ETAP8=1 bash bench/profile_gcc.sh` → `bench/profiles/etap8_gprof_*_flat.txt`; krótkie przypadki 20 przebiegów:
+`PO_OPTYMALIZACJI=1 bash bench/profile_gcc.sh` → `bench/profiles/po_optymalizacji_gprof_*_flat.txt`; krótkie przypadki 20 przebiegów:
 
 | Przypadek | Najdroższe funkcje (udział czasu własnego) |
 |---|---|
@@ -387,12 +387,12 @@ z lepszego układu gorącego kodu, który okazał się wrażliwy (punkty 3.4 i 3
 |---|---|
 | `bench/ab.py` | test A/B: naprzemiennie, przypięcie, mediana i rozrzut, zgodność bitowa po każdym powtórzeniu, `--from-raw` |
 | `bench/compare_results.py` | zgodność bitowa wszystkich configów kilku programów (MSVC i GCC przez WSL) |
-| `bench/plot_etap8.py` | wykresy `docs/img/etap8_*.png` |
+| `bench/plot_optymalizacja.py` | wykresy `docs/img/optymalizacja_*.png` |
 | `bench/run_profile.py` | nowa opcja `--cases` (profil skrócony), `etna_real` w grupie `lava` |
-| `bench/profile_gcc.sh` | tryb `ETAP8=1` (krótki profil gorących miejsc po zmianach) |
+| `bench/profile_gcc.sh` | tryb `PO_OPTYMALIZACJI=1` (krótki profil gorących miejsc po zmianach) |
 | `bench/results/ab/` | tabele i surowe przebiegi A/B (`ab_k*`), zgodność (`zgodnosc_k*`), dziennik `POSTEP.md` |
 | `bench/results/profile_2026-10-17_przed*`, `_przed2*`, `_po*` | profile przed (taktowanie dynamiczne, tło 17–20%), przed2 i po (te same warunki) |
-| `bench/profiles/etap8_gprof_*`, `asm/PottsMC_unlike_msvc_O2_etap8.asm` | profil po zmianach, asembler pętli MC po k1 |
+| `bench/profiles/po_optymalizacji_gprof_*`, `asm/PottsMC_unlike_msvc_O2.asm` | profil po zmianach, asembler pętli MC po k1 |
 | `engine/src/mc/PottsMC.*`, `Grains.*`, `core/Rng.hpp` | k1 (pętla prób), k5 (statystyki) |
 | `engine/src/core/Types.hpp`, `Storage.hpp`, `Boundary.hpp`, `MemoryModel.hpp`, `Neighborhood.hpp` | k2 (ramka w używanych osiach), k3 (`Pos`, `linear`, wariant sąsiedztwa ze stałej części hasha), `syncCell` |
 | `engine/src/ca/LavaCA.hpp`, `CaRules.hpp` | k3, k4 (automat frontalny), opis warunków zmiany komórki |

@@ -40,7 +40,7 @@ std::vector<Vent> VentPlacer::placeVents(const VentsConfig& v, const TerrainConf
         throw ConfigError(std::string("Za mało miejsc na kratery (placement = ") +
                           (v.placement == VentPlacement::Crater ? "crater" : "random") + "): dostępnych " +
                           std::to_string(candidates.size()) + ", a vents.count = " + std::to_string(v.count) +
-                          (v.placement == VentPlacement::Crater ? " — zwiększ terrain.craterRadius" : ""));
+                          (v.placement == VentPlacement::Crater ? "; zwiększ terrain.craterRadius" : ""));
     }
 
     // 2. Częściowe tasowanie Fishera–Yatesa: pierwsze count elementów to losowy wybór bez powtórzeń.
@@ -73,7 +73,7 @@ std::vector<Vent> VentPlacer::placeAt(const std::vector<std::pair<int, int>>& co
         if (h >= d.nz) {
             throw ConfigError(where + ": kolumna jest w całości skałą (wysokość terenu " + std::to_string(h) +
                               " >= space.nz = " + std::to_string(d.nz) +
-                              ") — nad nią nie ma miejsca na krater; zwiększ space.nz albo wybierz inną kolumnę");
+                              "), więc nad nią nie ma miejsca na krater; zwiększ space.nz albo wybierz inną kolumnę");
         }
         vents.push_back(Vent{cx, cy, h, static_cast<std::int32_t>(i + 1)});
     }

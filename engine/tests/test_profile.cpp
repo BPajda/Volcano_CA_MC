@@ -106,7 +106,7 @@ TEST_CASE("Model pamięci CA: oba bufory z ramką po 13 B na komórkę") {
     CHECK(m.bytes() == d.cells() * perCell);
 }
 
-TEST_CASE("Model pamięci CA 2D: ramka tylko w osiach używanych przez sąsiedztwo (etap 8)") {
+TEST_CASE("Model pamięci CA 2D: ramka tylko w osiach używanych przez sąsiedztwo") {
     const std::size_t perCell = 13;
     // Płaszczyzna x–y (nz = 1): ramka w x i y, bez dwóch warstw z = -1 i z = 1 (wcześniej 3·N_f).
     const Dims xy{10, 8, 1};

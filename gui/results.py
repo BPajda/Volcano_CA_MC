@@ -97,7 +97,7 @@ def _parse_txt(path: Path, columns: int) -> tuple[tuple[int, int, int], np.ndarr
         if len(dims) != 3:
             raise ResultError(f"{path.name}: nieprawidłowy nagłówek wymiarów", 422)
         if dims[0] * dims[1] * dims[2] > TXT_MAX_CELLS:
-            raise ResultError(f"{path.name}: {dims[0] * dims[1] * dims[2]:,} komórek — za dużo dla pliku txt; "
+            raise ResultError(f"{path.name}: {dims[0] * dims[1] * dims[2]:,} komórek, za dużo dla pliku txt; "
                               "uruchom symulację z output.format = bin", 422)
     # np.loadtxt (parser w C od numpy 1.23): ~0,6 s na 1 mln wierszy; np.fromfile(sep=" ") — ~16 s.
     try:
@@ -319,7 +319,7 @@ class ResultData:
 
     def _require_replay(self) -> None:
         if self.ca is None or self.ca.arrival is None:
-            raise ResultError("Odtwarzanie erupcji wymaga ca_result.bin w wersji 2 (z arrivalStep i solidStep) — "
+            raise ResultError("Odtwarzanie erupcji wymaga ca_result.bin w wersji 2 (z arrivalStep i solidStep); "
                               "uruchom symulację z output.format = bin")
 
     def vents(self) -> list | None:

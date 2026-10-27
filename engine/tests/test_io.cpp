@@ -221,7 +221,7 @@ bool sameAsPrintf(float v) {
 
 }  // namespace
 
-TEST_CASE("ResultWriter::formatTemp: te same znaki co printf(\"%.1f\") (etap 8, k7)") {
+TEST_CASE("ResultWriter::formatTemp: te same znaki co printf(\"%.1f\") (k7)") {
     // Remisy (x,x5 dokładnie w binarnym: .25, .75 — printf zaokrągla do parzystej), wartości ujemne zaokrąglane
     // do zera („-0.0”), −0,0, typowe temperatury lawy, duże wartości i wartości obsługiwane przez snprintf.
     const float special[] = {0.0f,     -0.0f,     0.04f,      -0.04f,    0.05f,      -0.05f,   0.15f,
@@ -257,7 +257,7 @@ TEST_CASE("ResultWriter::formatTemp: te same znaki co printf(\"%.1f\") (etap 8, 
     CHECK(bad == 0);
 }
 
-TEST_CASE("ResultWriter: ca_result.txt i mc_result.txt bajt w bajt jak zapis sprzed etapu 8 (k7)") {
+TEST_CASE("ResultWriter: ca_result.txt i mc_result.txt bajt w bajt jak zapis sprzed optymalizacji (k7)") {
     const auto dir = tempDir("io_txt_bytes");
     // Ponad 1 MB tekstu (kilka zapisów bufora), różne długości liczb, temperatury z remisami i ujemne.
     Microstructure m;
@@ -309,7 +309,7 @@ Microstructure slabOf(const Microstructure& m, int k0, int k1) {
 
 }  // namespace
 
-TEST_CASE("ResultWriter: plik tekstowy i nagłówki z pasów (etap 11, MPI-IO) = zapis całości") {
+TEST_CASE("ResultWriter: plik tekstowy i nagłówki z pasów (MPI-IO) = zapis całości") {
     const auto dir = tempDir("io_slabs");
     // 3D (pasy w z, także pas jednej warstwy), przekrój x–z (pasy w z) i płaszczyzna x–y (pasy w y).
     for (const Dims d : {Dims{23, 9, 11}, Dims{31, 1, 17}, Dims{37, 41, 1}}) {

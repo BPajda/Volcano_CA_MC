@@ -273,7 +273,8 @@ def test_pinning_to_cpu(settings):
         jm.set_pin(True, [0])
         with pytest.raises(JobError):
             jm.set_pin(True, [10_000])
-        job = jm.wait(jm.create(preset("test_2d", **{"ca.maxSteps": 30}), "przypiete").id, 60)
+        # zadanie na ~0,5 s: krótsze (30 kroków test_2d) kończyło się czasem przed przypięciem (PID not found)
+        job = jm.wait(jm.create(long_config(), "przypiete").id, 60)
         assert job.status == "done" and job.pinnedCpu == 0
         assert "przypięto do procesora logicznego 0" in jm.read_log(job.id)
     finally:

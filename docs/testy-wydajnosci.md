@@ -95,7 +95,7 @@ i **pośrednio, czasem** (krzywa czasu na komórkę, przepustowość, część 2
 
 ## 2. Przyspieszenie i efektywność (zestawienie wszystkich wersji)
 
-Skrypt `bench/zestawienie_e12.py` (bez przebiegów) czyta CSV optymalizacji sekwencyjnej, OpenMP, MPI i typów MPI i tworzy
+Skrypt `bench/zestawienie.py` (bez przebiegów) czyta CSV optymalizacji sekwencyjnej, OpenMP, MPI i typów MPI i tworzy
 [`zestawienie.md`](../bench/results/testy/zestawienie.md) (233 wiersze: przypadek × kompilator × wariant, T / S / E / f,
 źródło, warunki). Zasada: **S zawsze z T(1) tej samej sesji pomiarowej.**
 
@@ -111,11 +111,11 @@ Skrypt `bench/zestawienie_e12.py` (bez przebiegów) czyta CSV optymalizacji sekw
 | MC szachownica 1000², VN | 6,18 / 0,77 | **6,72** / 0,96 | 6,03 / 0,75 | 6,17 / 0,77 | MPI 7 | 3,54 |
 | MC szachownica 100³, Moore | **6,06** / 0,76 | 5,96 / 0,85 | 5,55 / 0,69 | 5,27 / 0,66 | OpenMP 8 | 3,66 |
 
-![S(p) i E(p) lawy: OpenMP, MPI, MPI 7, hybrydy](img/etap12_skalowanie_lawa.png)
+![S(p) i E(p) lawy: OpenMP, MPI, MPI 7, hybrydy](img/testy_skalowanie_lawa.png)
 
-![S(p) i E(p) classic](img/etap12_skalowanie_classic.png)
+![S(p) i E(p) classic](img/testy_skalowanie_classic.png)
 
-![S(p) i E(p) MC szachownica](img/etap12_skalowanie_mc.png)
+![S(p) i E(p) MC szachownica](img/testy_skalowanie_mc.png)
 
 - **Lawa: OpenMP.** Front lawy żyje w kilku dolnych warstwach z; OpenMP przydziela warstwy cyklicznie (`static,1`),
   MPI dzieli przestrzeń na ciągłe pasy, więc dolny pas dostaje prawie całą lawę (dokument „Wersja rozproszona MPI”: nierównomierność pasów).
@@ -138,7 +138,7 @@ zebraniu na proces 0, 3,43 / 4,34 przy MPI-IO.
 
 ### 2.2 Łączne przyspieszenie od programu sprzed optymalizacji
 
-![Schodki przyspieszenia: algorytm (optymalizacja sekwencyjna), szachownica MC, równoległość](img/etap12_schodki.png)
+![Schodki przyspieszenia: algorytm (optymalizacja sekwencyjna), szachownica MC, równoległość](img/testy_schodki.png)
 
 | Przypadek (MSVC) | przed optymalizacją | po optymalizacji | algorytm | szachownica przy 1 wątku | najlepszy wariant | równoległość | **łącznie** | GCC |
 |---|---|---|---|---|---|---|---|---|
@@ -188,7 +188,7 @@ Wyniki: [`slabe_omp_msvc.md`](../bench/results/testy/slabe_omp_msvc.md),
 | lawa `full` 128 × 128·p × 64 | **0,88** | 0,78 / 0,67 | — | 0,79 / 0,76 (lawa 128² × 64) |
 | lawa `front` 128 × 128·p × 64 | **1,00** | 0,27 / 0,25 | 0,76 / 0,22 | 0,67 / 0,36 |
 
-![Skalowanie słabe E_w(p): OpenMP i MPI, MSVC i GCC, obok silne E(p) podobnego przypadku](img/etap12_slabe.png)
+![Skalowanie słabe E_w(p): OpenMP i MPI, MSVC i GCC, obok silne E(p) podobnego przypadku](img/testy_slabe.png)
 
 - **Amdahl vs Gustafson.** Przy części szeregowej f z silnego skalowania (OpenMP 8, faza: 0,012 classic 2000² …
   0,08) Gustafson przewiduje E_w(8) = 1 − f · 7/8 ≈ 0,93–0,99. Tak jest w MC (MPI 7: 0,97) i w lawie `full` / `front`
@@ -233,7 +233,7 @@ Szczyt pamięci przy 8 wątkach / przy 1: **0,96–1,05** (MSVC), 0,99–1,10 (G
 
 ### 3.3 Procesy: suma i warstwy brzegowe
 
-![Pamięć MPI vs p: suma danych, proces 0 przy zebraniu i MPI-IO](img/etap12_pamiec_p.png)
+![Pamięć MPI vs p: suma danych, proces 0 przy zebraniu i MPI-IO](img/testy_pamiec_p.png)
 
 | Przypadek | dane: suma przy 8 procesach / przy 1 | warstwy brzegowe przy 2 / 4 / 8 procesach (udział w siatce okien) |
 |---|---|---|
@@ -267,7 +267,7 @@ w małych siatkach to większość pamięci (classic 1000², 8 procesów: 119 MB
 
 ### 3.5 Model vs pomiar
 
-![Szczyt pamięci vs rozmiar siatki (pomiar i model) oraz model vs pomiar](img/etap12_pamiec_rozmiar.png)
+![Szczyt pamięci vs rozmiar siatki (pomiar i model) oraz model vs pomiar](img/testy_pamiec_rozmiar.png)
 
 - 1 wątek: (szczyt − narzut stały) / model = **1,00–1,06** dla CA; B na komórkę: classic 2D 28,4–29,0, classic 3D
   29,0–34,3 (mniejsze siatki mają większy udział ramki), lawa 29–33, MC 3D 41–45. MC 200³: model zawyża o 16%
@@ -306,7 +306,7 @@ alokacji, dlatego tabela główna liczy **jądro** (funkcje kroku), obok cały p
 (`cg_annotate`). Tabele: [`cachegrind.md`](../bench/results/testy/cachegrind.md), raporty funkcji:
 `bench/profiles/cachegrind/`.
 
-![Chybienia D1 / L2 / L3 na jednostkę pracy: pary porównań, rozmiar siatki, pas MPI](img/etap12_cachegrind.png)
+![Chybienia D1 / L2 / L3 na jednostkę pracy: pary porównań, rozmiar siatki, pas MPI](img/testy_cachegrind.png)
 
 ### 4.2 Wyniki
 
@@ -362,7 +362,7 @@ kroków / MCS; zmienia się tylko rozmiar danych względem pamięci podręcznej;
 L3 przy ~1,45 mln (≈ 1 200); MC (12 B): ~175 tys. (≈ 420) i ~3,1 mln (≈ 1 770). Wyniki:
 [`krzywa_msvc.md`](../bench/results/testy/krzywa_msvc.md), `krzywa_gcc.md`.
 
-![Czas na komórkę × krok / na próbę MC vs liczba komórek, progi L2 / L3](img/etap12_krzywa.png)
+![Czas na komórkę × krok / na próbę MC vs liczba komórek, progi L2 / L3](img/testy_krzywa.png)
 
 | Krzywa (MSVC; GCC) | w L2 | po progu L2 | blisko progu L3 | poza L3 (RAM) |
 |---|---|---|---|---|
@@ -398,7 +398,7 @@ i odczytu, ~59 GB/s samego odczytu); jeden wątek bierze ~1/3 tego.** W funkcji 
 54–66 GB/s do 2 MB (L2), ~22 GB/s w L3 (4–32 MB), ~18 GB/s z RAM; przy 1 wątku L3 przy taktowaniu bazowym jest niewiele szybsza
 niż RAM; przy 8 wątkach zbiór ≤ 8 MB (1 MB na wątek, czyli L2 każdego rdzenia) daje 240–420 GB/s.
 
-![Przepustowość vs wątki i vs zbiór roboczy; zapotrzebowanie CA / MC przy 8 wątkach](img/etap12_przepustowosc.png)
+![Przepustowość vs wątki i vs zbiór roboczy; zapotrzebowanie CA / MC przy 8 wątkach](img/testy_przepustowosc.png)
 
 **Zapotrzebowanie przy 8 wątkach** (kreski na wykresie): jednostki pracy na sekundę ze skalowania słabego (OpenMP,
 p = 8) × ruch spoza L2 na jednostkę = chybienia L2 jądra z cachegrind × 64 B. Bajty z modelu pamięci (wszystkie
@@ -444,7 +444,7 @@ koszt ginie w pracy reguł.
 | zwykły zapis licznika w każdej iteracji | 0,53 / 0,48 | 0,52 / 0,48 | 0,76 / 0,65 | 0,49 / 0,41 … 0,60 / 0,53 |
 | listy warstw: nagłówki 96 B / co 128 B | 4,12 / 3,88 | 3,94 / 3,91 | 4,45 / 4,07 | 1,80 / 1,82 … 2,97 / 3,22 |
 
-![Fałszywe współdzielenie: licznik atomowy, zwykły zapis, listy warstw](img/etap12_falszywe.png)
+![Fałszywe współdzielenie: licznik atomowy, zwykły zapis, listy warstw](img/testy_falszywe.png)
 
 Fałszywe współdzielenie boli tam, gdzie każda operacja musi przejąć linię na wyłączność (atomowe: ×4–14 i rośnie
 z liczbą wątków); zwykły zapis kompilator i bufor zapisu łączą (×1,1–1,2). Listy warstw jak `FrontLayer`: MSVC
@@ -526,13 +526,13 @@ Najrozsądniejszy układ to hybryda: MPI między węzłami, OpenMP w węźle.
 
 | Plik | Co |
 |---|---|
-| `bench/zestawienie_e12.py` | zestawienie S / E / f wszystkich wersji z CSV (bez przebiegów) → `zestawienie.{md,csv}`, `zestawienie_lacznie.csv` |
+| `bench/zestawienie.py` | zestawienie S / E / f wszystkich wersji z CSV (bez przebiegów) → `zestawienie.{md,csv}`, `zestawienie_lacznie.csv` |
 | `bench/memory.py` | szczyt pamięci: engine 1–8 wątków, `engine_mpi` 1–8 procesów (zebranie / MPI-IO), model rozszerzony na procesy, `--wsl`, `--from-raw` |
 | `bench/cachegrind.py` | symulacja cachegrind (WSL), jądro vs cały program, najgorętsze funkcje → `cachegrind.{md,csv}`, `bench/profiles/cachegrind/` |
 | `bench/cache_info.py` | parametry pamięci podręcznej z systemu (Windows, Linux) → `procesor.md` |
 | `bench/cell_time.py` | czas na komórkę × krok / na próbę vs rozmiar siatki → `krzywa_{msvc,gcc}.*` |
 | `bench/scaling.py`, `bench/scaling_mpi.py` | tryb `--weak` (skalowanie słabe, przypadki `weak_cases()`, kafle terenu lawy) |
 | `bench/micro/bandwidth.cpp` | mikrotest przepustowości (STREAM), zbiór roboczy, fałszywe współdzielenie; cel CMake `bandwidth` |
-| `bench/plot_etap12.py` | wykresy `docs/img/etap12_*.png` |
+| `bench/plot_testy.py` | wykresy `docs/img/testy_*.png` |
 | `CMakePresets.json` | preset `gcc-release-g` (Release + `-g`, katalog `build-gcc-release-g/`) |
 | `bench/results/testy/` | dziennik `POSTEP.md`, `PLAN_POMIARU.md`, `procesor.md`, `zestawienie*`, `pamiec_{msvc,gcc}*`, `cachegrind.*`, `slabe_{omp,mpi}_{msvc,gcc}.*`, `krzywa_{msvc,gcc}.*`, `przepustowosc_{msvc,gcc}.csv` |

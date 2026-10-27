@@ -17,7 +17,7 @@ option(VOLCANO_PROFILE_NOINLINE "Kluczowe funkcje bez inline (tylko do profilowa
 #   (OpenMP 2.0, vcomp140 z pakietu redystrybucyjnego). Tylko do porównań: w Visual Studio 17.8 libomp140 jest
 #   w katalogu debug_nonredist, a w mikroteście (bench/micro/omp_overhead.cpp) narzut regionu był ~20× większy
 #   (docs/openmp.md, punkt 1). Kod jest zgodny z OpenMP 2.0, więc buduje się w obu wariantach.
-option(VOLCANO_OPENMP "Wątki OpenMP (etap 9)" ON)
+option(VOLCANO_OPENMP "Wątki OpenMP" ON)
 option(VOLCANO_MSVC_OPENMP_LLVM "MSVC: /openmp:llvm zamiast /openmp (tylko porównanie)" OFF)
 set(VOLCANO_OMP_TARGET "")
 if(VOLCANO_OPENMP)
@@ -38,7 +38,7 @@ endif()
 # VOLCANO_MPI — program engine_mpi (wersja rozproszona: pasy warstw między procesy MPI, src/mpi/) i jego testy pod
 #   mpiexec. Powstaje tylko, gdy find_package(MPI) znajdzie MPI (Windows: MS-MPI z SDK — nagłówki i msmpi.lib;
 #   Linux/WSL: OpenMPI, pakiet libopenmpi-dev). Biblioteka silnika i program engine nie zależą od MPI.
-option(VOLCANO_MPI "Wersja rozproszona engine_mpi (MPI, etap 10)" ON)
+option(VOLCANO_MPI "Wersja rozproszona engine_mpi (MPI)" ON)
 set(VOLCANO_MPI_FOUND OFF)
 if(VOLCANO_MPI)
     find_package(MPI COMPONENTS CXX)

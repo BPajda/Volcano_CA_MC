@@ -35,7 +35,7 @@ E = S/p; „faza” = sama faza obliczeń `caSim` albo `mcSim`, „cały” = ca
   pasem (do 6 MB na wymianę). Etna ma krok 0,3 ms: wymiana warstw trwa dłużej niż obliczenia, więc MPI ją
   **spowalnia** (S < 1). Tu wygrywa pamięć współdzielona (OpenMP z cyklicznym przydziałem warstw).
 
-![Przyspieszenie i efektywność fazy obliczeń, MPI, MSVC / MS-MPI](img/etap10_skalowanie.png)
+![Przyspieszenie i efektywność fazy obliczeń, MPI, MSVC / MS-MPI](img/mpi_skalowanie.png)
 
 ## 1. MPI w projekcie
 
@@ -89,7 +89,7 @@ komunikat każe użyć `checkerboard`) i więcej procesów niż warstw.
 
 ### 3.1 Pasy warstw i okno procesu
 
-![Podział na pasy z warstwami brzegowymi: przestrzeń, okna procesów dla lawy i dla classic / MC](img/etap10_podzial.png)
+![Podział na pasy z warstwami brzegowymi: przestrzeń, okna procesów dla lawy i dla classic / MC](img/mpi_podzial.png)
 
 - **Pasy w osi warstw:** z (przestrzeń 3D i przekrój lawy x–z), a w płaszczyźnie x–y oś y. To najbardziej zewnętrzna
   oś pamięci, więc pas to **ciągły fragment każdej tablicy pola** (siatki z ramką, wyniku `ca_result.bin`), a indeks
@@ -277,7 +277,7 @@ Elementy globalne, liczone raz, deterministycznie:
 - **Pomiar:** `bench/scaling_mpi.py`: przypadki z wersji OpenMP × warianty (`m<p>` procesów, `h<p>x<t>` hybryda, `c<p>`
   wymiana `changed`, `o<t>` OpenMP przy tej samej liczbie rdzeni), naprzemiennie, ≥ 5 powtórzeń, zgodność bitowa
   każdego przebiegu z pierwszym wariantem, S(p), E(p), Amdahl, udział komunikacji, nierównomierność, `--from-raw`,
-  `--wsl`. Wykresy: `bench/plot_etap10.py`.
+  `--wsl`. Wykresy: `bench/plot_mpi.py`.
 - **GUI:** bez zmian w uruchamianiu (pola `parallel.priority` i `mpi.exchange` pojawiły się w formularzu z
   `--print-defaults`, z opisami). Uruchamianie `mpiexec -n N engine_mpi` z kolejki GUI pominięte, bo to nie jest jedno
   pole: liczba procesów nie należy do configu symulacji (`engine` by jej nie użył), więc wymaga osobnej ścieżki
@@ -438,7 +438,7 @@ S fazy przy p procesach (MSVC / MS-MPI; p = 7: procesory 2–14, bez procesora 0
 
 ### 9.4 Prawo Amdahla i części szeregowe
 
-![Cały przebieg: zmierzone S(p) i krzywe Amdahla z dopasowanym f, MPI](img/etap10_amdahl.png)
+![Cały przebieg: zmierzone S(p) i krzywe Amdahla z dopasowanym f, MPI](img/mpi_amdahl.png)
 
 | Przypadek | f (cały przebieg) | f (sama faza) | część poza fazą przy p = 1 | S(∞) = 1/f |
 |---|---|---|---|---|
@@ -461,7 +461,7 @@ S fazy przy p procesach (MSVC / MS-MPI; p = 7: procesory 2–14, bez procesora 0
 
 ### 9.5 MPI vs OpenMP przy tej samej liczbie rdzeni
 
-![S fazy: MPI (p procesów) vs OpenMP (p wątków) przy 4 i 8 rdzeniach, MSVC i GCC](img/etap10_mpi_omp.png)
+![S fazy: MPI (p procesów) vs OpenMP (p wątków) przy 4 i 8 rdzeniach, MSVC i GCC](img/mpi_mpi_omp.png)
 
 S fazy (MSVC; T(1) wspólne; pogrubiony najlepszy wariant MPI na 7–8 rdzeniach):
 
@@ -488,7 +488,7 @@ S fazy (MSVC; T(1) wspólne; pogrubiony najlepszy wariant MPI na 7–8 rdzeniach
 
 ### 9.6 Tryb hybrydowy (procesy × wątki)
 
-![S fazy na 8 rdzeniach: 8 × 1, 4 × 2, 2 × 4 i 1 × 8 (OpenMP), MSVC i GCC](img/etap10_hybryda.png)
+![S fazy na 8 rdzeniach: 8 × 1, 4 × 2, 2 × 4 i 1 × 8 (OpenMP), MSVC i GCC](img/mpi_hybryda.png)
 
 - **2 procesy × 4 wątki to najlepszy wariant MPI w lawie (wszystkie 3 przypadki) i classic 300³**, 4 × 2 w MC 100³.
   Mniej pasów to mniej warstw brzegowych (front lawy: 0,57 MB zamiast 3,85 MB na wymianę) i mniejsza nierównomierność
@@ -501,7 +501,7 @@ S fazy (MSVC; T(1) wspólne; pogrubiony najlepszy wariant MPI na 7–8 rdzeniach
 
 ### 9.7 Komunikacja
 
-![Udział komunikacji w czasie fazy w funkcji liczby procesów](img/etap10_komunikacja.png)
+![Udział komunikacji w czasie fazy w funkcji liczby procesów](img/mpi_komunikacja.png)
 
 | Przypadek | komunikacja / faza, 2 procesy | 4 | 7 | 8 |
 |---|---|---|---|---|
@@ -525,7 +525,7 @@ S fazy (MSVC; T(1) wspólne; pogrubiony najlepszy wariant MPI na 7–8 rdzeniach
 
 ### 9.8 Nierównomierność obciążenia pasów i procesor 0
 
-![Czas obliczeń każdego procesu przy 4 i 8 procesach: lawa i classic 300³](img/etap10_obciazenie.png)
+![Czas obliczeń każdego procesu przy 4 i 8 procesach: lawa i classic 300³](img/mpi_obciazenie.png)
 
 - **Lawa:** front dużej lawy: dolne pasy liczą, górne prawie nic (4 procesy: 365 / 307 / 108 / 8 ms, nierówność
   ×1,85); Etna: pasy środkowe (tam spływa lawa) ×1,6–1,8; pełny przebieg odwrotnie, **górne pasy liczą więcej**
@@ -543,7 +543,7 @@ S fazy (MSVC; T(1) wspólne; pogrubiony najlepszy wariant MPI na 7–8 rdzeniach
 
 ### 9.9 Wymiana `always` vs `changed`
 
-![mpi.exchange = changed względem always: bajty na wymianę i czas fazy](img/etap10_wymiana.png)
+![mpi.exchange = changed względem always: bajty na wymianę i czas fazy](img/mpi_wymiana.png)
 
 | Przypadek | B / wymianę `always` (4 / 8 procesów) | `changed` / `always`: bajty (4 / 8) | warstwy pominięte (8 procesów) | `changed` / `always`: czas fazy (4 / 8) |
 |---|---|---|---|---|
@@ -646,7 +646,7 @@ S fazy (MSVC; T(1) wspólne; pogrubiony najlepszy wariant MPI na 7–8 rdzeniach
 | `engine/tests/test_strip.cpp`, `engine/tests/mpi/*` | testy podziału; testy MPI 1–8 procesów |
 | `engine/CMakeLists.txt` | `VOLCANO_MPI`, cele `engine_mpi`, `engine_mpi_tests`, testy pod `mpiexec` |
 | `bench/scaling_mpi.py`, `bench/compare_results.py` | pomiar skalowania MPI (warianty m / h / c / o, `initMax`, WSL `--use-hwthread-cpus`); `--launch` (program pod `mpiexec`) |
-| `bench/plot_etap10.py` | wykresy `docs/img/etap10_*.png` (schemat podziału, skalowanie, Amdahl, MPI vs OpenMP, hybryda, komunikacja, nierównomierność, `changed`) |
+| `bench/plot_mpi.py` | wykresy `docs/img/mpi_*.png` (schemat podziału, skalowanie, Amdahl, MPI vs OpenMP, hybryda, komunikacja, nierównomierność, `changed`) |
 | `bench/results/mpi/` | dziennik `POSTEP.md`, `PLAN_POMIARU.md`, skalowanie `skalowanie_mpi_{msvc,gcc}*` (`.md`, `.csv`, `_raw.csv`), tabele zgodności `zgodnosc_*.md`, narzut `ab_e10_*.md` (wersje pośrednie `ab_e10a_*`, `ab_e10d_*`), dobór przypadków `dobor_{msvc,gcc}.*` |
 | `docs/uruchamianie.md` | MS-MPI / OpenMPI w wymaganiach, `VOLCANO_MPI`, testy MPI, punkt 4.2 (`engine_mpi`), 7.3 (skalowanie MPI, wykresy) |
 | `gui/static/js/form.js` | opisy pól `parallel.priority` i `mpi.exchange` |

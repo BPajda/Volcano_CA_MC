@@ -89,12 +89,12 @@ export function replayLegend(info, mode, mcs = false) {
   if (mcs) return null;
   const L = { title: mode === 'flow' ? 'Odtwarzanie: krater / ziarno' : 'Odtwarzanie: żar lawy', items: [], notes: [] };
   if (mode === 'flow') {
-    L.notes.push('płynna lawa — kolor krateru (flowId), zastygła — ten sam kolor przyciemniony');
+    L.notes.push('płynna lawa: kolor krateru (flowId); zastygła: ten sam kolor przyciemniony');
   } else {
     const p = info.params;
     L.gradient = { stops: [0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => glowColor(p.solidusTemp + t * (p.eruptTemp - p.solidusTemp), p)),
       min: p.solidusTemp, max: p.eruptTemp, unit: '°C' };
-    L.notes.push('płynna lawa: temperatura w tym kroku (z temperatury końcowej i stygnięcia coolingAmbient na krok) — '
+    L.notes.push('płynna lawa: temperatura w tym kroku (z temperatury końcowej i stygnięcia coolingAmbient na krok), '
       + 'jasnożółta świeża, ciemnoczerwona tuż przed zastygnięciem');
     L.items.push({ rgb: TYPE_RGB[BASALT], label: 'bazalt (zastygła lawa)' });
   }
@@ -343,11 +343,11 @@ export async function exportFrames(bar, canvas, draw, baseName) {
  */
 export async function recordWebM(bar, canvas, draw, baseName, fps = 25) {
   if (typeof MediaRecorder === 'undefined' || !canvas.captureStream) {
-    bar.message('ta przeglądarka nie nagrywa canvasu (MediaRecorder) — użyj klatek PNG');
+    bar.message('ta przeglądarka nie nagrywa canvasu (MediaRecorder), użyj klatek PNG');
     return;
   }
   const type = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((t) => MediaRecorder.isTypeSupported(t));
-  if (!type) { bar.message('brak obsługi WebM w tej przeglądarce — użyj klatek PNG'); return; }
+  if (!type) { bar.message('brak obsługi WebM w tej przeglądarce, użyj klatek PNG'); return; }
   bar.pause();
   const ks = bar.frameList(300);
   const stream = canvas.captureStream(0);

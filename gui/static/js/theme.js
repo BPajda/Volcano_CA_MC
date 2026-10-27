@@ -89,7 +89,7 @@ function syncToggle() {
   const b = document.getElementById('theme-toggle');
   if (!b) return;
   const dark = currentTheme() === 'dark';
-  const label = dark ? 'Motyw ciemny — przełącz na jasny' : 'Motyw jasny — przełącz na ciemny';
+  const label = dark ? 'Motyw ciemny: przełącz na jasny' : 'Motyw jasny: przełącz na ciemny';
   b.setAttribute('aria-label', label);
   b.title = label;
 }

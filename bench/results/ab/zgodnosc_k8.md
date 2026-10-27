@@ -21,4 +21,4 @@ Porównanie bajt po bajcie z `przed` (bez times.json i config_used.json; stats.j
 | `test_3d` | ca_result.bin, ca_result.txt, stats.json | tak | tak | tak |
 | `wezuwiusz_real` | ca_result.bin, stats.json | tak | tak | tak |
 
-Tabela scalona z części: `zgodnosc_k8_cz1.md`, `zgodnosc_k8_cz2.md` (ta sama lista configów co w jednym przebiegu, podział na części — limit czasu jednego polecenia).
+Tabela scalona z części: `zgodnosc_k8_cz1.md`, `zgodnosc_k8_cz2.md` (ta sama lista configów co w jednym przebiegu, podział na części).

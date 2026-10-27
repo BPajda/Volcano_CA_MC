@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bitowa zgodność wyników (etap 8): te same configi z configs/*.json uruchomione kilkoma programami engine.
+"""Bitowa zgodność wyników: te same configi z configs/*.json uruchomione kilkoma programami engine.
 
 Każdy config (w wariancie domyślnym — tak jak leży w configs/) jest liczony każdym programem, a folder wyników
 porównywany bajt po bajcie z wynikiem pierwszego programu (wszystkie pliki poza times.json i config_used.json;
@@ -85,7 +85,7 @@ def main() -> int:
     ap.add_argument("--args", action="append", default=[], metavar="ETYKIETA=ARGUMENTY",
                     help='dodatkowe argumenty jednego programu, np. "full=--set ca.sweep=full"')
     ap.add_argument("--launch", action="append", default=[], metavar="ETYKIETA=POLECENIE",
-                    help='polecenie uruchamiające program (etap 10, MPI), np. "m3=mpiexec -n 3"')
+                    help='polecenie uruchamiające program (wersja MPI), np. "m3=mpiexec -n 3"')
     ap.add_argument("--configs", help="tylko wybrane configi (nazwy bez .json, po przecinku)")
     ap.add_argument("--name", default="zgodnosc", help="nazwa pliku wyniku (<nazwa>.md)")
     ap.add_argument("--out", default=str(ROOT / "bench" / "results" / "ab"), help="folder wyniku (domyślnie bench/results/ab)")

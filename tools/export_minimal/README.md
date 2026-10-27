@@ -1,30 +1,30 @@
 <!-- Szablon README wersji minimalnej: tools/export_minimal.py kopiuje go jako README.md (bez tego komentarza).
      Odnośniki są względne wobec katalogu głównego eksportu, nie wobec tego pliku. -->
-# volcano-ca-mc — symulacja erupcji wulkanu (CA + Monte Carlo)
+# volcano-ca-mc: symulacja erupcji wulkanu (CA + Monte Carlo)
 
 Spływ lawy jest modelowany automatem komórkowym w przestrzeni wokselowej 2D/3D jako rozrost ziaren: kratery są
-zarodkami, a lawa rośnie po terenie — generowanym albo prawdziwym (Etna, Wezuwiusz) — spada, rozlewa się w kierunku
+zarodkami, a lawa rośnie po terenie (generowanym albo prawdziwym: Etna, Wezuwiusz), spada, rozlewa się w kierunku
 największego spadku, wypełnia krater, stygnie i zastyga w bazalt. Zastygły bazalt krystalizuje metodą Monte Carlo
 (model Pottsa) z mobilnością zależną od czasu stygnięcia. Obliczenia wykonuje silnik C++17 bez interfejsu
 (config JSON → symulacja → pliki wyników i `times.json`), a GUI w przeglądarce przygotowuje konfiguracje, kolejkuje
 zadania i pokazuje wyniki w 2D i 3D (także odtwarzanie erupcji krok po kroku), a zakładka **Wydajność** pokazuje
 wyniki optymalizacji i zrównoleglenia (OpenMP, MPI) na interaktywnych wykresach z opisem „Jak czytać”.
 
-![Erupcja Etny w podglądzie 3D — odtwarzanie krok po kroku](docs/img/readme/gui_3_erupcja_3d.png)
+![Erupcja Etny w podglądzie 3D: odtwarzanie krok po kroku](docs/img/readme/gui_3_erupcja_3d.png)
 
 ## Wymagania
 
 - **Windows:** Visual Studio 2022 z pakietem „Programowanie aplikacji klasycznych w języku C++” (zawiera narzędzia
   CMake) albo Build Tools 2022; **Linux:** GCC lub Clang z obsługą C++17.
 - CMake ≥ 3.20.
-- Python ≥ 3.11 — GUI (`gui/requirements.txt`: fastapi, uvicorn, numpy, pillow), testy (`gui/requirements-dev.txt`),
+- Python ≥ 3.11: GUI (`gui/requirements.txt`: fastapi, uvicorn, numpy, pillow), testy (`gui/requirements-dev.txt`),
   narzędzia (`numpy`, `matplotlib`). Przeglądarka z obsługą WebGL2.
-- Zależności C++ (nlohmann/json, doctest) i biblioteki frontendu (three.js, Chart.js, fonty) są w repozytorium —
-  GUI działa bez internetu.
-- **Opcjonalnie MPI** (wersja rozproszona `engine_mpi`): **Windows** — Microsoft MPI v10.1.3, **oba** pliki ze strony
+- Zależności C++ (nlohmann/json, doctest) i biblioteki frontendu (three.js, Chart.js, fonty) są w repozytorium,
+  więc GUI działa bez internetu.
+- **Opcjonalnie MPI** (wersja rozproszona `engine_mpi`): **Windows**: Microsoft MPI v10.1.3, **oba** pliki ze strony
   Microsoft: `msmpisetup.exe` (środowisko uruchomieniowe, `mpiexec`) i `msmpisdk.msi` (nagłówki i `msmpi.lib`); po
-  instalacji otwórz nowy terminal (zmienne `MSMPI_INC`, `MSMPI_LIB64`). **Linux** — OpenMPI:
-  `sudo apt install openmpi-bin libopenmpi-dev`. Bez MPI buduje się wszystko poza `engine_mpi`.
+  instalacji otwórz nowy terminal (zmienne `MSMPI_INC`, `MSMPI_LIB64`). **Linux**: OpenMPI
+  (`sudo apt install openmpi-bin libopenmpi-dev`). Bez MPI buduje się wszystko poza `engine_mpi`.
 
 ## Budowanie
 
@@ -61,9 +61,9 @@ Silnik na przykładowym configu (wyniki w `results/test_2d/`: `ca_result.txt`/`.
 ```
 
 (Linux: `build-gcc-release/bin/engine --config configs/test_2d.json --out results/test_2d`.) Gotowe konfiguracje
-są w `configs/` — m.in. `etna_real.json` i `wezuwiusz_real.json` (prawdziwy teren), `mc_full_2d.json` (samo MC).
+są w `configs/`, m.in. `etna_real.json` i `wezuwiusz_real.json` (prawdziwy teren), `mc_full_2d.json` (samo MC).
 
-Wersja rozproszona (MPI) — przestrzeń dzielona na pasy warstw między procesy, wynik bitowo ten sam co `engine`
+Wersja rozproszona (MPI): przestrzeń dzielona na pasy warstw między procesy, wynik bitowo ten sam co `engine`
 (Monte Carlo przy więcej niż 1 procesie tylko w trybie szachownicy):
 
 ```
@@ -95,8 +95,8 @@ python -m pytest gui/tests                   # wymaga zbudowanego silnika
 ## Struktura katalogów
 
 ```
-engine/      silnik C++17: src/ (core, terrain, ca, mc, io, app, parallel — OpenMP i pasy, mpi — engine_mpi),
-             tests/ (doctest; mpi/ — testy pod mpiexec), third_party/
+engine/      silnik C++17: src/ (core, terrain, ca, mc, io, app, parallel: OpenMP i pasy, mpi: engine_mpi),
+             tests/ (doctest; mpi/: testy pod mpiexec), third_party/
 gui/         GUI: backend Python (FastAPI, tylko 127.0.0.1), frontend HTML/JS (static/), testy pytest (tests/)
 tools/       podgląd wyników (PNG), seria bez GUI, mapy wysokości, prawdziwy teren, eksport VTK
 bench/       skrypty pomiarów (profil, testy A/B, skalowanie OpenMP i MPI), mikrobenchmarki, dane cytowane w raporcie (results/)
@@ -105,7 +105,7 @@ docs/pdf/    dokumentacja tematyczna w PDF (optymalizacja, OpenMP, MPI, testy wy
 raport.pdf   raport techniczny
 ```
 
-Dane terenu Etny i Wezuwiusza pochodzą z AWS Terrain Tiles — wymagane przypisanie danych:
+Dane terenu Etny i Wezuwiusza pochodzą z AWS Terrain Tiles; wymagane przypisanie danych:
 [configs/heightmaps/README.md](configs/heightmaps/README.md).
 
 ## Opis projektu i wyniki

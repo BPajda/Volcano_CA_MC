@@ -11,7 +11,9 @@ i datą wygenerowania; u góry każdej strony tytuł dokumentu, na dole numer st
 dokumentu (bez liczników CSS raportu). Obrazki z docs/img/, tabele i listingi zawijane (nic nie wychodzi poza stronę).
 Odnośniki do innych dokumentów stają się tekstem „(zob. dokument „Tytuł”)”, odnośniki do plików kodu i wyników —
 samą ścieżką. Skrypt sprawdza po wyrenderowaniu: wczytane obrazki, elementy szersze niż strona, liczbę stron.
-Wymaga: pip install --user markdown pygments pypdf playwright (+ pymupdf dla --png).
+Obrazki trafiają do PDF w rozdzielczości druku (najwyżej ~300 dpi w ramce 174 × 120 mm): zrzuty ekranu jako JPEG,
+wykresy bez zmian albo pomniejszone PNG (kopie w katalogu tymczasowym; pliki w docs/img/ bez zmian).
+Wymaga: pip install --user markdown pygments pypdf playwright pillow (+ pymupdf dla --png).
 """
 
 from __future__ import annotations
@@ -21,7 +23,9 @@ import datetime as dt
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -116,6 +120,40 @@ def build_html(md_path: Path, titles: dict[str, str], date: str) -> tuple[str, s
     return title, doc
 
 
+# Obrazki do druku: ramka obrazka w PDF to szerokość tekstu (174 mm) i max-height 120 mm (CSS_DOCS), więc większa
+# rozdzielczość niż ~300 dpi w tej ramce nic nie daje, a pełne zrzuty stron GUI (1280 × 3700 px) ważą po kilkaset KB.
+PRINT_DPI = 300
+PRINT_BOX_PX = (round(174 / 25.4 * PRINT_DPI), round(120 / 25.4 * PRINT_DPI))
+SCREENSHOT = re.compile(r"^img/(gui_|ui_|real_|replay_|raport/gui_|readme/)")  # zrzuty ekranu (JPEG); reszta — wykresy
+IMG_SRC = re.compile(r'(<img\b[^>]*\bsrc=")(img/[^"]+)(")')
+
+
+def print_image(rel: str, tmp: Path, cache: dict[str, str]) -> str:
+    """Kopia obrazka docs/<rel> do druku (adres file:// w katalogu tymczasowym); oryginał, gdy kopia nie jest mniejsza."""
+    if rel in cache:
+        return cache[rel]
+    from PIL import Image
+
+    src = DOCS / rel
+    shot = bool(SCREENSHOT.match(rel))
+    im = Image.open(src)
+    w, h = im.size
+    s = min(1.0, PRINT_BOX_PX[0] / w, PRINT_BOX_PX[1] / h)
+    if not shot and s == 1.0:  # wykres w rozdzielczości druku: bez zmian (Chromium i tak zapisuje go bezstratnie)
+        cache[rel] = rel
+        return rel
+    im = im.convert("RGB")
+    if s < 1:
+        im = im.resize((round(w * s), round(h * s)), Image.LANCZOS)
+    dst = tmp / (rel.replace("/", "_").rsplit(".", 1)[0] + (".jpg" if shot else ".png"))
+    if shot:  # zrzut ekranu: JPEG (Chromium osadza go bez ponownego kodowania)
+        im.save(dst, "JPEG", quality=88, optimize=True)
+    else:
+        im.save(dst, "PNG", optimize=True)
+    cache[rel] = dst.resolve().as_uri() if dst.stat().st_size < src.stat().st_size else rel
+    return cache[rel]
+
+
 def header(title: str) -> str:
     return ('<div style="width:100%; font-family: Inter, Segoe UI, sans-serif; font-size:7.5pt; color:#776d63; '
             f'padding: 0 18mm; display:flex; justify-content:space-between;"><span>volcano-ca-mc</span>'
@@ -172,11 +210,14 @@ def main() -> int:
     index.setdefault("pages", {})
     date = dt.date.today().strftime("%d.%m.%Y")
     problems = 0
+    img_tmp = Path(tempfile.mkdtemp(prefix="volcano_pdf_img_"))
+    img_cache: dict[str, str] = {}
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
         for md in docs:
             title, html = build_html(md, titles, date)
+            html = IMG_SRC.sub(lambda m: m.group(1) + print_image(m.group(2), img_tmp, img_cache) + m.group(3), html)
             tmp = DOCS / f".pdf_{md.stem}.html"  # obok dokumentu: względne img/ i ../gui/static/vendor/fonts/ działają
             pdf = OUT / f"{md.stem}.pdf"
             try:
@@ -201,6 +242,7 @@ def main() -> int:
                     for i in range(min(3, len(d))):
                         d[i].get_pixmap(dpi=70).save(str(out / f"{md.stem}_{i + 1}.png"))
         browser.close()
+    shutil.rmtree(img_tmp, ignore_errors=True)
     index["generated"] = dt.date.today().isoformat()
     index["titles"] = dict(sorted(index["titles"].items()))
     index["pages"] = dict(sorted(index["pages"].items()))

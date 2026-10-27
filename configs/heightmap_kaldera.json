@@ -1,6 +1,6 @@
 {
   "_opis": "Mapa wysokości z pliku: kaldera z wyłomem na wschód (configs/heightmaps/kaldera_wylom.csv) + krystalizacja MC.",
-  "_uwaga": "Lawa z krateru w kalderze wypełnia ją do poziomu wyłomu i wypływa tylko przez wyłom doliną na wschód — inaczej niż stożek z generatora, który przelewa się równo na wszystkie strony. terrain.craterRadius wyznacza tu tylko obszar, w którym losowane są kratery (placement = crater).",
+  "_uwaga": "Lawa z krateru w kalderze wypełnia ją do poziomu wyłomu i wypływa tylko przez wyłom doliną na wschód, inaczej niż stożek z generatora, który przelewa się równo na wszystkie strony. terrain.craterRadius wyznacza tu tylko obszar, w którym losowane są kratery (placement = crater).",
   "space": {
     "nx": 100,
     "ny": 100,

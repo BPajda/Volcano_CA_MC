@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pamięć główna wersji równoległych (etap 12): szczyt pamięci procesu (RSS) i model pamięci (`MemoryModel`)
+"""Pamięć główna wersji równoległych: szczyt pamięci procesu (RSS) i model pamięci (`MemoryModel`)
 dla engine z p wątkami OpenMP i engine_mpi z p procesami (zebranie wyniku na proces 0 albo MPI-IO), kilka rozmiarów
 siatki. Pamięć nie zależy od tła ani od turbo, więc pomiar nie wymaga wolnego komputera (krótkie przebiegi, 1 powtórzenie
 — szczyt pamięci jest powtarzalny; sprawdzane --reps 2).

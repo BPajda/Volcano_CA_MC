@@ -35,7 +35,7 @@ TEST_CASE_TEMPLATE("Brzeg periodyczny (classic): zawijanie we wszystkich osiach"
     CHECK(s.flowId(4, 3, 5) == 11);
 }
 
-TEST_CASE_TEMPLATE("Brzeg 2D: ramka tylko w płaszczyźnie siatki, zawijanie i narożniki (etap 8)", S, VectorStorage,
+TEST_CASE_TEMPLATE("Brzeg 2D: ramka tylko w płaszczyźnie siatki, zawijanie i narożniki", S, VectorStorage,
                    MatrixStorage) {
     // Płaszczyzna x–y (nz = 1): ramka w x i y; w osi z nie ma ramki (sąsiedztwo 2D jej nie używa).
     S s(Dims{4, 3, 1});

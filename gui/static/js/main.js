@@ -84,7 +84,7 @@ function onFormChange(cfg) {
     <tr><td>Pamięć (szacunek)</td><td>~${fmtBytes(e.bytes)}</td></tr>
     <tr><td>Czas (szacunek)</td><td>~${fmtTime(e.ms)}${e.steps ? ` <span class="hint">(~${fmtInt(e.steps)} kroków CA)</span>` : ''}</td></tr>
     <tr><td>Pliki wyników</td><td>~${fmtBytes(e.fileBytes)}</td></tr></table>
-    <p class="hint">Heurystyka z pomiarów profilu (B/komórkę, ns/komórkę·krok, ns/próbę MC) — rząd wielkości.</p>`;
+    <p class="hint">Heurystyka z pomiarów profilu (B/komórkę, ns/komórkę·krok, ns/próbę MC), rząd wielkości.</p>`;
   for (const w of e.warnings) html += notice(w.level === 'error' ? 'error' : w.level === 'info' ? 'info' : 'warn', esc(w.text));
   $('#estimate').innerHTML = html;
   // cfg z argumentu — onFormChange jest wołane już z konstruktora formularza, zanim `form` jest przypisany.
@@ -96,7 +96,7 @@ function onFormChange(cfg) {
 function showValidation(res, title) {
   const box = $('#validation');
   let html = '';
-  if (res.ok) html += notice('ok', title || 'Config poprawny — silnik przyjmie te parametry.');
+  if (res.ok) html += notice('ok', title || 'Config poprawny: silnik przyjmie te parametry.');
   for (const e of res.errors || []) html += notice('error', esc(e));
   for (const w of res.warnings || []) html += notice('warn', `Ostrzeżenie: ${esc(w)}`);
   box.innerHTML = html;
@@ -125,7 +125,7 @@ async function run() {
     const job = await postJSON('/api/jobs', {
       name: $('#job-name').value.trim() || 'zadanie', config: configToSend(), mcFrom: $('#mc-from-select').value || null,
     });
-    showValidation({ ok: true, warnings: job.warnings }, 'Config poprawny — zadanie dodane do kolejki.');
+    showValidation({ ok: true, warnings: job.warnings }, 'Config poprawny, zadanie dodane do kolejki.');
     $('#run-result').innerHTML = notice('ok', `Utworzono plik konfiguracyjny <code>${esc(job.configPath)}</code><br>
       i folder wyników <code>${esc(job.outDir)}/</code>.<br>
       <button class="btn btn-small" id="goto-jobs">Pokaż w zakładce Zadania</button>`);
@@ -142,7 +142,7 @@ async function run() {
 function fillPresets() {
   const sel = $('#preset-select');
   sel.innerHTML = '<option value="">— wybierz preset —</option>';
-  const groups = { configs: 'configs/ — przykładowe configi', gui: 'configs/gui/ — configi zadań z GUI' };
+  const groups = { configs: 'przykładowe configi (configs/)', gui: 'configi zadań z GUI (configs/gui/)' };
   for (const [g, label] of Object.entries(groups)) {
     const items = state.presets.filter((p) => p.group === g);
     if (!items.length) continue;
@@ -159,8 +159,8 @@ function loadPreset() {
   form.set(p.config);
   $('#job-name').value = p.group === 'gui' ? p.label : p.name;
   if (!p.mcFromOnly) { $('#mc-from-select').value = ''; form.setMcFrom(false); }
-  let desc = `<b>${esc(p.file)}</b>${p.description ? ` — ${esc(p.description)}` : ''}${p.note ? `<br>${esc(p.note)}` : ''}`;
-  if (p.mcFromOnly) desc += '<br>Ten preset zawiera tylko parametry MC — wybierz wynik CA w polu „Źródło danych”.';
+  let desc = `<b>${esc(p.file)}</b>${p.description ? `: ${esc(p.description)}` : ''}${p.note ? `<br>${esc(p.note)}` : ''}`;
+  if (p.mcFromOnly) desc += '<br>Ten preset zawiera tylko parametry MC. Wybierz wynik CA w polu „Źródło danych”.';
   $('#preset-description').innerHTML = desc;
   $('#validation').innerHTML = '';
   $('#run-result').innerHTML = '';
@@ -177,7 +177,7 @@ function importFile(file) {
       if (typeof cfg !== 'object' || Array.isArray(cfg)) throw new Error('plik musi zawierać obiekt JSON { … }');
       form.set(cfg);
       $('#job-name').value = file.name.replace(/\.json$/i, '');
-      $('#preset-description').innerHTML = `Zaimportowano <b>${esc(file.name)}</b>${cfg._opis ? ` — ${esc(cfg._opis)}` : ''}`;
+      $('#preset-description').innerHTML = `Zaimportowano <b>${esc(file.name)}</b>${cfg._opis ? `: ${esc(cfg._opis)}` : ''}`;
       updateIdPreview();
       validate();
     } catch (err) {
@@ -210,7 +210,7 @@ function mcFromResultId(id) {
   form.setMcFrom(true);
   $('#job-name').value = `mc_na_${slug(id.split('/').pop())}`.slice(0, 40);
   updateIdPreview();
-  $('#validation').innerHTML = notice('info', `Samo Monte Carlo na wyniku CA <code>${esc(id)}</code> (<code>engine --mc-from</code>) — sprawdź parametry MC i kliknij Uruchom.`);
+  $('#validation').innerHTML = notice('info', `Samo Monte Carlo na wyniku CA <code>${esc(id)}</code> (<code>engine --mc-from</code>): sprawdź parametry MC i kliknij Uruchom.`);
 }
 
 // ---------------------------------------------------------------- wyniki
@@ -263,7 +263,7 @@ async function refreshResults() {
 function fillResultSelect() {
   const sel = $('#result-select');
   const sorted = [...state.results].sort((a, b) => (b.modified || 0) - (a.modified || 0));
-  sel.innerHTML = sorted.map((r) => `<option value="${esc(r.id)}">${esc(r.name)} — ${(r.dims || []).join('×')} ${esc(r.mode || '')}${r.gui ? ' (GUI)' : ''}</option>`).join('');
+  sel.innerHTML = sorted.map((r) => `<option value="${esc(r.id)}">${esc(r.name)} · ${(r.dims || []).join('×')} ${esc(r.mode || '')}${r.gui ? ' (GUI)' : ''}</option>`).join('');
   if (state.selected) sel.value = state.selected;
 }
 

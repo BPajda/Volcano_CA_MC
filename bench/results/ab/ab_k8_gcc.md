@@ -1,6 +1,6 @@
 # Test A/B `ab_k8_gcc`
 
-Optymalizacja 8 (presety kompilatora): GCC -O3 vs -O3 -march=native (preset gcc-release-native), oba z -falign-functions=64, tryb oszczędny (bez turbo) — kilka przypadków
+Optymalizacja 8 (presety kompilatora): GCC -O3 vs -O3 -march=native (preset gcc-release-native), oba z -falign-functions=64, taktowanie bazowe — kilka przypadków
 
 - Programy: `k7a` = `engine_k7a`, `native` = `engine_native`
 - Przypięcie: sched_setaffinity({2}) (WSL2: procesor wirtualny); priorytet: domyślny; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

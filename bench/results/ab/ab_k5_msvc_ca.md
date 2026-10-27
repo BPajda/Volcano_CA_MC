@@ -1,6 +1,6 @@
 # Test A/B `ab_k5_msvc_ca`
 
-Optymalizacja 5 (tańsze statystyki MC), MSVC, tryb oszczędny (bez turbo) — kontrola CA: k5 nie zmienia kodu automatu (układ kodu)
+Optymalizacja 5 (tańsze statystyki MC), MSVC, taktowanie bazowe — kontrola CA: k5 nie zmienia kodu automatu (układ kodu)
 
 - Programy: `k4` = `engine_k4_msvc.exe`, `k5` = `engine_k5_msvc.exe`
 - Przypięcie: psutil.cpu_affinity([2]); priorytet: HIGH_PRIORITY_CLASS; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

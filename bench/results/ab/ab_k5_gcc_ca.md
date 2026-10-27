@@ -1,6 +1,6 @@
 # Test A/B `ab_k5_gcc_ca`
 
-Optymalizacja 5 (tańsze statystyki MC), GCC, tryb oszczędny (bez turbo) — kontrola CA: k5 nie zmienia kodu automatu
+Optymalizacja 5 (tańsze statystyki MC), GCC, taktowanie bazowe — kontrola CA: k5 nie zmienia kodu automatu
 
 - Programy: `k4` = `engine_k4`, `k5` = `engine_k5`
 - Przypięcie: sched_setaffinity({2}) (WSL2: procesor wirtualny); priorytet: domyślny; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

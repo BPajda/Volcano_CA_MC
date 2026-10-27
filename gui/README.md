@@ -1,4 +1,4 @@
-# gui — interfejs użytkownika
+# gui: interfejs użytkownika
 
 Lokalna aplikacja web: formularz parametrów albo **seria zadań** → pliki konfiguracyjne i foldery wyników →
 silnik `engine` uruchamiany jako podproces (**kolejka zadań**) → wizualizacja wyniku 2D (przekroje) i 3D (ściany
@@ -30,26 +30,26 @@ Liczba workerów, pauza i przypięcie ustawione w GUI są zapamiętywane w `resu
 
 | Plik | Rola |
 |---|---|
-| `__main__.py` | `python -m gui` — uvicorn na 127.0.0.1, sprawdzenie zajętego portu, otwarcie przeglądarki |
-| `app.py` | FastAPI: endpointy `/api/...` (lista w docstringu, `docs/interfejs-graficzny.md`, `docs/kolejka-serie-dane.md`; `/api/doc/list`, `/api/doc` — lista i treść dokumentów, `/api/doc/pdf` — PDF dokumentu z `docs/pdf/` dla linku „Pobierz PDF” zakładki „Wydajność”), pliki statyczne, ochrona Host/Content-Type |
+| `__main__.py` | `python -m gui`: uvicorn na 127.0.0.1, sprawdzenie zajętego portu, otwarcie przeglądarki |
+| `app.py` | FastAPI: endpointy `/api/...` (lista w docstringu, `docs/interfejs-graficzny.md`, `docs/kolejka-serie-dane.md`; `/api/doc/list` i `/api/doc`: lista i treść dokumentów; `/api/doc/pdf`: PDF dokumentu z `docs/pdf/` dla linku „Pobierz PDF” zakładki „Wydajność”), pliki statyczne, ochrona Host/Content-Type |
 | `settings.py` | ścieżka silnika (env → `settings.json` → auto-wykrycie Release, potem Debug), katalogi `configs/`, `results/`, serii i map wysokości, port, workery, `pinCpus` |
 | `engine.py` | wywołania silnika: `--print-defaults` (formularz), `--validate` (walidacja), polecenie uruchomienia z `--progress` |
 | `jobs.py` | `JobManager`: zadanie = config + folder wyników + podproces + status + `engine.log`; **kolejka** (kolejność, pauza, workery zmieniane w locie, anulowanie zadania i serii, ponowienie, przypięcie do CPU + wysoki priorytet), **serie** (`create_series`: walidacja wszystkich configów → zapis wszystkich plików → kolejka), stan w `results/gui/jobs.json` (v2) |
-| `series.py` | generator serii: osie (klucze, lista / zakres / potęgi, parowanie), iloczyn kartezjański, nazwy `NN_<opis>`, `write_series` (`configs/…/series/<id>/` + `series.json`, `results/…/series/<id>/`), szablony `TEMPLATES` — **wspólny z `tools/make_series.py`** (bez FastAPI) |
+| `series.py` | generator serii: osie (klucze, lista / zakres / potęgi, parowanie), iloczyn kartezjański, nazwy `NN_<opis>`, `write_series` (`configs/…/series/<id>/` + `series.json`, `results/…/series/<id>/`), szablony `TEMPLATES`; **wspólny z `tools/make_series.py`** (bez FastAPI) |
 | `compare.py` | wyniki serii w tabeli (`times.json`, `stats.json`, `config_used.json`), koszt jednostkowy, wykrywanie parametrów zmiennych, CSV |
-| `heightmap.py` | mapy wysokości: walidacja CSV (reguły silnika, komunikaty po polsku), obraz PNG/JPG → mapa (Pillow), lista i zapis w `configs/heightmaps/`, metadane map z prawdziwego terenu (`load_geo`: bbox, skala — szer./dł. w GUI) |
-| `replay.py` | odtwarzanie erupcji: pojawienie / zastygnięcie komórki, stan i temperatura w kroku k, liczby komórek w każdym kroku — ta sama reguła co `static/js/replay.js` |
-| `export.py` | ZIP folderu wyniku, VTK ImageData `.vti` (zlib / binary / ascii) — także `tools/export_vtk.py` |
+| `heightmap.py` | mapy wysokości: walidacja CSV (reguły silnika, komunikaty po polsku), obraz PNG/JPG → mapa (Pillow), lista i zapis w `configs/heightmaps/`, metadane map z prawdziwego terenu (`load_geo`: bbox, skala; szer./dł. w GUI) |
+| `replay.py` | odtwarzanie erupcji: pojawienie / zastygnięcie komórki, stan i temperatura w kroku k, liczby komórek w każdym kroku (ta sama reguła co `static/js/replay.js`) |
+| `export.py` | ZIP folderu wyniku, VTK ImageData `.vti` (zlib / binary / ascii), używany też przez `tools/export_vtk.py` |
 | `names.py` | bezpieczne nazwy plików z tekstu użytkownika, znacznik czasu |
 | `results.py` | odczyt wyników: `ca_result.bin` v1/v2 i `.txt`, `mc_result.*`, `times.json`, `stats.json`, `mc_stats.csv`; `np.memmap` dla plików > 128 MB; LRU ostatnich wyników; lista wyników do 4 poziomów w głąb (`results/gui/series/<seria>/<zadanie>`, foldery po `engine --batch`); miniatury (`maxSide`) |
 | `render.py` | czyste funkcje numpy: przekrój (próbkowanie > 4 mln komórek), ściany, mapa powierzchni (też wysokość samej skały), woksele |
-| `static/` | frontend bez kroku budowania: `index.html` (+ zestaw ikon SVG), `css/style.css` (zmienne obu motywów), `js/*.js` (moduły ES; `replay.js`: pasek odtwarzania, paleta „żar”, ZIP z klatkami PNG, WebM; `ventpicker.js`: kratery na mapie; `theme.js`: motyw), `vendor/` (three.js, Chart.js, fonty Inter i JetBrains Mono — wersje, licencje i sumy w `vendor/README.md`) |
-| `tests/` | pytest (`test_results.py`, `test_jobs.py`, `test_series.py`, `test_heightmap.py`, `test_export.py`, `test_fetch_dem.py`, `test_replay.py`, `test_perf.py`: 146 testów), `screenshots.py` (Playwright: scenariusz i zrzuty `docs/img/gui_*.png`, prawdziwy teren: `real_*.png`, `replay_*.png`; `--only-series`, `--skip-series`, `--only-real`, `--skip-real`, `--theme dark/light`), `ui_shots.py` (zrzuty zakładek bez tworzenia zadań — `ui_przed_*`, `ui_po_*`, `ui_jasny_*`, rozdzielczości `--size`/`--dpr`, płynność odtwarzania `--fps`), `palette_check.py` (kontrast WCAG obu motywów, kolory komórek przy daltonizmie — emulacja Chromium; `--wykresy` — kolory wykresów zakładki „Wydajność”), `run_ca_vs_mc.py` (seria CA vs MC przez GUI → `docs/img/ca_vs_mc.png`, `docs/data/ca_vs_mc*.{csv,json}`) |
+| `static/` | frontend bez kroku budowania: `index.html` (+ zestaw ikon SVG), `css/style.css` (zmienne obu motywów), `js/*.js` (moduły ES; `replay.js`: pasek odtwarzania, paleta „żar”, ZIP z klatkami PNG, WebM; `ventpicker.js`: kratery na mapie; `theme.js`: motyw), `vendor/` (three.js, Chart.js, fonty Inter i JetBrains Mono; wersje, licencje i sumy w `vendor/README.md`) |
+| `tests/` | pytest (`test_results.py`, `test_jobs.py`, `test_series.py`, `test_heightmap.py`, `test_export.py`, `test_fetch_dem.py`, `test_replay.py`, `test_perf.py`: 146 testów), `screenshots.py` (Playwright: scenariusz i zrzuty `docs/img/gui_*.png`, prawdziwy teren: `real_*.png`, `replay_*.png`; `--only-series`, `--skip-series`, `--only-real`, `--skip-real`, `--theme dark/light`), `ui_shots.py` (zrzuty zakładek bez tworzenia zadań: `ui_przed_*`, `ui_po_*`, `ui_jasny_*`, rozdzielczości `--size`/`--dpr`, płynność odtwarzania `--fps`), `palette_check.py` (kontrast WCAG obu motywów, kolory komórek przy daltonizmie w emulacji Chromium; `--wykresy`: kolory wykresów zakładki „Wydajność”), `run_ca_vs_mc.py` (seria CA vs MC przez GUI → `docs/img/ca_vs_mc.png`, `docs/data/ca_vs_mc*.{csv,json}`) |
 
 Frontend: `main.js` (zakładki, formularz, wyniki, wybór wyniku), `form.js` (formularz z domyślnego configu silnika
-+ opisy pól i reguły „nie dotyczy”), `series.js` (zakładka „Seria”), `jobs.js` (zakładka „Zadania” — kolejka),
-`compare.js` (zakładka „Porównanie” — tabela, wykres, galeria), `heightmap.js` (mapa wysokości w formularzu),
-`estimate.js` (szacunek pamięci/czasu z pomiarów profilu aplikacji), `palette.js` (kolory danych i legendy — jedyne miejsce z paletą
++ opisy pól i reguły „nie dotyczy”), `series.js` (zakładka „Seria”), `jobs.js` (zakładka „Zadania”: kolejka),
+`compare.js` (zakładka „Porównanie”: tabela, wykres, galeria), `heightmap.js` (mapa wysokości w formularzu),
+`estimate.js` (szacunek pamięci/czasu z pomiarów profilu aplikacji), `palette.js` (kolory danych i legendy, jedyne miejsce z paletą
 naukową), `theme.js` (motyw ciemny / jasny: przełącznik, `localStorage`, kolory z CSS dla canvasu, three.js i Chart.js),
 `viewer2d.js` (canvas), `viewer3d.js` (three.js), `stats.js` (Chart.js), `perf.js` (zakładka „Wydajność”: sekcje
 i wykresy z pliku `static/data/wydajnosc.json`, który tworzy `python tools\wydajnosc_gui.py` z `bench/results/`),
@@ -58,15 +58,15 @@ i wykresy z pliku `static/data/wydajnosc.json`, który tworzy `python tools\wyda
 
 ## Zasady
 
-- **Backend tylko na 127.0.0.1**; nic nie liczy — obliczenia robi wyłącznie silnik C++ (także walidacja configów serii).
+- **Backend tylko na 127.0.0.1**; nic nie liczy: obliczenia robi wyłącznie silnik C++ (także walidacja configów serii).
 - **Frontend bez kroku budowania** (bez npm/webpack/React); biblioteki **lokalnie** w `static/vendor/`
-  w przypiętych wersjach — GUI działa bez internetu.
+  w przypiętych wersjach, więc GUI działa bez internetu.
 - Do przeglądarki idą tylko wycinki (przekrój, ściany, powierzchnia, woksele, miniatury) jako surowe bajty
   z opisem w nagłówku `X-Meta`; kolorowanie po stronie przeglądarki.
 - Identyfikatory wyników, serie, nazwy zadań i mapy nie mogą wyjść poza `results/`, `configs/gui/`,
   `configs/heightmaps/` (testy w `tests/`).
-- Logika serii tylko w `series.py` (nie kopiować do `tools/`); pomiary czasu — 1 worker + przypięcie.
-- Wykresy: jedna oś Y, kolor = wartość serii (CA = lawa, MC = fiolet — `theme.js`; inne podziały — paleta
+- Logika serii tylko w `series.py` (nie kopiować do `tools/`); pomiary czasu: 1 worker + przypięcie.
+- Wykresy: jedna oś Y, kolor = wartość serii (CA = lawa, MC = fiolet z `theme.js`; inne podziały: paleta
   kategoryczna motywu), legenda + tabela jako uzupełnienie.
 - Kolory: interfejs tylko przez zmienne CSS motywu (`css/style.css`), dane tylko przez `palette.js`; JS nie wpisuje
   kolorów na sztywno. Fonty i ikony lokalnie (bez internetu). Opis: `docs/wyglad-interfejsu.md`.

@@ -45,7 +45,8 @@ Razem **25 wykresów** i tabela.
 
 Każda karta ma ten sam układ, od góry:
 
-1. **tytuł** i znacznik kompilatora, przełączniki wykresu, przyciski **Tabela** (te same dane w tabeli: dostępna
+1. **tytuł** i znacznik kompilatora („MSVC” albo „GCC (WSL)”, a przy wykresach z MPI razem z biblioteką: „MSVC / MS-MPI”,
+   „GCC / OpenMPI (WSL)”), przełączniki wykresu, przyciski **Tabela** (te same dane w tabeli: dostępna
    alternatywa dla podpowiedzi i koloru) i **Eksport PNG** (tytuł, wykres i warunki w kolorach bieżącego motywu);
 2. **wykres** z podpowiedzią po najechaniu (dokładna wartość, rozrzut [min–max], liczba powtórzeń, czasy; tu i tylko
    tu mogą się pojawić klucze techniczne, np. „automat (caSim)”);
@@ -75,7 +76,8 @@ w dwóch podpisanych grupach wierszy: „Kroki k1–k4, taktowanie dynamiczne”
 frontalny”), wartość = przyspieszenie kroku (czas przed krokiem / czas po kroku), rośnie w prawo od ×1. W wierszu
 osobny słupek dla każdej rodziny przypadków (lawa, rozrost ziaren, Monte Carlo), tylko gdy krok jej dotyczy; brak
 słupka = „krok nie dotyczy”. Rozrzut przypadków jest w podpowiedzi. k6 ma napis „nie mierzono (brak czasu na
-pomiary)”, k8 „bez zysku (×1,0), tylko ustawienia porównawcze”. Pod wykresem w „Jak czytać” lista kroków, po jednym
+pomiary)”, k8 „bez zysku (×1,0), tylko ustawienia porównawcze”. Bardzo krótkie słupki (różnica do 3%) nie mają
+liczby, żeby etykiety kilku rodzin nie nachodziły na siebie; „bez zmian” jest w podpowiedzi. Pod wykresem w „Jak czytać” lista kroków, po jednym
 zdaniu na krok. Przełącznik „miara”: cały przebieg albo tylko zmieniona część programu.
 
 ![Wpływ każdego kroku optymalizacji](img/gui_wydajnosc_zblizenie_kroki.png)
@@ -90,10 +92,12 @@ siatki. Oś: „chybienia na komórkę i krok albo na próbę”.
 ![Chybienia pamięci podręcznej, para porównań, poziom D1](img/gui_wydajnosc_zblizenie_chybienia.png)
 
 **Model pamięci z kodu vs pomiar.** Domyślny widok to **błąd modelu w %** ((model − pomiar) / pomiar): wiersz na
-przypadek, pogrupowany po rodzinie (rozrost ziaren, lawa, Monte Carlo), pełne koło = 1 wątek, puste kwadraty = suma po
-procesach MPI (jeden wariant na znacznik), szare pasmo ±10%, przy Monte Carlo 200×200×200 dopisek „model zawyża”. Drugi
+przypadek, pogrupowany po rodzinie (rozrost ziaren, lawa, Monte Carlo), pełne koło = 1 wątek, pusty kwadrat = suma po
+procesach MPI z zebraniem wyniku na procesie 0, pełny trójkąt = suma po procesach z zapisem MPI-IO (jeden wariant
+na znacznik; wniosek „do 8%” dotyczy kwadratów), szare pasmo ±10%, przy Monte Carlo 200×200×200 dopisek „model zawyża”. Drugi
 widok, „model vs pomiar”, to wykres punktowy w skali logarytmicznej z linią „pomiar = model” i pasmem ±10%, z legendą
-w dwóch podpisanych rzędach (kolor: tryb, kształt: rodzina). Stała pamięć programu odjęta od pomiaru jest opisana
+w dwóch podpisanych rzędach (kolor: tryb, u procesów MPI pusty znacznik = zebranie wyniku, pełny = MPI-IO; kształt:
+rodzina). Stała pamięć programu odjęta od pomiaru jest opisana
 słownie w „Jak czytać” (6,3 MB dla programu jednowątkowego, 9,6 MB na każdy proces MPI).
 
 ![Model pamięci z kodu vs pomiar, widok błędu w procentach](img/gui_wydajnosc_zblizenie_model.png)
@@ -157,15 +161,16 @@ python tools\wydajnosc_gui.py --check    # tylko sprawdzenie, czy plik jest aktu
 ```
 
 - Skrypt czyta pliki pomiarów i zestawia je tymi samymi funkcjami co skrypty pomiarowe: zestawienie S / E i łączne
-  przyspieszenie z `bench/zestawienie_e12.py` (`collect()`, S zawsze od T(1) tej samej sesji), pamięć z `bench/memory.py`
+  przyspieszenie z `bench/zestawienie.py` (`collect()`, S zawsze od T(1) tej samej sesji), pamięć z `bench/memory.py`
   (`med_rows()`, `mpi_model()`), części pomiarów typów MPI i MPI-IO: ostatnia wersja każdej części. Nie uruchamia
   silnika. Po nowym pomiarze wystarczy uruchomić skrypt ponownie.
 - **Plik JSON jest w repozytorium**: GUI działa bez skryptu i bez danych `bench/results/*/`, także w wersji minimalnej.
   Test `test_json_is_fresh` porównuje plik ze świeżo wygenerowanym.
-- **Format 2** (opis w nagłówku skryptu): `format`, `generated`, `generator`, `sources`, `compilers`, `header` (zasada
+- **Format 2** (opis w nagłówku skryptu): `format`, `generated`, `generator`, `sources`, `compilers`,
+  `compilersShort` (plakietka wykresów bez MPI), `header` (zasada
   i plakietki), `glossary` (Pojęcia: `term`, `def`), `conditions`, `summary` (kafelki, tabela, wykres rozbicia,
   „Jak czytać”), `sections[]` (`id`, `title`, `intro`, `doc`, `charts[]`). Wykres: `id`, `title`, `kind` (`line`,
-  `bar`, `hbar`, `scatter`, `dots`), `selectors`, `compilers`, `views` (klucz = kompilator i wartości przełączników
+  `bar`, `hbar`, `scatter`, `dots`), `selectors`, `compilers`, `mpi` (czy wykres dotyczy MPI), `views` (klucz = kompilator i wartości przełączników
   połączone „|”), `lead` (myśl przewodnia), `conclusion`, `howto[]` (Jak czytać), `steps` (lista kroków k1–k8),
   `conditions` (słownie), `sources` (Skąd dane), `doc` (`pdf`, `title`, `section`). Widok: osie (tytuł, skala log.,
   format, zakres), serie (`name`, `role`: znaczenie koloru, znacznik, linia przerywana, dane, `lo` / `hi`, podpowiedzi

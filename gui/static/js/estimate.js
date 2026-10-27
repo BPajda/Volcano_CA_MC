@@ -80,11 +80,11 @@ export function estimate(cfg, mcFrom = null) {
   }
   const ms = caMs + mcMs + (txt ? N * 150e-6 : 0);
 
-  if (bytes > 8 * 1024 * MB) warnings.push({ level: 'error', text: `Szacowana pamięć ${fmtBytes(bytes)} — więcej niż typowy komputer (zostaw ~25% RAM systemowi).` });
+  if (bytes > 8 * 1024 * MB) warnings.push({ level: 'error', text: `Szacowana pamięć ${fmtBytes(bytes)}: więcej niż typowy komputer (zostaw ~25% RAM systemowi).` });
   else if (bytes > 2 * 1024 * MB) warnings.push({ level: 'warn', text: `Duża siatka: ~${fmtBytes(bytes)} pamięci.` });
-  if (ms > 10 * 60 * 1000) warnings.push({ level: 'warn', text: `Szacowany czas ${fmtTime(ms)} — długie obliczenia (zadanie można anulować).` });
-  if (txt && N > 1e7) warnings.push({ level: 'warn', text: `Plik txt dla ${fmtInt(N)} komórek: ~${fmtBytes((9 + 3 * digits) * N)} i wolny zapis — wybierz format bin.` });
-  if (N > 3e7) warnings.push({ level: 'warn', text: 'Bardzo duży wynik — podgląd 2D/3D czyta tylko przekroje i ściany, ale wczytanie metadanych może potrwać.' });
+  if (ms > 10 * 60 * 1000) warnings.push({ level: 'warn', text: `Szacowany czas ${fmtTime(ms)}: długie obliczenia (zadanie można anulować).` });
+  if (txt && N > 1e7) warnings.push({ level: 'warn', text: `Plik txt dla ${fmtInt(N)} komórek: ~${fmtBytes((9 + 3 * digits) * N)} i wolny zapis; wybierz format bin.` });
+  if (N > 3e7) warnings.push({ level: 'warn', text: 'Bardzo duży wynik: podgląd 2D/3D czyta tylko przekroje i ściany, ale wczytanie metadanych może potrwać.' });
   if (d === 2 && Nf > 2.5 * N && N > 1e6) warnings.push({ level: 'info', text: 'Siatka 2D: ramka w nieużywanej osi zajmuje 2/3 pamięci.' });
   return { cells: N, dims: [nx, ny, nz], d, bytes, ms, caMs, mcMs, steps, fileBytes, warnings, mcOn, full, classic };
 }

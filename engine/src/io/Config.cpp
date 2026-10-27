@@ -137,7 +137,7 @@ std::vector<std::pair<int, int>> getColumns(const ojson& j, const std::string& p
         for (const auto& c : out) {  // lista jest krótka — wystarczy porównanie z poprzednimi
             if (c.first == xi && c.second == yi) {
                 throw ConfigError("Parametr " + q(where) + " = " + p.dump() +
-                                  " powtarza kolumnę z wcześniejszego elementu listy — w jednej kolumnie może być "
+                                  " powtarza kolumnę z wcześniejszego elementu listy; w jednej kolumnie może być "
                                   "najwyżej jeden krater");
             }
         }
@@ -192,7 +192,7 @@ void Config::merge(ojson& base, const ojson& patch, const std::string& prefix) {
         ojson& target = base[key];
         if (target.is_object()) {
             if (!it.value().is_object()) {
-                throw ConfigError("Parametr " + q(path) + " jest sekcją — oczekiwano obiektu { ... }, podano: " +
+                throw ConfigError("Parametr " + q(path) + " jest sekcją: oczekiwano obiektu { ... }, podano: " +
                                   it.value().dump());
             }
             merge(target, it.value(), path);
@@ -367,20 +367,20 @@ Config Config::fromJson(const ojson& j) {
         if (static_cast<std::size_t>(c.vents.count) != listed) {
             throw ConfigError("vents.count (" + std::to_string(c.vents.count) +
                               ") musi być równe liczbie kraterów w „vents.positions” (" + std::to_string(listed) +
-                              ") — przy placement = \"positions\" każdy krater ma podane położenie");
+                              "), bo przy placement = \"positions\" każdy krater ma podane położenie");
         }
     } else if (lavaCa && listed > 0) {
         c.warnings.push_back("vents.positions jest ignorowane, bo vents.placement = \"" +
                              std::string(c.vents.placement == VentPlacement::Crater ? "crater" : "random") +
                              "\" (położenia losowane); kratery w zadanych miejscach: placement = \"positions\"");
     } else if (runsCa && c.ca.mode == CaMode::Classic && c.vents.placement == VentPlacement::Positions) {
-        c.warnings.push_back("w trybie classic zarodki są losowane w całej przestrzeni — vents.placement = "
+        c.warnings.push_back("w trybie classic zarodki są losowane w całej przestrzeni, więc vents.placement = "
                              "\"positions\" i vents.positions są ignorowane");
     }
     c.vents.eruptionSteps = getInt(j, "vents.eruptionSteps", 0, 65535);
     c.vents.eruptTemp = getNumber(j, "vents.eruptTemp", -1e6, 1e6);
     if (runsCa && c.ca.mode == CaMode::Lava && c.vents.eruptTemp < c.ca.solidusTemp) {
-        throw ConfigError("vents.eruptTemp musi być nie mniejsze niż ca.solidusTemp — inaczej lawa "
+        throw ConfigError("vents.eruptTemp musi być nie mniejsze niż ca.solidusTemp, inaczej lawa "
                           "zastygłaby od razu w kraterze");
     }
     if (runsCa && c.ca.mode == CaMode::Classic && static_cast<std::size_t>(c.vents.count) > c.space.cells()) {
@@ -394,7 +394,7 @@ Config Config::fromJson(const ojson& j) {
                           "klasyczny rozrost ziaren MC to mc.domain = \"full\"");
     }
     if (c.mc.fullOnly() && c.mc.mobilityFromCooling) {
-        c.warnings.push_back("mc.mobilityFromCooling dotyczy tylko mc.domain = \"basalt\" (czas stygnięcia lawy z CA) — "
+        c.warnings.push_back("mc.mobilityFromCooling dotyczy tylko mc.domain = \"basalt\" (czas stygnięcia lawy z CA); "
                              "w trybie full jest ignorowane");
     }
 
@@ -416,12 +416,12 @@ Config Config::fromJson(const ojson& j) {
     c.parallel.affinity =
         getEnum<Affinity>(j, "parallel.affinity", {{"none", Affinity::None}, {"pcores", Affinity::PCores}});
     if (!openmpBuilt() && c.parallel.threads != 1) {
-        c.warnings.push_back("program zbudowano bez OpenMP (VOLCANO_OPENMP=OFF) — parallel.threads = " +
+        c.warnings.push_back("program zbudowano bez OpenMP (VOLCANO_OPENMP=OFF): parallel.threads = " +
                              std::to_string(c.parallel.threads) + " jest ignorowane, obliczenia w jednym wątku");
     }
     if (c.mc.enabled && !c.mc.checkerboard && c.parallel.threads != 1) {
-        c.warnings.push_back("mc.update = \"random\" jest z natury sekwencyjne (każda próba widzi wynik poprzednich) — "
-                             "pętla MC idzie w jednym wątku; równoległe MC: mc.update = \"checkerboard\"");
+        c.warnings.push_back("mc.update = \"random\" jest z natury sekwencyjne (każda próba widzi wynik poprzednich), "
+                             "więc pętla MC idzie w jednym wątku; równoległe MC: mc.update = \"checkerboard\"");
     }
     // Etap 10: priorytet procesu i wariant wymiany warstw brzegowych MPI — tylko walidacja; wartości czytają
     // highPriority() i mpiExchangeChanged() z effective (bez nowych pól struktury — układ kodu MSVC, etap 6, punkt 7).

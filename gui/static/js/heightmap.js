@@ -49,7 +49,7 @@ export class HeightmapPanel {
     const info = $('#hm-info');
     if (known) {
       const sp = cfg.space || {};
-      let text = `<code>${esc(known.file)}</code> — ${known.nx}×${known.ny} kolumn, wysokość ${known.min.toFixed(1)}–${known.max.toFixed(1)} komórek`;
+      let text = `<code>${esc(known.file)}</code>: ${known.nx}×${known.ny} kolumn, wysokość ${known.min.toFixed(1)}–${known.max.toFixed(1)} komórek`;
       if (known.note) text += `<br>${esc(known.note)}`;
       if (known.geo) {
         const g = known.geo, b = g.bbox;
@@ -57,11 +57,11 @@ export class HeightmapPanel {
           + ` w poziomie, ${g.metersPerCellZ?.toFixed(1)} m w pionie (przewyższenie ×${g.exaggeration?.toFixed(1)}) · ${esc(g.source || '')}`
           + ` (przypisanie danych: <code>configs/heightmaps/README.md</code>)`;
       }
-      if (sp.nx !== known.nx || sp.ny !== known.ny) text += `<br>${notice('error', `Wymiary siatki ${sp.nx}×${sp.ny} nie pasują do mapy ${known.nx}×${known.ny} — wybierz mapę ponownie albo popraw space.nx / space.ny.`)}`;
+      if (sp.nx !== known.nx || sp.ny !== known.ny) text += `<br>${notice('error', `Wymiary siatki ${sp.nx}×${sp.ny} nie pasują do mapy ${known.nx}×${known.ny}. Wybierz mapę ponownie albo popraw space.nx / space.ny.`)}`;
       if (classic) text += `<br>${notice('info', 'W trybie classic / MC full teren jest pomijany.')}`;
       info.innerHTML = text;
     } else if (file) {
-      info.innerHTML = `terrain.file = <code>${esc(file)}</code> (plik spoza configs/heightmaps/ — bez podglądu)`;
+      info.innerHTML = `terrain.file = <code>${esc(file)}</code> (plik spoza configs/heightmaps/, bez podglądu)`;
     } else {
       info.textContent = 'Teren ze stożka wulkanu (parametry w sekcji „Teren”). Mapa z pliku daje dowolny kształt: kalderę z wyłomem, kanion, dwa wulkany.';
     }
@@ -165,7 +165,7 @@ export class HeightmapPanel {
       await this.refresh();
       $('#hm-select').value = res.file;
       this.onSelect();
-      msg.innerHTML = notice('ok', `Zapisano <code>${esc(res.file)}</code> — ${res.nx}×${res.ny}, wysokość ${res.min.toFixed(1)}–${res.max.toFixed(1)}.
+      msg.innerHTML = notice('ok', `Zapisano <code>${esc(res.file)}</code>: ${res.nx}×${res.ny}, wysokość ${res.min.toFixed(1)}–${res.max.toFixed(1)}.
         Formularz: terrain.type = file, wymiary siatki z mapy.`) + res.warnings.map((w) => notice('warn', esc(w))).join('');
     } catch (err) {
       msg.innerHTML = (err.errors || [err.message]).map((e) => notice('error', esc(e))).join('');

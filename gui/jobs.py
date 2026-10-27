@@ -197,7 +197,7 @@ class JobManager:
             if job.status == "running":
                 # Proces silnika zginął razem z GUI (albo działa bez nadzoru) — wynik niepewny.
                 job.status = "interrupted"
-                job.error = "przerwane — GUI zostało zamknięte w trakcie obliczeń"
+                job.error = "przerwane: GUI zostało zamknięte w trakcie obliczeń"
                 job.finished = job.finished or _now()
             self._jobs[job.id] = job
         q = data.get("queue") or {}
@@ -625,7 +625,7 @@ class JobManager:
                     logf.flush()
                 elif threads != 1:
                     prio = "priorytet wysoki" if priority else "priorytet normalny"
-                    logf.write(f"# wątki OpenMP: {threads if threads > 0 else 'wszystkie'} — {prio}, bez przypięcia "
+                    logf.write(f"# wątki OpenMP: {threads if threads > 0 else 'wszystkie'}, {prio}, bez przypięcia "
                                "do jednego procesora (rdzenie wątków wybiera silnik: parallel.affinity)\n")
                     logf.flush()
                 with self._lock:

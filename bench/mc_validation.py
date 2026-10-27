@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Walidacja statystyczna szachownicy MC (etap 9): mc.update = checkerboard vs random (wariant naiwny).
+"""Walidacja statystyczna szachownicy MC: mc.update = checkerboard vs random (wariant naiwny).
 
 Szachownica to inny proces losowy niż wariant naiwny (inny porządek prób: kolor po kolorze, każda komórka raz na MCS,
 zamiast N prób w losowych komórkach ze zwracaniem), więc wyniki nie są bitowo te same — porównujemy rozkłady. Dla każdego
@@ -7,7 +7,7 @@ przypadku i ≥ 10 ziaren generatora (rngSeed) oba warianty liczą ten sam ukła
   * liczbę ziaren i średnią wielkość ziarna po N MCS (średnia, odchylenie, przedział ufności 95%, różnica względna,
     statystyka t Welcha),
   * kinetykę: wykładnik wzrostu n z dopasowania średniej wielkości ziarna ~ MCS^n (MCS 20..N, każde ziarno osobno),
-  * krzywe liczby ziaren i średniej wielkości vs MCS (średnia i min–max po ziarnach) -> docs/img/etap9_mc_walidacja.png.
+  * krzywe liczby ziaren i średniej wielkości vs MCS (średnia i min–max po ziarnach) -> docs/img/openmp_mc_walidacja.png.
 
 Przypadki: configs/mc_full_2d.json (200², von Neumann, Q = 50) i configs/mc_full_3d.json (50³, Moore, Q = 50) z kT jak
 w configach (0) i 100 MCS, oraz 2D z kT = 0,3 (czy zgodność trzyma się także przy akceptacji ruchów pod górę; poniżej
@@ -45,12 +45,16 @@ from plot_profile import C, INK2, save, style  # noqa: E402  (paleta i styl wykr
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "bench" / "results" / "omp"
-MODES = [("random", "random (wariant naiwny)", C[0]), ("checkerboard", "szachownica", C[1])]
+MODES = [("random", "losowa kolejność (wariant naiwny)", C[0]), ("checkerboard", "szachownica", C[1])]
 CASES = [
     ("2d_vn_kT0", "2D 200², von Neumann, kT = 0", "mc_full_2d", {"mc": {"mcs": 100, "statsEvery": 5}}),
     ("3d_moore_kT0", "3D 50³, Moore, kT = 0", "mc_full_3d", {"mc": {"mcs": 100, "statsEvery": 5}}),
     ("2d_vn_kT03", "2D 200², von Neumann, kT = 0,3", "mc_full_2d", {"mc": {"mcs": 100, "statsEvery": 5, "kT": 0.3}}),
 ]
+# Nazwy przypadków na wykresie (tabela mc_walidacja.md zostaje z krótkimi nazwami z CASES).
+PLOT_LABEL = {"2d_vn_kT0": "Monte Carlo 200×200, von Neumann, kT = 0",
+              "3d_moore_kT0": "Monte Carlo 50×50×50, Moore, kT = 0",
+              "2d_vn_kT03": "Monte Carlo 200×200, von Neumann, kT = 0,3"}
 
 
 def run_all(exe: str, seeds: list[int]) -> pd.DataFrame:
@@ -164,12 +168,12 @@ def plot(df: pd.DataFrame, out: Path) -> None:
             ax.set_xlabel("MCS")
             ax.set_ylabel(ylab)
             if i == 0:
-                ax.set_title(label, color=INK2)
+                ax.set_title(PLOT_LABEL.get(cid, label), color=INK2)
     axes[0][0].legend(loc="lower left")
     seeds = df["seed"].nunique()
-    fig.suptitle(f"Szachownica vs wariant naiwny MC — średnia i min–max z {seeds} ziaren generatora", y=1.0)
+    fig.suptitle(f"Szachownica i wariant naiwny Monte Carlo: średnia i min–max z {seeds} ziaren generatora", y=1.0)
     fig.tight_layout()
-    save(fig, out, "etap9_mc_walidacja.png")
+    save(fig, out, "openmp_mc_walidacja.png")
 
 
 def main() -> int:

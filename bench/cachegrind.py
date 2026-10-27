@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Symulacja pamięci podręcznej (etap 12): valgrind --tool=cachegrind na programie GCC (`build-gcc-release-g` — kod jak
+"""Symulacja pamięci podręcznej: valgrind --tool=cachegrind na programie GCC (`build-gcc-release-g` — kod jak
 Release -O3, z -g), 1 wątek, w WSL. Liczniki sprzętowe nie są dostępne (WSL: brak perf, Windows: liczniki PMU
 wymagają uprawnień administratora — bench/results/testy/POSTEP.md), więc chybienia liczy symulator.
 

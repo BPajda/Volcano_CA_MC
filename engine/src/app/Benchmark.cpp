@@ -202,7 +202,7 @@ int Benchmark::runFromCli(const CliOptions& opt) {
               << "CPU: " << cpu << ", kompilator: " << TimingReport::compilerName() << ", build: "
               << TimingReport::buildType() << "\n";
     if (TimingReport::buildType() != "Release") {
-        std::cout << "UWAGA: build Debug — czasy nie są miarodajne, uruchom wersję Release.\n";
+        std::cout << "UWAGA: build Debug, czasy nie są miarodajne; uruchom wersję Release.\n";
     }
     std::cout << '\n' << tableHeader() << '\n' << std::flush;
 

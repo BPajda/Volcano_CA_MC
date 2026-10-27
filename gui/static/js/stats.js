@@ -119,7 +119,7 @@ function caStatsCard(s) {
 function mcStatsCard(mc) {
   if (!mc) return '';
   let html = `<div class="card"><h3>Statystyki MC (stats.json)</h3>${kv([
-    ['domena', `${esc(mc.domain)} — ${fmtInt(mc.domainCells)} komórek`], ['Q / MCS', `${mc.Q} / ${mc.mcs}`],
+    ['domena', `${esc(mc.domain)}, ${fmtInt(mc.domainCells)} komórek`], ['Q / MCS', `${mc.Q} / ${mc.mcs}`],
     ['J / kT', `${num(mc.J)} / ${num(mc.kT)}`], ['sąsiedztwo / brzeg', `${esc(mc.neighborhood)} / ${esc(mc.boundary)}`],
     ['mobilność', mc.mobility === 'cooling' ? `ze stygnięcia (min ${num(mc.mobilityMin)})` : 'wyłączona'],
     ['ziarna: start → koniec', `${fmtInt(mc.grainsStart)} → ${fmtInt(mc.grainsEnd)}`],
@@ -131,7 +131,7 @@ function mcStatsCard(mc) {
   if (bm) {
     const row = (name, c) => `<tr><td>${name}</td><td class="num">${fmtInt(c.cells)}</td><td class="num">${fmtInt(c.grainsEnd)}</td>
       <td class="num">${num(c.meanGrainSizeEnd)}</td><td class="num">${fmtInt(c.largestGrainEnd)}</td></tr>`;
-    html += `<p class="legend-title">Wg mobilności (próg ${num(bm.threshold)}) — efekt „chilled margin”</p>
+    html += `<p class="legend-title">Wg mobilności (próg ${num(bm.threshold)}): efekt „chilled margin”</p>
       <table class="table"><thead><tr><th>Klasa</th><th class="num">komórki</th><th class="num">ziarna</th><th class="num">średnia</th>
       <th class="num">największe</th></tr></thead><tbody>${row('długo płynna (m ≥ 0,5)', bm.high)}${row('szybko zastygła (m < 0,5)', bm.low)}</tbody></table>`;
   }
@@ -168,7 +168,7 @@ export function renderStats(root, d) {
   const t = d.times || {};
   const s = d.stats || {};
   let html = '';
-  html += d.times ? timesCard(t) : '<div class="card"><h3>Czasy</h3><p class="empty">Brak times.json — wynik bez pomiaru czasu</p></div>';
+  html += d.times ? timesCard(t) : '<div class="card"><h3>Czasy</h3><p class="empty">Brak times.json (wynik bez pomiaru czasu)</p></div>';
   html += d.times ? infoCard(t) : '';
   html += memoryCard(t);
   html += caStatsCard(s);

@@ -871,6 +871,11 @@ export class PerfView {
     box.hidden = false;
   }
 
+  /** Nazwa kompilatora na plakietce: z biblioteką MPI tylko przy wykresach, które dotyczą MPI. */
+  compilerName(comp, spec) {
+    return spec?.mpi === false ? (this.data.compilersShort?.[comp] || this.data.compilers[comp]) : this.data.compilers[comp];
+  }
+
   render(c) {
     const { comp, view, subst } = this.resolve(c);
     c.dirty = false;
@@ -879,9 +884,11 @@ export class PerfView {
     const chip = $('[data-role=chip]', c.el);
     const notes = [];
     if (comp) {
-      chip.textContent = this.data.compilers[comp];
+      chip.textContent = this.compilerName(comp, c.spec);
       chip.hidden = false;
-      if (comp !== this.compiler) notes.push(`Brak danych ${this.data.compilers[this.compiler]}, pokazano ${this.data.compilers[comp]}.`);
+      if (comp !== this.compiler) {
+        notes.push(`Brak danych ${this.compilerName(this.compiler, c.spec)}, pokazano ${this.compilerName(comp, c.spec)}.`);
+      }
       if (comp === 'gcc') notes.push(this.data.conditions.gcc);
     } else {
       chip.hidden = true;
@@ -939,7 +946,7 @@ export class PerfView {
     ctx.fillRect(0, 0, out.width, out.height);
     ctx.fillStyle = th.ink;
     ctx.font = `600 ${16 * k}px ${th.font}`;
-    ctx.fillText(`${c.spec.title}${comp ? ` (${this.data.compilers[comp]})` : ''}`, pad, 26 * k);
+    ctx.fillText(`${c.spec.title}${comp ? ` (${this.compilerName(comp, c.spec)})` : ''}`, pad, 26 * k);
     ctx.drawImage(src, pad, head);
     ctx.fillStyle = th.ink2;
     ctx.font = `${12 * k}px ${th.font}`;

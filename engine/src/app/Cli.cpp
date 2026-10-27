@@ -102,19 +102,19 @@ CliOptions Cli::parse(int argc, const char* const* argv) {
     // Seria (etap 5): configi pochodzą z folderu, więc --config i --mc-from nie mają sensu;
     // --set, --grid, --timing-detail i --out dotyczą wszystkich przebiegów serii.
     if (!opt.batchDir.empty() && (!opt.configPath.empty() || !opt.mcFrom.empty() || opt.benchmark || opt.validate)) {
-        throw CliError("--batch uruchamia wszystkie configi z folderu — nie łączy się z --config, --mc-from, "
+        throw CliError("--batch uruchamia wszystkie configi z folderu i nie łączy się z --config, --mc-from, "
                        "--benchmark ani --validate (dozwolone: --out, --set, --grid, --threads, --timing-detail, "
                        "--thread-stats, --progress)");
     }
     if (opt.validate && (opt.benchmark || opt.progress || opt.timingDetail || opt.threadStats)) {
-        throw CliError("--validate tylko sprawdza config (--config, --set, --mc-from) — nie łączy się z "
+        throw CliError("--validate tylko sprawdza config (--config, --set, --mc-from) i nie łączy się z "
                        "--benchmark, --progress, --timing-detail ani --thread-stats");
     }
     if (opt.benchmark && opt.threadStats) {
-        throw CliError("--thread-stats dotyczy pojedynczej symulacji — nie działa razem z --benchmark");
+        throw CliError("--thread-stats dotyczy pojedynczej symulacji, nie działa razem z --benchmark");
     }
     if (opt.benchmark && opt.progress) {
-        throw CliError("--progress dotyczy pojedynczej symulacji — nie działa razem z --benchmark");
+        throw CliError("--progress dotyczy pojedynczej symulacji, nie działa razem z --benchmark");
     }
     if (!opt.benchmark && (opt.quick || opt.repeats != 3)) {
         throw CliError("--quick i --repeats działają tylko razem z --benchmark");
@@ -123,15 +123,15 @@ CliOptions Cli::parse(int argc, const char* const* argv) {
         throw CliError("--mc-from nie działa razem z --benchmark");
     }
     if (opt.benchmark && opt.timingDetail) {
-        throw CliError("--timing-detail dotyczy pojedynczej symulacji — nie działa razem z --benchmark");
+        throw CliError("--timing-detail dotyczy pojedynczej symulacji, nie działa razem z --benchmark");
     }
     return opt;
 }
 
 std::string Cli::usage() {
     return
-        "engine — symulacja erupcji wulkanu: spływ lawy (automat komórkowy) i krystalizacja\n"
-        "zastygłej lawy (Monte Carlo)\n"
+        "engine: symulacja erupcji wulkanu (spływ lawy jako automat komórkowy i krystalizacja\n"
+        "zastygłej lawy metodą Monte Carlo)\n"
         "\n"
         "Użycie:\n"
         "  engine --config <plik.json> --out <folder> [--set klucz=wartość]... [--grid vector|matrix]\n"
@@ -154,9 +154,9 @@ std::string Cli::usage() {
         "  --grid <g>         reprezentacja siatki: vector (płaska tablica) lub matrix\n"
         "  --threads N        liczba wątków OpenMP (skrót dla --set parallel.threads=N; 0 = wszystkie,\n"
         "                     1 = jeden wątek); harmonogram i przypinanie: parallel.schedule, parallel.chunk,\n"
-        "                     parallel.affinity (pcores — jeden wątek na rdzeń fizyczny P)\n"
+        "                     parallel.affinity (pcores: jeden wątek na rdzeń fizyczny P)\n"
         "  --high-priority    proces z wysokim priorytetem (skrót dla --set parallel.priority=high; pomiary\n"
-        "                     wielowątkowe i engine_mpi pod mpiexec — inaczej program w tle zatrzymuje\n"
+        "                     wielowątkowe i engine_mpi pod mpiexec; inaczej program w tle zatrzymuje\n"
         "                     wątki i procesy na barierach)\n"
         "  --mc-from <f>      samo Monte Carlo na wyniku CA z folderu f (ca_result.bin lub .txt);\n"
         "                     parametry MC z sekcji mc configu (mc.domain = basalt), wymiary z pliku\n"
@@ -169,9 +169,9 @@ std::string Cli::usage() {
         "  --repeats N        liczba powtórzeń każdego przypadku benchmarku (mediana), domyślnie 3\n"
         "  --quick            benchmark bez przypadków >= 1 mln komórek\n"
         "  --timing-detail    dodatkowo czasy faz wewnątrz CA (ramka, D(n), reguły, zamiana buforów)\n"
-        "                     i MC (kroki, składniki statystyk) — sekcja detail w times.json\n"
+        "                     i MC (kroki, składniki statystyk): sekcja detail w times.json\n"
         "  --thread-stats     czas pracy każdego wątku w fazach kroku CA i MC (min / średnia / maks po wątkach,\n"
-        "                     nierównomierność obciążenia, procesory) — sekcja threadStats w times.json\n"
+        "                     nierównomierność obciążenia, procesory): sekcja threadStats w times.json\n"
         "  --progress         co ~0,5 s linia postępu na stdout: PROGRESS ca <krok>/<maxSteps> active=<n>,\n"
         "                     PROGRESS mc <MCS>/<mcs>, PROGRESS save 0/1 (dla GUI); z --batch:\n"
         "                     PROGRESS batch <gotowe>/<wszystkie> po każdym configu\n"

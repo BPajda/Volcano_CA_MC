@@ -88,7 +88,7 @@ def main() -> int:
     # Konsola Windows bez UTF-8 (np. potok w Git Bash, cp1250) — znaki spoza strony kodowej jako „?”.
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
-    ap = argparse.ArgumentParser(description="Seria zadań bez GUI: configi + engine --batch (etap 5)",
+    ap = argparse.ArgumentParser(description="Seria zadań bez GUI: configi + engine --batch",
                                  formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__.split("\n\n", 2)[2])
     src = ap.add_mutually_exclusive_group()
     src.add_argument("--template", help="gotowy szablon serii (jak w GUI), np. ca_vs_mc")

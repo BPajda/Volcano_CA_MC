@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wulkan CA + MC</title>
+  <title>Wulkan: spływ lawy (CA) i krystalizacja bazaltu (MC)</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M3 43 17.6 17.2c1-1.7 2.6-1.9 3.8-.5l1.2 1.4c.8.9 2 .9 2.8 0l1.2-1.4c1.2-1.4 2.8-1.2 3.8.5L45 43Z' fill='%233a3632'/%3E%3Cpath d='M22.6 18.1c.8.9 2 .9 2.8 0l.9 6.1c-1.1 2.3.4 4.6.9 7.1.5 2.4-.4 4.6-1.6 6.7-1.4-2-2.6-4.2-3-6.7-.4-2.4-.9-4.8.1-7.1Z' fill='%23ff6a1f'/%3E%3Cpath d='M24 3.5c2.6 3.7 3.6 5.5 3.6 7.1a3.6 3.6 0 0 1-7.2 0c0-1.6 1-3.4 3.6-7.1Z' fill='%23ffb02e'/%3E%3C/svg%3E">
   <!-- Motyw przed pierwszym malowaniem (bez mignięcia): wybór z localStorage, inaczej ustawienie systemu
        (prefers-color-scheme). Pełna obsługa przełącznika: js/theme.js. -->
@@ -73,7 +73,7 @@
     <a class="brand" href="#form" title="Nowa symulacja">
       <svg class="brand-logo" aria-hidden="true"><use href="#i-volcano"></use></svg>
       <span class="brand-text">
-        <span class="brand-title">Wulkan — spływ lawy (CA) i krystalizacja bazaltu (MC)</span>
+        <span class="brand-title">Wulkan: spływ lawy (CA) i krystalizacja bazaltu (MC)</span>
         <span class="brand-sub">Automat komórkowy + Monte Carlo (model Pottsa)</span>
       </span>
     </a>
@@ -196,7 +196,7 @@
           <div class="card-head">
             <h3>Kratery na mapie</h3>
             <span class="hint"><code>vents.placement = positions</code>: kliknięcie dodaje krater w kolumnie (x, y),
-              kliknięcie na znaczniku go usuwa; lista trafia do <code>vents.positions</code>, liczba — do <code>vents.count</code></span>
+              kliknięcie na znaczniku go usuwa; lista trafia do <code>vents.positions</code>, a liczba do <code>vents.count</code></span>
           </div>
           <div class="vp-row">
             <canvas id="vp-canvas" class="vp-canvas" width="520" height="520"></canvas>
@@ -266,7 +266,7 @@
           <div id="series-axes"></div>
           <div class="hint series-help">
             Zadania serii to <b>iloczyn kartezjański</b> wartości wszystkich osi. <b>Parowanie:</b> kilka kluczy w jednej osi
-            zmienia się razem — np. <code>space.nx</code> + <code>space.ny</code> dla siatek kwadratowych.
+            zmienia się razem, np. <code>space.nx</code> + <code>space.ny</code> dla siatek kwadratowych.
             Wartości: <code>100, 200, 500</code> (przy kluczach sparowanych ta sama wartość trafia do wszystkich),
             krotka <code>100;100;1</code> (kolejno dla kolejnych kluczy), etykieta <code>[CA] false;basalt</code>,
             teksty bez cudzysłowów (<code>moore, von_neumann</code>), <code>true</code>/<code>false</code>.
@@ -337,7 +337,7 @@
           <tbody></tbody>
         </table>
       </div>
-      <p id="jobs-empty" class="empty" hidden>Brak zadań — utwórz je w zakładce „Nowa symulacja” albo „Seria”.</p>
+      <p id="jobs-empty" class="empty" hidden>Brak zadań. Utwórz je w zakładce „Nowa symulacja” albo „Seria”.</p>
     </div>
   </section>
 
@@ -374,10 +374,10 @@
           <tbody></tbody>
         </table>
       </div>
-      <p id="results-empty" class="empty" hidden>Brak wyników w <code>results/</code> — uruchom symulację w zakładce „Nowa symulacja”.</p>
-      <p class="hint">ZIP — cały folder wyniku (config_used, wyniki, times, stats, log). VTK — plik <code>.vti</code>
+      <p id="results-empty" class="empty" hidden>Brak wyników w <code>results/</code>. Uruchom symulację w zakładce „Nowa symulacja”.</p>
+      <p class="hint">ZIP: cały folder wyniku (config_used, wyniki, times, stats, log). VTK: plik <code>.vti</code>
         (ImageData, pola komórek <code>type</code>, <code>flowId</code>, <code>temp</code>, <code>crystal</code>…) do ParaView.
-        MC — samo Monte Carlo na tym wyniku CA (<code>--mc-from</code>).</p>
+        MC: samo Monte Carlo na tym wyniku CA (<code>--mc-from</code>).</p>
     </div>
   </section>
 
@@ -432,7 +432,7 @@
     <div class="card">
       <div class="card-head">
         <h3>Galeria mikrostruktur</h3>
-        <span class="hint">przekroje 2D wszystkich wyników — kliknij miniaturę, aby otworzyć podgląd 2D</span>
+        <span class="hint">przekroje 2D wszystkich wyników; kliknij miniaturę, aby otworzyć podgląd 2D</span>
         <div class="toolbar">
           <label class="field-inline">Pole <select id="cmp-gal-field">
             <option value="auto">automatycznie (kryształ MC / ziarno CA)</option>
@@ -503,7 +503,7 @@
           <div id="v2-tooltip" class="tooltip" hidden></div>
           <div id="v2-loading" class="loading" hidden>wczytywanie…</div>
         </div>
-        <p class="hint viewer-status" id="v2-status">Kółko myszy — powiększenie, przeciąganie — przesuwanie.</p>
+        <p class="hint viewer-status" id="v2-status">Kółko myszy: powiększenie, przeciąganie: przesuwanie.</p>
       </div>
       <aside class="card legend-card"><h3>Legenda</h3><div id="v2-legend"></div></aside>
     </div>
@@ -522,7 +522,7 @@
             </span>
           </span>
           <label class="field-inline">Pole <select id="v3-field"></select></label>
-          <label class="field-inline" id="v3-top-group" title="Górna warstwa wulkanu to prawie samo powietrze — rzut z góry pokazuje najwyższą niepustą komórkę każdej kolumny">
+          <label class="field-inline" id="v3-top-group" title="Górna warstwa wulkanu to prawie samo powietrze, więc rzut z góry pokazuje najwyższą niepustą komórkę każdej kolumny">
             <input id="v3-top-surface" type="checkbox"> górna ściana = rzut z góry</label>
           <label class="field-inline" id="v3-exag-group" hidden>Przewyższenie
             <input id="v3-exag" type="range" min="0.5" max="3" step="0.25" value="1">
@@ -551,7 +551,7 @@
         <div class="canvas-wrap sky" id="v3-wrap">
           <div id="v3-loading" class="loading" hidden>wczytywanie…</div>
         </div>
-        <p class="hint viewer-status" id="v3-status">Lewy przycisk — obrót, prawy — przesuwanie, kółko — powiększenie.</p>
+        <p class="hint viewer-status" id="v3-status">Lewy przycisk: obrót, prawy: przesuwanie, kółko: powiększenie.</p>
       </div>
       <aside class="card legend-card"><h3>Legenda</h3><div id="v3-legend"></div></aside>
     </div>

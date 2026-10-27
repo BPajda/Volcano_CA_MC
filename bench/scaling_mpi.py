@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pomiar skalowania MPI (etap 10): przyspieszenie S(p) = T(1)/T(p), efektywność E(p) = S(p)/p, część szeregowa
+"""Pomiar skalowania MPI: przyspieszenie S(p) = T(1)/T(p), efektywność E(p) = S(p)/p, część szeregowa
 z prawa Amdahla i udział komunikacji dla engine_mpi przy p procesach (domyślnie 1, 2, 3, 4, 6, 8 — tylko rdzenie P),
 z wariantami hybrydowymi (procesy × wątki OpenMP), wariantem wymiany `mpi.exchange = changed` i — dla porównania przy
 tej samej liczbie rdzeni — programem engine z wątkami OpenMP.
@@ -375,7 +375,7 @@ def main() -> int:
     ap.add_argument("--mpiexec", default="mpiexec", help="polecenie mpiexec (domyślnie z PATH)")
     ap.add_argument("--cases", help="tylko wybrane przypadki (id po przecinku)")
     ap.add_argument("--variants", help=f"warianty (domyślnie {DEFAULT_VARIANTS}; z --weak {DEFAULT_WEAK_VARIANTS})")
-    ap.add_argument("--weak", action="store_true", help="skalowanie słabe (etap 12): przestrzeń razy liczba rdzeni "
+    ap.add_argument("--weak", action="store_true", help="skalowanie słabe: przestrzeń razy liczba rdzeni "
                                                          "wariantu, przypadki scaling.weak_cases()")
     ap.add_argument("--reps", type=int, help="powtórzenia (domyślnie z tabeli przypadków)")
     ap.add_argument("--min-reps", type=int, default=5, help="minimalna liczba powtórzeń (domyślnie 5)")
@@ -413,7 +413,7 @@ def main() -> int:
         return from_raw(args, plan)
     too_many = [v["label"] for v in variants if v["cores"] > 8]
     if too_many:
-        ap.error(f"tryb oszczędny: najwyżej 8 procesów × wątków (warianty {', '.join(too_many)})")
+        ap.error(f"pomiary tylko na rdzeniach P: najwyżej 8 procesów × wątków (warianty {', '.join(too_many)})")
     name = args.name or "skalowanie_mpi_" + dt.datetime.now().strftime("%Y-%m-%d_%H%M")
 
     # --- tryb --wsl: ten sam skrypt w WSL; tło mierzone po stronie Windows ---
@@ -556,7 +556,7 @@ def main() -> int:
                       f"koniec {load_end.get('totalPercent', 0):.0f}%")
     if args.weak:
         header.append("- Skalowanie słabe: przestrzeń razy liczba rdzeni wariantu, `output.format = none`; wyników "
-                      "różnych rozmiarów nie porównuje się bitowo (zgodność procesów — etapy 10–11)")
+                      "różnych rozmiarów nie porównuje się bitowo (zgodność procesów sprawdzają pomiary MPI oraz typów MPI i MPI-IO)")
     else:
         header.append(f"- Zgodność wyników z `{variants[0]['label']}`: " +
                       ("wszystkie przebiegi bitowo zgodne" if failures == 0 else f"**{failures} różnic**"))

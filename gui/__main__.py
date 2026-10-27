@@ -32,14 +32,14 @@ def main() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if s.connect_ex((settings.host, settings.port)) == 0:
             url = f"http://{settings.host}:{settings.port}/"
-            print(f"Port {settings.port} jest zajęty — GUI już działa? Otwieram {url}\n"
+            print(f"Port {settings.port} jest zajęty (GUI już działa?). Otwieram {url}\n"
                   f"(inny port: python -m gui --port 8001)")
             if not args.no_browser:
                 webbrowser.open(url)
             return 1
 
     url = f"http://{settings.host}:{settings.port}/"
-    print(f"GUI symulacji wulkanu: {url}  (Ctrl+C — zatrzymanie)")
+    print(f"GUI symulacji wulkanu: {url}  (Ctrl+C: zatrzymanie)")
     print(f"Silnik: {settings.engine or 'NIE ZNALEZIONO'} ({settings.engine_source})")
     for w in settings.warnings:
         print(f"Ostrzeżenie: {w}")

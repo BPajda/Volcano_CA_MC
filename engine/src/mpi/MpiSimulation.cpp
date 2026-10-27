@@ -468,7 +468,7 @@ ProcessSetup setupProcess(MpiContext& ctx, const Config& c, TimingReport& timing
         if (ctx.root() && static_cast<std::size_t>(ctx.size) * static_cast<std::size_t>(par.threads) >
                               plan.cpus.size()) {
             warnings.push_back("procesy × wątki = " + std::to_string(ctx.size * par.threads) + " > liczba rdzeni P (" +
-                               std::to_string(plan.cpus.size()) + ") — część rdzeni dostaje po kilka wątków");
+                               std::to_string(plan.cpus.size()) + "), część rdzeni dostaje po kilka wątków");
         }
     }
     return out;
@@ -480,11 +480,11 @@ ProcessSetup setupProcess(MpiContext& ctx, const Config& c, TimingReport& timing
 void prepareMcFrom(Config& cfg, const std::string& folder, bool headerOnly, Microstructure& ca, BinHeader& header,
                    ResultSource& src, CoolingData& cooling, std::vector<std::string>& warnings, TimingReport& timing) {
     if (cfg.mc.domain != McDomain::Basalt) {
-        throw ConfigError("--mc-from krystalizuje wynik CA z pliku — wymaga mc.domain = \"basalt\" (podano \"" +
+        throw ConfigError("--mc-from krystalizuje wynik CA z pliku, więc wymaga mc.domain = \"basalt\" (podano \"" +
                           std::string(nameOf(cfg.mc.domain)) + "\")");
     }
     if (!cfg.mc.enabled) {
-        warnings.push_back("mc.enabled = false — w trybie --mc-from Monte Carlo jest uruchamiane zawsze");
+        warnings.push_back("mc.enabled = false, a w trybie --mc-from Monte Carlo jest uruchamiane zawsze");
         cfg.mc.enabled = true;
     }
     Timer t;
@@ -505,7 +505,7 @@ void prepareMcFrom(Config& cfg, const std::string& folder, bool headerOnly, Micr
         warnings.push_back("wymiary z pliku " + std::to_string(ca.dims.nx) + " x " + std::to_string(ca.dims.ny) +
                            " x " + std::to_string(ca.dims.nz) + " różnią się od space z configu (" +
                            std::to_string(cfg.space.nx) + " x " + std::to_string(cfg.space.ny) + " x " +
-                           std::to_string(cfg.space.nz) + ") — obowiązują wymiary z pliku");
+                           std::to_string(cfg.space.nz) + "); obowiązują wymiary z pliku");
     }
     cfg.space = ca.dims;
     if (cfg.neighborhood == NeighborhoodKind::Hexagonal && !cfg.space.is2D()) {
@@ -533,16 +533,16 @@ void MpiSimulation::checkConfig(const Config& cfg, int processes) {
                           "reprezentacji siatki w programie engine)");
     }
     if (cfg.mc.enabled && !cfg.mc.checkerboard && processes > 1) {
-        throw ConfigError("mc.update = \"random\" (wariant naiwny) jest sekwencyjny — każda próba widzi wynik "
+        throw ConfigError("mc.update = \"random\" (wariant naiwny) jest sekwencyjny: każda próba widzi wynik "
                           "poprzednich, więc nie da się go rozdzielić między procesy; przy " +
                           std::to_string(processes) + " procesach wymagane mc.update = \"checkerboard\" "
-                          "(szachownica, etap 9) albo 1 proces");
+                          "(szachownica) albo 1 proces");
     }
     const int layers = layerCountOf(cfg.space);
     if (processes > layers) {
         throw ConfigError("za dużo procesów: " + std::to_string(processes) + " > liczba warstw przestrzeni (" +
                           std::to_string(layers) + (layerAxisZ(cfg.space) ? " w osi z" : " w osi y") +
-                          ") — każdy proces potrzebuje co najmniej jednej warstwy");
+                          "), a każdy proces potrzebuje co najmniej jednej warstwy");
     }
 }
 
@@ -795,11 +795,11 @@ McSummary MpiSimulation::runMc(MpiContext& ctx, const Config& cfg, const Microst
             }
         }
         if (cooling == CoolingData::None && cfg.mc.mobilityFromCooling) {
-            s.warnings.push_back("wynik CA bez solidStep/arrivalStep (plik txt) — mobilność ze stygnięcia "
+            s.warnings.push_back("wynik CA bez solidStep/arrivalStep (plik txt): mobilność ze stygnięcia "
                                  "wyłączona, MC jak dla mobilityFromCooling = false");
         }
         if (cooling == CoolingData::SolidOnly) {
-            s.warnings.push_back("ca_result.bin w wersji 1 nie zawiera arrivalStep — czas w stanie płynnym "
+            s.warnings.push_back("ca_result.bin w wersji 1 nie zawiera arrivalStep, czas w stanie płynnym "
                                  "liczony od kroku 0 (= solidStep)");
         }
     }
@@ -812,7 +812,7 @@ McSummary MpiSimulation::runMc(MpiContext& ctx, const Config& cfg, const Microst
     MPI_Allreduce(MPI_IN_PLACE, &cells, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, ctx.comm);
     s.domainCells = static_cast<std::size_t>(cells);
     if (s.domainCells == 0) {
-        s.warnings.push_back(full ? "domena MC jest pusta" : "domena MC jest pusta — wynik CA nie zawiera bazaltu");
+        s.warnings.push_back(full ? "domena MC jest pusta" : "domena MC jest pusta: wynik CA nie zawiera bazaltu");
     }
     std::unique_ptr<ThreadStats> threadStats;
     if (timing.threadStatsEnabled() && par.parallel() && mc.checkerboard()) {

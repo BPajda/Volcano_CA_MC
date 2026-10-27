@@ -1,5 +1,5 @@
 {
-  "_opis": "Większy wulkan 3D (150x150x80) z 5 kraterami bocznymi — demonstracja i pomiary wydajności.",
+  "_opis": "Większy wulkan 3D (150x150x80) z 5 kraterami bocznymi: demonstracja i pomiary wydajności.",
   "space":        { "nx": 150, "ny": 150, "nz": 80 },
   "grid":         "vector",
   "boundary":     "absorbing",

@@ -456,7 +456,7 @@ def plot_detail(df, build, out):
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Wykresy profilu aplikacji (etap 3)")
+    ap = argparse.ArgumentParser(description="Wykresy profilu aplikacji")
     ap.add_argument("--csv", help="podsumowanie z run_profile.py (domyślnie najnowszy pełny zestaw)")
     ap.add_argument("--build", default="msvc-O2", help="build głównych wykresów (domyślnie msvc-O2)")
     ap.add_argument("--out", default=str(ROOT / "docs" / "img"), help="folder na PNG")

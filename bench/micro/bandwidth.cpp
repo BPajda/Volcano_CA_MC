@@ -17,8 +17,8 @@
 // Użycie: bandwidth [--mode stream|sizes|false|all] [--threads 1,2,4,6,8] [--size-mb 160] [--reps 10] [--pin]
 //                   [--high-priority] [--csv plik]
 //   --pin: wątki przypięte jak parallel.affinity = pcores (rdzenie P: procesory 2, 4, …, 14, 0; parallel/Affinity.*).
-// Wynik: tabela na stdout (+ CSV). Build: cel CMake bandwidth (tylko z OpenMP). Pomiar czasu — wolny komputer, tryb
-// oszczędny (bez turbo), procesy przypięte; plan: bench/results/testy/PLAN_POMIARU.md.
+// Wynik: tabela na stdout (+ CSV). Build: cel CMake bandwidth (tylko z OpenMP). Pomiar czasu — wolny komputer,
+// taktowanie bazowe, procesy przypięte; plan: bench/results/testy/PLAN_POMIARU.md.
 
 #include <algorithm>
 #include <atomic>
@@ -403,7 +403,7 @@ int main(int argc, char** argv) {
     }
     for (const int p : threads) {
         if (p < 1 || p > 8) {
-            std::fprintf(stderr, "Tryb oszczędny: 1–8 wątków (podano %d)\n", p);
+            std::fprintf(stderr, "Pomiar tylko na rdzeniach P: 1–8 wątków (podano %d)\n", p);
             return 2;
         }
     }

@@ -81,28 +81,63 @@ def texts(obj, path: str = ""):
 
 
 def js_strings(src: str) -> list[str]:
-    """Napisy z kodu JS ('…', "…", `…`) bez komentarzy — to, co może trafić na ekran."""
-    out, i, n = [], 0, len(src)
-    while i < n:
-        c = src[i]
-        if src.startswith("//", i):
-            i = src.find("\n", i)
-            i = n if i < 0 else i
-        elif src.startswith("/*", i):
-            i = src.find("*/", i + 2) + 2
-        elif c in "'\"`":
-            j, buf = i + 1, []
-            while j < n and src[j] != c:
-                if src[j] == "\\":
-                    buf.append(src[j:j + 2])
-                    j += 2
-                    continue
-                buf.append(src[j])
-                j += 1
-            out.append("".join(buf))
-            i = j + 1
-        else:
-            i += 1
+    """Napisy z kodu JS ('…', "…", `…`) bez komentarzy — to, co może trafić na ekran. W szablonie `…${wyr}…` tekst
+    szablonu jest jednym napisem (wyrażenie zastępuje znak \\0), a napisy z wyrażenia — osobnymi (także zagnieżdżone)."""
+    out, n = [], len(src)
+
+    def code(i: int, in_expr: bool) -> int:
+        depth = 0
+        while i < n:
+            c = src[i]
+            if src.startswith("//", i):
+                i = src.find("\n", i)
+                i = n if i < 0 else i
+            elif src.startswith("/*", i):
+                j = src.find("*/", i + 2)
+                i = n if j < 0 else j + 2
+            elif c in "'\"":
+                j, buf = i + 1, []
+                while j < n and src[j] != c:
+                    buf.append(src[j:j + 2] if src[j] == "\\" else src[j])
+                    j += 2 if src[j] == "\\" else 1
+                out.append("".join(buf))
+                i = j + 1
+            elif c == "`":
+                i = template(i + 1)
+            elif c == "/" and re.search(r"(^|[(,=:\[!&|?{};]|return)\s*$", src[max(0, i - 12):i]):
+                j, cls = i + 1, False  # wyrażenie regularne /…/ (może zawierać cudzysłowy, np. /[&<>"']/g)
+                while j < n and src[j] != "\n" and (cls or src[j] != "/"):
+                    cls = (cls or src[j] == "[") and src[j] != "]"
+                    j += 2 if src[j] == "\\" else 1
+                i = j + 1
+            elif in_expr and c == "{":
+                depth += 1
+                i += 1
+            elif in_expr and c == "}":
+                if depth == 0:
+                    return i + 1
+                depth -= 1
+                i += 1
+            else:
+                i += 1
+        return i
+
+    def template(i: int) -> int:
+        buf = []
+        while i < n and src[i] != "`":
+            if src[i] == "\\":
+                buf.append(src[i:i + 2])
+                i += 2
+            elif src.startswith("${", i):
+                buf.append("\0")
+                i = code(i + 2, True)
+            else:
+                buf.append(src[i])
+                i += 1
+        out.append("".join(buf))
+        return i + 1
+
+    code(0, False)
     return out
 
 
@@ -281,6 +316,33 @@ def test_perf_js_texts():
     bad = [s for s in js_strings(PERF_JS.read_text(encoding="utf-8"))
            if "—" in s or re.search("etap|turbo", s, re.I)]
     assert not bad, bad
+
+
+def prose_dash(s: str) -> bool:
+    """Długa pauza w prozie: „—” poza znakiem pustej wartości ('—', „krok —”, „do końca: —”) i poza pustą pozycją
+    listy wyboru („— wybierz preset —”)."""
+    if s.strip() == "—":
+        return False
+    s = re.sub(r"(['\"])—\1", "", s)
+    s = re.sub(r"— [^—<>'\"]+ —", "", s)
+    s = re.sub(r"(krok|do końca:) —", "", s)
+    return "—" in s
+
+
+def test_gui_texts_without_dash():
+    """Teksty wszystkich zakładek (index.html bez komentarzy, napisy z js/*.js) bez długich pauz w prozie."""
+    static = ROOT / "gui" / "static"
+    html = re.sub(r"<!--.*?-->|/\*.*?\*/", "", (static / "index.html").read_text(encoding="utf-8"), flags=re.S)
+    bad = [ln.strip() for ln in html.splitlines() if prose_dash(ln)]
+    for js in sorted((static / "js").glob("*.js")):
+        bad += [f"{js.name}: {s[:80]}" for s in js_strings(js.read_text(encoding="utf-8")) if prose_dash(s)]
+    assert not bad, bad
+
+
+def test_app_title():
+    html = (ROOT / "gui" / "static" / "index.html").read_text(encoding="utf-8")
+    title = "Wulkan: spływ lawy (CA) i krystalizacja bazaltu (MC)"
+    assert f"<title>{title}</title>" in html and f'<span class="brand-title">{title}</span>' in html
 
 
 def test_pdf_links_exist(data):

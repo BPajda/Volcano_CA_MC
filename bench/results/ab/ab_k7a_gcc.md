@@ -1,6 +1,6 @@
 # Test A/B `ab_k7a_gcc`
 
-Stabilizacja układu kodu GCC: k7a = kod k7 z -falign-functions=64 (przyjęte jako domyślne w GCC Release), tryb oszczędny (bez turbo); grupa mc bez 100^3
+Stabilizacja układu kodu GCC: k7a = kod k7 z -falign-functions=64 (przyjęte jako domyślne w GCC Release), taktowanie bazowe; grupa mc bez 100^3
 
 - Tabela z pomiaru `ab_k7a_gcc_ca_raw.csv`, `ab_k7a_gcc_mc_raw.csv` (te same przebiegi naprzemienne; programy k5, k7, k7a; warunki pomiaru i tło — w nagłówku `ab_k7a_gcc_ca.md`, `ab_k7a_gcc_mc.md`)
 

@@ -166,7 +166,7 @@ def create_app(settings: Settings | None = None, start_workers: bool = True) -> 
         yield
         jobs.shutdown(cancel_running=True)
 
-    app = FastAPI(title="Wulkan: CA + MC — GUI", docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json",
+    app = FastAPI(title="Wulkan: spływ lawy (CA) i krystalizacja bazaltu (MC)", docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json",
                   lifespan=lifespan)
     app.state.settings, app.state.jobs, app.state.store, app.state.engine = settings, jobs, store, engine
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
@@ -459,7 +459,7 @@ def create_app(settings: Settings | None = None, start_workers: bool = True) -> 
         path = heightmap.save_map(settings.heightmaps_dir, body.name, h, comment)
         warnings = []
         if body.nz and float(h.max()) > body.nz - 5:
-            warnings.append(f"Najwyższy punkt mapy ({h.max():.1f}) jest blisko nz = {body.nz} — nad terenem zostaje "
+            warnings.append(f"Najwyższy punkt mapy ({h.max():.1f}) jest blisko nz = {body.nz}: nad terenem zostaje "
                             "mało miejsca na lawę; zwiększ nz.")
         if info_.get("clipped"):
             warnings.append(f"Część wysokości przekraczała nz = {body.nz} i została przycięta.")
@@ -576,7 +576,7 @@ def create_app(settings: Settings | None = None, start_workers: bool = True) -> 
     def result_vtk(id: str, format: str = Query("zlib", pattern="^(zlib|binary|ascii)$")):
         d = store.load(id)
         if format == "ascii" and d.dims[0] * d.dims[1] * d.dims[2] > 2_000_000:
-            raise ResultError("Format ascii tylko dla wyników do 2 mln komórek — wybierz zlib albo binary")
+            raise ResultError("Format ascii tylko dla wyników do 2 mln komórek; wybierz zlib albo binary")
         name = download_name(id)
         fd, tmp = tempfile.mkstemp(prefix="volcano_", suffix=".vti")
         os.close(fd)

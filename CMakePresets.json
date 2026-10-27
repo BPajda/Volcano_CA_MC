@@ -25,7 +25,7 @@
     {
       "name": "msvc-o1",
       "inherits": "msvc-base",
-      "displayName": "MSVC Release /O1 (profil, etap 3)",
+      "displayName": "MSVC Release /O1 (profil aplikacji)",
       "description": "Porównanie poziomów optymalizacji: Release z /O1 (minimalny rozmiar) zamiast /O2.",
       "binaryDir": "${sourceDir}/build-msvc-o1",
       "cacheVariables": {
@@ -37,8 +37,8 @@
     {
       "name": "msvc-release-avx2",
       "inherits": "msvc-base",
-      "displayName": "MSVC Release /arch:AVX2 (etap 8, porównanie flag)",
-      "description": "Release z instrukcjami AVX2 (procesory od ok. 2013 r.) — porównanie z domyślnym /O2; domyślny preset bez zmian (przenośność).",
+      "displayName": "MSVC Release /arch:AVX2 (porównanie flag)",
+      "description": "Release z instrukcjami AVX2 (procesory od ok. 2013 r.): porównanie z domyślnym /O2; domyślny preset bez zmian (przenośność).",
       "binaryDir": "${sourceDir}/build-msvc-avx2",
       "cacheVariables": {
         "CMAKE_CONFIGURATION_TYPES": "Release",
@@ -48,7 +48,7 @@
     {
       "name": "msvc-profile",
       "inherits": "msvc-base",
-      "displayName": "MSVC Release + PDB (profiler Visual Studio, etap 3)",
+      "displayName": "MSVC Release + PDB (profiler Visual Studio)",
       "description": "Ten sam kod co Release (/O2 /Ob2), dodatkowo symbole /Zi + /DEBUG, żeby profiler pokazał nazwy funkcji.",
       "binaryDir": "${sourceDir}/build-msvc-profile",
       "cacheVariables": {
@@ -60,7 +60,7 @@
     {
       "name": "msvc-profile-noinline",
       "inherits": "msvc-profile",
-      "displayName": "MSVC Release + PDB, kluczowe funkcje bez inline (profil, etap 3)",
+      "displayName": "MSVC Release + PDB, kluczowe funkcje bez inline (profil aplikacji)",
       "binaryDir": "${sourceDir}/build-msvc-profile-noinline",
       "cacheVariables": { "VOLCANO_PROFILE_NOINLINE": "ON" }
     },
@@ -81,16 +81,16 @@
     {
       "name": "gcc-release-native",
       "inherits": "gcc-base",
-      "displayName": "GCC Release -march=native (etap 8, porównanie flag)",
-      "description": "Release z instrukcjami procesora, na którym kompilujemy (program nieprzenośny) — porównanie z domyślnym -O3.",
+      "displayName": "GCC Release -march=native (porównanie flag)",
+      "description": "Release z instrukcjami procesora, na którym kompilujemy (program nieprzenośny): porównanie z domyślnym -O3.",
       "binaryDir": "${sourceDir}/build-gcc-native",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG -march=native" }
     },
     {
       "name": "gcc-release-g",
       "inherits": "gcc-base",
-      "displayName": "GCC Release + -g (etap 12, cachegrind)",
-      "description": "Kod jak gcc-release (-O3 z VOLCANO_OPT_FLAG, -falign-functions=64) z informacją dla debuggera — valgrind --tool=cachegrind / cg_annotate przypisuje chybienia pamięci podręcznej do funkcji i wierszy; -g nie zmienia kodu GCC.",
+      "displayName": "GCC Release + -g (cachegrind)",
+      "description": "Kod jak gcc-release (-O3 z VOLCANO_OPT_FLAG, -falign-functions=64) z informacją dla debuggera: valgrind --tool=cachegrind / cg_annotate przypisuje chybienia pamięci podręcznej do funkcji i wierszy; -g nie zmienia kodu GCC.",
       "binaryDir": "${sourceDir}/build-gcc-release-g",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CMAKE_CXX_FLAGS_RELEASE": "-DNDEBUG -g" }
     },
@@ -104,7 +104,7 @@
     {
       "name": "gcc-o0",
       "inherits": "gcc-base",
-      "displayName": "GCC Release -O0 (profil, etap 3)",
+      "displayName": "GCC Release -O0 (profil aplikacji)",
       "description": "Porównanie poziomów optymalizacji: bez optymalizacji, ale z NDEBUG (bez asercji, inaczej niż Debug).",
       "binaryDir": "${sourceDir}/build-gcc-o0",
       "cacheVariables": {
@@ -116,7 +116,7 @@
     {
       "name": "gcc-o2",
       "inherits": "gcc-base",
-      "displayName": "GCC Release -O2 -g (profil, etap 3; też callgrind)",
+      "displayName": "GCC Release -O2 -g (profil aplikacji, też callgrind)",
       "description": "Porównanie -O2 vs -O3. Symbole -g nie zmieniają kodu GCC, a pozwalają callgrind przypisać koszt do linii źródła.",
       "binaryDir": "${sourceDir}/build-gcc-o2",
       "cacheVariables": {
@@ -128,7 +128,7 @@
     {
       "name": "gcc-o2-noinline",
       "inherits": "gcc-o2",
-      "displayName": "GCC -O2 -g, kluczowe funkcje bez inline (callgrind, etap 3)",
+      "displayName": "GCC -O2 -g, kluczowe funkcje bez inline (callgrind)",
       "description": "Jak gcc-o2, ale z VOLCANO_PROFILE_NOINLINE i bez -pg (program z -pg ginie pod valgrindem od SIGPROF).",
       "binaryDir": "${sourceDir}/build-gcc-o2-noinline",
       "cacheVariables": { "VOLCANO_PROFILE_NOINLINE": "ON" }
@@ -136,7 +136,7 @@
     {
       "name": "gcc-profile",
       "inherits": "gcc-base",
-      "displayName": "GCC -O2 -pg (gprof, etap 3)",
+      "displayName": "GCC -O2 -pg (gprof)",
       "binaryDir": "${sourceDir}/build-gcc-profile",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -148,7 +148,7 @@
     {
       "name": "gcc-profile-noinline",
       "inherits": "gcc-profile",
-      "displayName": "GCC -O2 -pg, kluczowe funkcje bez inline (gprof, etap 3)",
+      "displayName": "GCC -O2 -pg, kluczowe funkcje bez inline (gprof)",
       "binaryDir": "${sourceDir}/build-gcc-profile-noinline",
       "cacheVariables": { "VOLCANO_PROFILE_NOINLINE": "ON" }
     }

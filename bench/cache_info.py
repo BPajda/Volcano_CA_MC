@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parametry pamięci podręcznej procesora (etap 12): poziomy, rozmiary, asocjacyjność, długość linii i które procesory
+"""Parametry pamięci podręcznej procesora: poziomy, rozmiary, asocjacyjność, długość linii i które procesory
 logiczne dzielą każdą pamięć podręczną — z systemu, bez zgadywania z nazwy procesora.
 
 Windows: GetLogicalProcessorInformationEx (RelationCache + RelationProcessorCore — klasa wydajności rdzenia, czyli

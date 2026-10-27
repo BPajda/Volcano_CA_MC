@@ -226,7 +226,7 @@ def parse_points(keys: list[str], text: str) -> list[Point]:
             parts = parts * len(keys)   # sparowane klucze dostają tę samą wartość
         if len(parts) != len(keys):
             raise SeriesError(f"Punkt „{tok}” ma {len(parts)} wartości, a oś ma {len(keys)} "
-                              f"{'klucz' if len(keys) == 1 else 'klucze'} ({', '.join(keys)}) — "
+                              f"{'klucz' if len(keys) == 1 else 'klucze'} ({', '.join(keys)}); "
                               "podaj jedną wartość (dla wszystkich kluczy) albo krotkę a;b;c")
         points.append(Point(parts, label or default_label(keys, parts)))
     if not points:
@@ -259,7 +259,7 @@ def range_points(keys: list[str], start: Any, stop: Any, step: Any) -> list[Poin
         raise SeriesError("„do” musi być nie mniejsze niż „od”")
     n = int(math.floor((b - a) / s + 1e-9)) + 1
     if n > MAX_POINTS:
-        raise SeriesError(f"Zakres daje {n} wartości — maksimum to {MAX_POINTS} na oś")
+        raise SeriesError(f"Zakres daje {n} wartości, a maksimum to {MAX_POINTS} na oś")
     ints = all(float(x).is_integer() for x in (a, b, s))
     vals = _maybe_int([a + i * s for i in range(n)], ints)
     return [Point([v] * len(keys), default_label(keys, [v] * len(keys))) for v in vals]
@@ -332,7 +332,7 @@ def axis_from_dict(d: dict, number: int = 1) -> Axis:
     else:
         raise SeriesError(f"Oś „{name}”: nieznany tryb „{mode}” (list, range, pow, points)")
     if len(pts) > MAX_POINTS:
-        raise SeriesError(f"Oś „{name}” ma {len(pts)} punktów — maksimum to {MAX_POINTS}")
+        raise SeriesError(f"Oś „{name}” ma {len(pts)} punktów, a maksimum to {MAX_POINTS}")
     return Axis(name, keys, pts)
 
 
@@ -373,18 +373,18 @@ def expand(spec: SeriesSpec, allowed_keys: set[str] | None = None) -> list[Serie
     for a in axes:
         for k in a.keys:
             if k.startswith("_"):
-                errors.append(f"Klucz „{k}” zaczyna się od „_” — silnik takie klucze pomija")
+                errors.append(f"Klucz „{k}” zaczyna się od „_”, a silnik takie klucze pomija")
             elif allowed_keys is not None and k not in allowed_keys:
-                errors.append(f"Nieznany parametr „{k}” (oś „{a.name}”) — dozwolone klucze: jak w engine --print-defaults")
+                errors.append(f"Nieznany parametr „{k}” (oś „{a.name}”); dozwolone klucze: jak w engine --print-defaults")
             if k in seen and seen[k] != a.name:
-                errors.append(f"Klucz „{k}” jest w dwóch osiach („{seen[k]}” i „{a.name}”) — połącz je w jedną oś")
+                errors.append(f"Klucz „{k}” jest w dwóch osiach („{seen[k]}” i „{a.name}”); połącz je w jedną oś")
             seen[k] = a.name
     names = [a.name for a in axes]
     if len(set(names)) != len(names):
         errors.append("Osie muszą mieć różne nazwy")
     total = math.prod(len(a.points) for a in axes)
     if total > MAX_JOBS:
-        errors.append(f"Seria ma {total} zadań — maksimum to {MAX_JOBS}")
+        errors.append(f"Seria ma {total} zadań, a maksimum to {MAX_JOBS}")
     if errors:
         raise SeriesError(errors[0], errors)
 
@@ -408,7 +408,7 @@ def preview_warnings(jobs: list[SeriesJob]) -> list[str]:
     """Ostrzeżenia podglądu (liczba zadań)."""
     out = []
     if len(jobs) > WARN_JOBS:
-        out.append(f"Seria ma {len(jobs)} zadań (> {WARN_JOBS}) — obliczenia mogą potrwać długo; "
+        out.append(f"Seria ma {len(jobs)} zadań (> {WARN_JOBS}): obliczenia mogą potrwać długo; "
                    "sprawdź szacowany czas.")
     return out
 
@@ -496,7 +496,7 @@ TEMPLATES: list[dict] = [
         "id": "ca_vs_mc", "name": "CA vs MC: rozmiar siatki",
         "description": "Porównanie czasu symulacji: klasyczny rozrost CA (100 zarodków, von Neumann, periodyczne) "
                        "i naiwny MC full (Q = 50, 100 MCS, von Neumann, periodyczne) na tych samych siatkach "
-                       "2D {100², 200², 500², 1000²} i 3D {10³, 25³, 50³, 100³} — 16 zadań. Do pomiarów: 1 worker "
+                       "2D {100², 200², 500², 1000²} i 3D {10³, 25³, 50³, 100³}: 16 zadań. Do pomiarów: 1 worker "
                        "i przypięcie do rdzenia P.",
         "basePreset": None, "basePatch": _CLASSIC_BASE, "measure": True,
         "axes": [
@@ -510,7 +510,7 @@ TEMPLATES: list[dict] = [
     {
         "id": "seeds", "name": "Wpływ liczby zarodków",
         "description": "Rozrost klasyczny CA (von Neumann, periodyczne) z 1, 10, 100 i 1000 zarodkami na siatkach "
-                       "500² i 50³ — 8 zadań. Więcej zarodków = mniej kroków = krótszy czas.",
+                       "500² i 50³: 8 zadań. Więcej zarodków = mniej kroków = krótszy czas.",
         "basePreset": None, "basePatch": _CLASSIC_BASE, "measure": True,
         "axes": [
             {"name": "rozmiar", "keys": ["space.nx", "space.ny", "space.nz"],
@@ -524,7 +524,7 @@ TEMPLATES: list[dict] = [
     {
         "id": "neighborhood", "name": "Wpływ sąsiedztwa (2D)",
         "description": "Rozrost klasyczny CA (100 zarodków) i MC full (Q = 50, 100 MCS) na siatce 300×300, "
-                       "brzeg periodyczny, dla sąsiedztw von Neumann, Moore, losowe pentagonalne i heksagonalne — "
+                       "brzeg periodyczny, dla sąsiedztw von Neumann, Moore, losowe pentagonalne i heksagonalne: "
                        "8 zadań (czas, liczba kroków, liczba ziaren po MC).",
         "basePreset": None, "basePatch": deep_merge(_CLASSIC_BASE, {"space": {"nx": 300, "ny": 300, "nz": 1}}),
         "measure": True,
@@ -538,7 +538,7 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "lava_vents", "name": "Lawa: liczba kraterów",
-        "description": "Preset test_3d (64×64×48, kratery na zboczu) z 1, 3, 5 i 8 kraterami — 4 zadania: "
+        "description": "Preset test_3d (64×64×48, kratery na zboczu) z 1, 3, 5 i 8 kraterami, 4 zadania: "
                        "objętość lawy, zasięg, liczba kroków i czas CA.",
         "basePreset": "test_3d", "basePatch": {"output": {"format": "bin"}}, "measure": False,
         "axes": [

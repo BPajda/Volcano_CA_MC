@@ -1,4 +1,4 @@
-# Dlaczego naiwne MC z GCC -O3 jest ~2-3x szybsze niż z MSVC /O2 (etap 3, 09.10.2026)
+# Dlaczego naiwne MC z GCC -O3 jest ~2-3x szybsze niż z MSVC /O2 (profil aplikacji, 09.10.2026)
 # Sprzęt: i9-13900HX, przypięcie do LP 2 (rdzeń P). MSVC 19.38 (/O2 /Ob2), GCC 11.4 (-O3) w WSL2.
 
 ## 1. Asembler PottsMC::sweep() (listing MSVC /FAs, GCC -S) — pętla unlikeNeighbors (wstawiona w sweep)
@@ -82,7 +82,7 @@ wariant MC full                bazowy   CSE           bez skoków    oba        
 100x100x100, Moore, 10 MCS     1825,7   1698,5 (0,93) 1562,4 (0,86) 1451,2 (0,79) 1786,5 (0,98) 1757
 1000x1000, VN, 10 MCS          672,9    744,3 (1,11)  807,3 (1,20)  721,3 (1,07)  668,4 (0,99)  —
 lava_mc_3d (caSim)             1356,6   1332,8 (0,98) 1370,9 (1,01) 1347,3 (0,99)  1377,0 (1,02) —
-(* GCC z macierzy profile_2026-10-09 i z etapu 2 — inna sesja pomiarowa)
+(* GCC z macierzy profile_2026-10-09 i z pomiarów wersji Monte Carlo: inna sesja pomiarowa)
 
 ## Wniosek
 Główna przyczyna: MSVC kompiluje warunek (mask && spin != s) ? 1 : 0 do skoków warunkowych,

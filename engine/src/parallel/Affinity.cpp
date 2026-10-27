@@ -123,7 +123,7 @@ CpuPlan CpuAffinity::performanceCores() {
                 candidates.push_back(c);
             }
         }
-        plan.method = "brak informacji o rdzeniach P — wszystkie procesory systemu (" +
+        plan.method = "brak informacji o rdzeniach P, wszystkie procesory systemu (" +
                       std::to_string(candidates.size()) + ")";
     }
     // Najpierw pierwszy procesor logiczny każdego rdzenia fizycznego (rdzeń rozpoznany po najmniejszym numerze z listy
@@ -227,7 +227,7 @@ bool CpuAffinity::raisePriority(std::string& method) {
 #else
     errno = 0;
     const bool ok = setpriority(PRIO_PROCESS, 0, -5) == 0;
-    method = ok ? "nice -5" : "setpriority(-5) odmówił (brak uprawnień) — priorytet normalny";
+    method = ok ? "nice -5" : "setpriority(-5) odmówił (brak uprawnień), priorytet normalny";
     return ok;
 #endif
 }

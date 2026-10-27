@@ -34,7 +34,7 @@ bool contains(const std::string& s, const std::string& part) { return s.find(par
 
 }  // namespace
 
-TEST_CASE("Config: wartości domyślne zgodne z opisem etapu") {
+TEST_CASE("Config: wartości domyślne zgodne z opisem") {
     const Config c = Config::load("", {});
     CHECK((c.space == Dims{200, 1, 100}));
     CHECK(c.grid == GridKind::Vector);
@@ -169,7 +169,7 @@ TEST_CASE("Config: tryb mc full pomija walidację lawy, mobilityFromCooling daje
                    "tylko w 2D"));
 }
 
-TEST_CASE("Config: vents.positions — kratery w zadanych kolumnach (etap 6)") {
+TEST_CASE("Config: vents.positions — kratery w zadanych kolumnach") {
     // Domyślnie lista pusta i placement = crater (stare configi bez zmian).
     const Config d = Config::load("", {});
     CHECK(d.vents.placement == VentPlacement::Crater);
@@ -217,7 +217,7 @@ TEST_CASE("Config: vents.positions — kratery w zadanych kolumnach (etap 6)") {
     CHECK(contains(errorOf({"mc.snapshotsEvery=-1"}), "mc.snapshotsEvery"));
 }
 
-TEST_CASE("Config: warianty MPI z etapu 11 — mpi.pack, mpi.bcast, mpi.io") {
+TEST_CASE("Config: warianty MPI: mpi.pack, mpi.bcast, mpi.io") {
     const Config d = Config::load("", {});
     CHECK_FALSE(d.mpiPackDatatype());  // domyślnie jak w etapie 10: manual, json, gather
     CHECK_FALSE(d.mpiBcastStruct());

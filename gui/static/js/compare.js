@@ -96,7 +96,7 @@ export class CompareView {
     }
     const sel = $('#cmp-source');
     sel.innerHTML = (this.ids ? '<option value="">— zaznaczone wyniki —</option>' : '')
-      + this.sources.map((s) => `<option value="${esc(s.ref)}">${esc(s.name)} — ${s.done}/${s.jobs} · ${esc(s.gui ? 'GUI' : s.source)} · results/${esc(s.ref)}</option>`).join('');
+      + this.sources.map((s) => `<option value="${esc(s.ref)}">${esc(s.name)} · ${s.done}/${s.jobs} · ${esc(s.gui ? 'GUI' : s.source)} · results/${esc(s.ref)}</option>`).join('');
     if (!this.sources.length && !this.ids) sel.innerHTML = '<option value="">— brak serii —</option>';
     const want = this.ids ? '' : (this.ref && this.sources.some((s) => s.ref === this.ref) ? this.ref : this.sources[0]?.ref);
     if (want !== undefined) sel.value = want ?? '';
@@ -245,7 +245,7 @@ export class CompareView {
     panels.sort();
     box.innerHTML = panels.length ? panels.map((p, i) => `<div class="cmp-chart"><p class="legend-title">${esc(p ? `${this.col(pKey).label}: ${p}` : '')}</p>
       <div class="chart-box"><canvas id="cmp-chart-${i}" role="img" aria-label="${esc(`${this.label(yKey)} vs ${this.label(xKey)} ${p}`)}"></canvas></div></div>`).join('')
-      : '<p class="empty">Brak gotowych wyników z tą miarą — poczekaj na koniec zadań albo wybierz inną miarę.</p>';
+      : '<p class="empty">Brak gotowych wyników z tą miarą. Poczekaj na koniec zadań albo wybierz inną miarę.</p>';
     box.classList.toggle('two', panels.length > 1);
     const xLabels = [];
     if (categorical) for (const r of rows) { const x = String(this.value(r, xKey)); if (!xLabels.includes(x)) xLabels.push(x); }
@@ -298,7 +298,7 @@ export class CompareView {
             tooltip: {
               callbacks: {
                 title: (items) => (items[0] ? `${this.label(xKey)}: ${categorical ? items[0].label : fmtNum(items[0].parsed.x)}` : ''),
-                label: (c) => `${fmtNum(c.parsed.y, this.col(yKey).unit)} ${this.col(yKey).unit || ''} — ${c.dataset.label} (${c.raw.row?.name || ''})`,
+                label: (c) => `${fmtNum(c.parsed.y, this.col(yKey).unit)} ${this.col(yKey).unit || ''}: ${c.dataset.label} (${c.raw.row?.name || ''})`,
               },
             },
           },
@@ -319,7 +319,7 @@ export class CompareView {
     if (yKey === 'simMs') note += ' · czas symulacji = caSim dla CA, mcSim dla MC (bez wczytania, alokacji i zapisu)';
     if (yKey === 'nsPerUnit') note += ' · CA: ns na komórkę i krok, MC: ns na próbę (1 MCS = tyle prób, ile komórek domeny)';
     if (skipped > 0) note += ` · pominięto ${skipped} bez tej miary${logY || logX ? ' (albo ≤ 0 na skali log)' : ''}`;
-    if (seriesNames.length > th.series.length) note += ' · więcej serii niż kolorów palety — wybierz inny podział';
+    if (seriesNames.length > th.series.length) note += ' · więcej serii niż kolorów palety, wybierz inny podział';
     $('#cmp-chart-note').textContent = note;
     $('#cmp-chart-title').textContent = `${this.col(yKey).label} vs ${this.col(xKey).label}`;
   }
@@ -341,7 +341,7 @@ export class CompareView {
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = th.ink;
     ctx.font = `600 ${18 * k}px ${th.font}`;
-    ctx.fillText(`${$('#cmp-chart-title').textContent} — ${this.table?.series?.name || ''}`, pad, 28 * k);
+    ctx.fillText(`${$('#cmp-chart-title').textContent}: ${this.table?.series?.name || ''}`, pad, 28 * k);
     let x = pad;
     canvases.forEach((c, i) => {
       if (titles[i]) {
@@ -421,7 +421,7 @@ export class CompareView {
       <figcaption><b>${r.index}.</b> ${esc(Object.values(r.labels || {}).join(' · ') || r.name)}<br>
       <span class="sub">${esc([r.nx, r.ny, r.nz].join('×'))} · ${esc(r.algorithm || '')}</span>
       <button class="btn btn-small btn-ghost" data-act="v3" title="Otwórz w podglądzie 3D">widok 3D</button></figcaption></figure>`).join('')
-      : '<p class="empty">Brak gotowych wyników — poczekaj na koniec zadań serii (zakładka „Zadania”).</p>';
+      : '<p class="empty">Brak gotowych wyników. Poczekaj na koniec zadań serii (zakładka „Zadania”).</p>';
     const figs = $$('figure[data-id]', box);
     let next = 0;
     const work = async () => {
@@ -460,7 +460,7 @@ export class CompareView {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(tmp, (canvas.width - w * scale) / 2, (canvas.height - h * scale) / 2, w * scale, h * scale);
-    fig.title = `${id} — ${field}, przekrój ⟂ ${axis} = ${index}${types.meta.step > 1 ? ` (co ${types.meta.step}. komórka)` : ''}; kliknij: podgląd 2D`;
+    fig.title = `${id}: ${field}, przekrój ⟂ ${axis} = ${index}${types.meta.step > 1 ? ` (co ${types.meta.step}. komórka)` : ''}; kliknij: podgląd 2D`;
   }
 
   // ------------------------------------------------------------ dowolne wyniki

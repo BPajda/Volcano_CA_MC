@@ -128,11 +128,11 @@ def load_settings(root: Path = PROJECT_ROOT, settings_file: Path | None = SETTIN
     else:
         s.engine, s.engine_source = find_engine(root), "auto-wykrycie"
     if s.engine is None:
-        s.warnings.append("Nie znaleziono programu engine — zbuduj silnik (cmake --build --preset msvc-release) "
+        s.warnings.append("Nie znaleziono programu engine. Zbuduj silnik (cmake --build --preset msvc-release) "
                           "albo podaj ścieżkę w gui/settings.json / zmiennej VOLCANO_ENGINE.")
     elif not s.engine.is_file():
         s.warnings.append(f"Program silnika nie istnieje: {s.engine} ({s.engine_source})")
         s.engine = None
     elif "debug" in str(s.engine).lower():
-        s.warnings.append(f"Używany jest build Debug ({s.engine}) — symulacje będą kilka razy wolniejsze.")
+        s.warnings.append(f"Używany jest build Debug ({s.engine}): symulacje będą kilka razy wolniejsze.")
     return s

@@ -72,10 +72,10 @@ export class VentPicker {
           this.heights = typed('float32', buffer);
         } catch (err) { this.note = `nie można wczytać mapy: ${err.message}`; }
       } else if (file) {
-        this.note = map ? `mapa ${map.nx}×${map.ny} nie pasuje do siatki ${this.nx}×${this.ny}` : 'mapa spoza configs/heightmaps/ — bez podglądu wysokości';
+        this.note = map ? `mapa ${map.nx}×${map.ny} nie pasuje do siatki ${this.nx}×${this.ny}` : 'mapa spoza configs/heightmaps/, bez podglądu wysokości';
       } else {
         this.heights = coneHeights(t, this.nx, this.ny);
-        this.note = 'teren ze stożka — podgląd bez szumu (terrain.noise)';
+        this.note = 'teren ze stożka, podgląd bez szumu (terrain.noise)';
       }
       this.base = null;
     }
@@ -247,15 +247,15 @@ export class VentPicker {
 
   renderList(profile) {
     const g = this.geo;
-    let head = `Siatka ${this.nx}×${this.ny}${profile ? ' (przekrój 2D — kliknij na profilu, y = 0)' : ''}`;
+    let head = `Siatka ${this.nx}×${this.ny}${profile ? ' (przekrój 2D: kliknij na profilu, y = 0)' : ''}`;
     if (g) head += ` · ${g.metersPerCell?.toFixed(0)} m/komórkę w poziomie, ${g.metersPerCellZ?.toFixed(1)} m w pionie (przewyższenie ×${g.exaggeration?.toFixed(1)})`;
     if (this.contourStep && !profile) head += ` · poziomice co ${this.contourStep.toLocaleString('pl-PL')} ${g ? 'm' : 'kom.'}`;
     if (this.note) head += ` · ${this.note}`;
-    if (g?.source) head += `<br>Teren: ${esc(g.source)}, zoom ${g.zoom}, pobrano ${esc(g.fetched || '?')} — przypisanie danych: <code>configs/heightmaps/README.md</code>`;
+    if (g?.source) head += `<br>Teren: ${esc(g.source)}, zoom ${g.zoom}, pobrano ${esc(g.fetched || '?')}; przypisanie danych: <code>configs/heightmaps/README.md</code>`;
     this.info.innerHTML = head;
     this.list.innerHTML = this.positions.length
       ? this.positions.map(([x, y]) => `<li><b>[${x}, ${y}]</b> <span class="hint">${this.describe(x, y, false)}</span></li>`).join('')
-      : '<li class="hint vp-empty">brak kraterów — kliknij na mapie</li>';
+      : '<li class="hint vp-empty">brak kraterów, kliknij na mapie</li>';
   }
 }
 

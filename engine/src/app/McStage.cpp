@@ -138,11 +138,11 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
             }
         }
         if (cooling == CoolingData::None && cfg.mc.mobilityFromCooling) {
-            s.warnings.push_back("wynik CA bez solidStep/arrivalStep (plik txt) — mobilność ze stygnięcia "
+            s.warnings.push_back("wynik CA bez solidStep/arrivalStep (plik txt): mobilność ze stygnięcia "
                                  "wyłączona, MC jak dla mobilityFromCooling = false");
         }
         if (cooling == CoolingData::SolidOnly) {
-            s.warnings.push_back("ca_result.bin w wersji 1 nie zawiera arrivalStep — czas w stanie płynnym "
+            s.warnings.push_back("ca_result.bin w wersji 1 nie zawiera arrivalStep, czas w stanie płynnym "
                                  "liczony od kroku 0 (= solidStep)");
         }
         mem.release("mcDomainMask");  // maska domeny ginie przy wyjściu z bloku
@@ -151,7 +151,7 @@ McSummary McStage::run(const Config& cfg, const Microstructure* ca, CoolingData 
     mem.allocate("mcGrid", mc.bytes());  // + listy komórek domeny
     s.domainCells = mc.domainCells();
     if (s.domainCells == 0) {
-        s.warnings.push_back(full ? "domena MC jest pusta" : "domena MC jest pusta — wynik CA nie zawiera bazaltu");
+        s.warnings.push_back(full ? "domena MC jest pusta" : "domena MC jest pusta: wynik CA nie zawiera bazaltu");
     }
     // --thread-stats: czas pracy wątków w każdym kolorze szachownicy (tylko szachownica w wielu wątkach — tryb random
     // nie ma regionów równoległych w pętli MC).

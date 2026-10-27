@@ -26,7 +26,7 @@ void check(int rc, const char* what, const std::string& path) {
 
 int toInt(std::uint64_t v, const char* what) {
     if (v > static_cast<std::uint64_t>(INT_MAX)) {
-        throw std::runtime_error(std::string("MPI-IO: ") + what + " ma więcej niż 2 GB — za dużo na jeden blok typu MPI");
+        throw std::runtime_error(std::string("MPI-IO: ") + what + " ma więcej niż 2 GB, za dużo na jeden blok typu MPI");
     }
     return static_cast<int>(v);
 }

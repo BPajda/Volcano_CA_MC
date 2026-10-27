@@ -52,7 +52,7 @@ COLUMNS: list[dict] = [
     {"key": "nsPerTrial", "label": "MC: czas na próbę", "unit": "ns", "kind": "num"},
     {"key": "nsPerUnit", "label": "koszt jednostkowy (CA: ns/kom./krok, MC: ns/próbę)", "unit": "ns", "kind": "num"},
     {"key": "peakRssMiB", "label": "szczyt pamięci procesu", "unit": "MiB", "kind": "num"},
-    {"key": "modelMiB", "label": "pamięć — model teoretyczny", "unit": "MiB", "kind": "num"},
+    {"key": "modelMiB", "label": "pamięć (model teoretyczny)", "unit": "MiB", "kind": "num"},
     {"key": "bytesPerCell", "label": "pamięć na komórkę (model)", "unit": "B", "kind": "num"},
     {"key": "outputMiB", "label": "pliki wyników", "unit": "MiB", "kind": "num"},
     {"key": "totalLavaVolume", "label": "objętość lawy", "unit": "komórek", "kind": "num"},

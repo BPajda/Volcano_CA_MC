@@ -167,7 +167,7 @@ export class SeriesView {
     }
     let html = '<option value="">+ dodaj klucz…</option>';
     for (const [g, keys] of groups) {
-      html += `<optgroup label="${esc(g)}">${keys.map((k) => `<option value="${esc(k)}">${esc(fieldLabel(k))} — ${esc(k)}</option>`).join('')}</optgroup>`;
+      html += `<optgroup label="${esc(g)}">${keys.map((k) => `<option value="${esc(k)}">${esc(fieldLabel(k))} (${esc(k)})</option>`).join('')}</optgroup>`;
     }
     return html;
   }
@@ -185,7 +185,7 @@ export class SeriesView {
       return `<div class="axis" data-i="${i}">
         <div class="axis-head"><b>Parametr ${i + 1}</b>
           <label class="field-inline">nazwa osi <input type="text" class="axis-name" data-field="name" value="${esc(a.name)}" maxlength="30"></label>
-          ${a.keys.length > 1 ? '<span class="badge-soft">sparowane — zmieniają się razem</span>' : ''}
+          ${a.keys.length > 1 ? '<span class="badge-soft">sparowane: zmieniają się razem</span>' : ''}
           <button class="btn btn-small btn-ghost axis-remove" data-act="remove-axis">Usuń parametr</button></div>
         <div class="axis-keys">klucze: ${chips || '<span class="sub">wybierz klucz configu →</span>'}
           <select data-act="add-key" class="axis-key-add">${this.keyOptions(used)}</select>
@@ -197,7 +197,7 @@ export class SeriesView {
             : `${num('start', 'od')} ${num('stop', 'do')} ${num('factor', 'mnożnik')}`}</div>
         <div class="axis-points hint">${pointsInfo}</div>
       </div>`;
-    }).join('') || '<p class="empty">Brak parametrów zmiennych — dodaj co najmniej jeden.</p>';
+    }).join('') || '<p class="empty">Brak parametrów zmiennych. Dodaj co najmniej jeden.</p>';
     $('#series-add-axis').disabled = this.axes.length >= MAX_AXES;
   }
 
@@ -327,7 +327,7 @@ export class SeriesView {
       <tr><td>Łączny czas (szacunek)</td><td>~${fmtTime(total)}${workers > 1 ? ` <span class="hint">(${workers} workery: ~${fmtTime(total / workers)})</span>` : ''}</td></tr>
       <tr><td>Największa pamięć</td><td>~${fmtBytes(maxBytes)}</td></tr>
       <tr><td>Pliki wyników</td><td>~${fmtBytes(files)}</td></tr></table>
-      <p class="hint">Heurystyka z pomiarów profilu — rząd wielkości (czas: obliczenia + ~${PROCESS_OVERHEAD_MS} ms na proces).</p>`;
+      <p class="hint">Heurystyka z pomiarów profilu, rząd wielkości (czas: obliczenia + ~${PROCESS_OVERHEAD_MS} ms na proces).</p>`;
     for (const [text, level] of warns) html += notice(level === 'error' ? 'error' : 'warn', esc(text));
     $('#series-estimate').innerHTML = html;
     $('#series-run').disabled = false;
@@ -360,8 +360,8 @@ export class SeriesView {
       const n = res.jobs.length;
       $('#series-result').innerHTML = notice('ok', `Seria <b>${esc(res.name)}</b> (<code>${esc(res.id)}</code>):<br>
         utworzono ${plural(n, 'plik konfiguracyjny', 'pliki konfiguracyjne', 'plików konfiguracyjnych')} + <code>series.json</code> w
-        <code>${esc(res.configsDir)}/</code> i ${plural(n, 'folder', 'foldery', 'folderów')} wyników w <code>${esc(res.resultsDir)}/</code>
-        — dopiero potem ${plural(n, 'zadanie trafiło', 'zadania trafiły', 'zadań trafiło')} do kolejki.<br>
+        <code>${esc(res.configsDir)}/</code> i ${plural(n, 'folder', 'foldery', 'folderów')} wyników w <code>${esc(res.resultsDir)}/</code>;
+        dopiero potem ${plural(n, 'zadanie trafiło', 'zadania trafiły', 'zadań trafiło')} do kolejki.<br>
         <button class="btn btn-small" id="series-goto-jobs">Pokaż w zakładce Zadania</button>
         <button class="btn btn-small" id="series-goto-compare">Porównanie</button>`);
       $('#series-goto-jobs').addEventListener('click', () => this.hooks.showJobs());

@@ -16,11 +16,11 @@ namespace {
 // (Simulation::runMcFrom, ResultReader::readFolder).
 void checkMcFrom(Config cfg, const std::string& folder, ValidationResult& r) {
     if (cfg.mc.domain != McDomain::Basalt) {
-        r.errors.push_back(std::string("--mc-from krystalizuje wynik CA z pliku — wymaga mc.domain = \"basalt\" "
+        r.errors.push_back(std::string("--mc-from krystalizuje wynik CA z pliku, więc wymaga mc.domain = \"basalt\" "
                                        "(podano \"") + nameOf(cfg.mc.domain) + "\")");
     }
     if (!cfg.mc.enabled) {
-        r.warnings.push_back("mc.enabled = false — w trybie --mc-from Monte Carlo jest uruchamiane zawsze");
+        r.warnings.push_back("mc.enabled = false, a w trybie --mc-from Monte Carlo jest uruchamiane zawsze");
     }
     const fs::path dir(folder);
     if (!fs::is_directory(dir)) {

@@ -1,8 +1,8 @@
-# Etap 11 — plan cichego pomiaru (typy pochodne MPI i MPI-IO)
+# Plan pomiaru typów pochodnych MPI i MPI-IO
 
-Plan dla części 2 etapu: dokładne polecenia, kolejność i szacowany czas. Przygotowany w części 1 na podstawie
+Plan pomiaru z 21.10.2026: dokładne polecenia, kolejność i szacowany czas. Przygotowany na podstawie
 pojedynczych przebiegów doboru przypadków ([`dobor_msvc.md`](dobor_msvc.md), [`dobor_gcc.md`](dobor_gcc.md)) — opis
-i obserwacje wstępne: [`POSTEP.md`](POSTEP.md), część 1 — sesja 2. Wszystkie polecenia z katalogu projektu
+i obserwacje wstępne: [`POSTEP.md`](POSTEP.md), punkt „Dobór przypadków”. Wszystkie polecenia z katalogu projektu
 (PowerShell); każda część trwa ≤ 7 min (szacunek = suma czasów procesów z doboru × powtórzenia × 1,12 — narzut
 skryptu: porównanie plików, usuwanie wyników, start).
 
@@ -11,9 +11,9 @@ i kontrola między częściami ~3 min.
 
 ## 0. Przed pomiarem (≈ 3 min)
 
-1. **Warunki** (jak w etapach 8–10): zasilanie sieciowe, uśpienie „Nigdy”, zamknięte inne programy (przeglądarka,
+1. **Warunki** (jak w poprzednich pomiarach): zasilanie sieciowe, uśpienie „Nigdy”, zamknięte inne programy (przeglądarka,
    wideo, GUI projektu), zamknięte programy działające w tle, np. narzędzia producenta laptopa.
-2. **Tryb oszczędny** (bez turbo, WSL 8 procesorów):
+2. **Taktowanie bazowe i WSL 8 procesorów:**
 
    ```powershell
    powercfg /qh SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX  | Select-String "Current"   # 0x00000063 (99%)
@@ -22,7 +22,7 @@ i kontrola między częściami ~3 min.
    python -c "import psutil; print(psutil.cpu_percent(interval=5))"                      # tło < 30%, najlepiej < 10%
    ```
 
-3. **Programy** — binarki końcowe części 1 (te, które przeszły `ctest` i tabele zgodności `zgodnosc_mpi_io_*.md`):
+3. **Programy** — binarki końcowe (te, które przeszły `ctest` i tabele zgodności `zgodnosc_mpi_io_*.md`):
 
    ```powershell
    Get-FileHash bench\baseline\engine_mpi_e11_msvc.exe, bench\baseline\engine_e11_msvc.exe | Select-Object Hash, Path
@@ -30,8 +30,8 @@ i kontrola między częściami ~3 min.
    ```
 
    Oczekiwane początki SHA-256: `engine_mpi_e11_msvc.exe` 4667EECD…, `engine_e11_msvc.exe` AD2F33AC…,
-   `engine_mpi_e11_gcc` 301bd275…, `engine_e11_gcc` 40d8d186…. Jeśli się różnią — kod zmienił się po części 1: nie
-   mierzyć (kod silnika jest w części 2 zamknięty), opisać w dzienniku.
+   `engine_mpi_e11_gcc` 301bd275…, `engine_e11_gcc` 40d8d186…. Jeśli się różnią — kod zmienił się po testach: nie
+   mierzyć (pomiar dotyczy binarek po testach), opisać w dzienniku.
 4. **Miejsce na dysku i system plików:** MSVC pisze do folderu tymczasowego systemu (NTFS, dysk systemowy) — potrzeba
    ~1,5 GB wolnego (dwa pliki tekstowe classic 300³ po 562 MB naraz + wejście `--mc-from` 351 MB); GCC — `/tmp` w WSL
    (ext4: `wsl -e df -hT /tmp` → `ext4`, ≥ 2 GB wolnego). Oba systemy plików leżą na tym samym dysku SSD NVMe (plik
@@ -44,12 +44,12 @@ i kontrola między częściami ~3 min.
    ```
 
    Oczekiwane: „różnic wyników: 0”, w tabeli config 219 B (`m3s`) i ~980 B (`m3`).
-6. Przed każdą częścią linia „W toku: …” w [`POSTEP.md`](POSTEP.md) (polecenie, godzina), po części — wynik, tło, uwagi.
+6. Każda część zapisana w [`POSTEP.md`](POSTEP.md): polecenie, godzina, wynik, tło, uwagi.
 
 ## 1. Pytania i przypadki
 
-`python bench\mpi_io.py --list` — 14 przypadków w 4 grupach. Konfiguracje jak w pomiarach skalowania etapów 9–10
-(`bench/scaling.py`: `lava_big`, `classic`), żeby czasy dało się zestawić z etapem 10.
+`python bench\mpi_io.py --list` — 14 przypadków w 4 grupach. Konfiguracje jak w pomiarach skalowania OpenMP i MPI
+(`bench/scaling.py`: `lava_big`, `classic`), żeby czasy dało się zestawić z pomiarem MPI.
 
 | Grupa | Przypadek | Co | Powt. | Warianty MSVC | Warianty GCC | Czas 1 powt. MSVC |
 |---|---|---|---|---|---|---|
@@ -73,18 +73,18 @@ i kontrola między częściami ~3 min.
 - Grupa `read`: wejście (wynik CA) liczy raz program `engine` (jeden wątek) przed pomiarem; MC z `mc.mcs = 0` — tylko
   odczyt, inicjalizacja, statystyki i zapis mapy kryształów.
 - Zawężenia względem pełnego zestawu (czas): duża lawa w `io` i `read` — p = 1 i 8 (pliki ~14–19 MB, mało zależą od
-  p); `read_classic_300` — p = 1 i 8; GCC (procesory wirtualne WSL — wyniki porównawcze, jak w etapach 9–10): `pack`,
+  p); `read_classic_300` — p = 1 i 8; GCC (procesory wirtualne WSL — wyniki porównawcze, jak w pomiarach OpenMP i MPI): `pack`,
   `io`, `bcast` przy 8 procesach, `read` przy 1 i 8.
 
 ## 2. Warianty i miary
 
 | Wariant | Co |
 |---|---|
-| `m<p>` | `engine_mpi` na p procesach po 1 wątku, opcje jak w etapie 10 (`mpi.pack = manual`, `mpi.bcast = json`, `mpi.io = gather`) |
+| `m<p>` | `engine_mpi` na p procesach po 1 wątku, opcje wersji MPI (`mpi.pack = manual`, `mpi.bcast = json`, `mpi.io = gather`) |
 | przyrostek `d` | `mpi.pack = datatype` — typy pochodne w wymianie warstw brzegowych |
 | przyrostek `s` | `mpi.bcast = struct` — blok liczbowy configu i kratery / zarodki jako struktury |
 | przyrostek `i` | `mpi.io = mpiio` — zapis wyników i odczyt `--mc-from` przez MPI-IO |
-| `m7` | 7 procesów na procesorach 2–14 (bez procesora 0 — w etapie 10 proces na nim liczył 13–30% dłużej) |
+| `m7` | 7 procesów na procesorach 2–14 (bez procesora 0 — w pomiarze MPI proces na nim liczył 13–30% dłużej) |
 
 Każdy przebieg: `--high-priority`, `parallel.affinity = pcores` (proces r na rdzeniu P nr r — procesory logiczne 2, 4,
 …, 14, 0), warianty przypadku naprzemiennie (kolejność odwracana co powtórzenie), mediana [min–max], wynik każdego
@@ -92,7 +92,7 @@ przebiegu porównany bajt po bajcie z pierwszym wariantem tego powtórzenia (`co
 
 Miary (z `times.json`; kolumny tabel `mpi_io.py`):
 
-- **pack:** czas fazy (`caSim` / `mcSim`), czas wymiany warstw (`mpi.<etap>.haloMs`, średnia po procesach; w MC
+- **pack:** czas fazy (`caSim` / `mcSim`), czas wymiany warstw (`mpi.<faza>.haloMs`, średnia po procesach; w MC
   zawiera czekanie na wolniejszy pas po kolorze), na jedną wymianę, bajty i komunikaty na wymianę (te same w obu
   wariantach — kontrola), liczba typów i czas ich budowy (część czasu wymiany).
 - **bcast:** `MPI_Bcast` configu (proces 0), bajty, przygotowanie na procesie 0 (`effective.dump()` / blok), budowa
@@ -161,16 +161,15 @@ Kontrola między częściami ~0,5 min (temperatura, tło).
   `ioMode` = `mpiio` tylko w wariantach `…i`;
 - `read`: `readBytes` (MPI-IO) = 5 B × komórki (classic 300³: 135 000 000).
 
-## 5. Co z tego powstaje w części 2
+## 5. Wyniki
 
 - tabele `pomiar_msvc.md`, `pomiar_gcc.md`, `pomiar_gcc_romio.md` (+ `_raw.csv` części): wymiana manual vs datatype,
   rozsyłanie JSON vs struktury, zapis gather vs MPI-IO (bin, txt, MB/s, udział w `total`, pamięć procesu 0), odczyt
   `--mc-from`; OMPIO vs ROMIO;
-- wykresy `docs/img/etap11_*.png` (skrypt do napisania w części 2 na wzór `bench/plot_etap10.py`): czas wymiany
+- wykresy `docs/img/mpi_io_*.png` (`bench/plot_mpi_io.py`): czas wymiany
   manual vs datatype (przypadki × p), czas zapisu i MB/s gather vs MPI-IO (bin i txt osobno, p), udział zapisu
   w `total` przed / po, odczyt `--mc-from`, schematy (typ struct warstwy z pól SoA, widok subarray pasa w pliku,
   przesunięcia `MPI_Exscan` w pliku tekstowym);
-- `docs/etap-11-mpi-typy-io.md`: punkt „Wyniki pomiaru” — uczciwe wnioski (czy typy pochodne przyspieszają wymianę
-  na jednym komputerze, gdzie MPI-IO zyskuje: brak zebrania i kopii na procesie 0, równoległe formatowanie tekstu,
-  pamięć procesu 0 — a gdzie nie: sam zapis jednego pliku na jednym dysku), ograniczenia, przewidywania dla klastra,
-  wnioski dla etapu 12.
+- opis wyników w [`docs/mpi-typy-i-zapis.md`](../../../docs/mpi-typy-i-zapis.md), punkt 8: czy typy pochodne
+  przyspieszają wymianę na jednym komputerze, gdzie MPI-IO zyskuje (brak zebrania i kopii na procesie 0, równoległe
+  formatowanie tekstu, pamięć procesu 0), a gdzie nie (sam zapis jednego pliku na jednym dysku).

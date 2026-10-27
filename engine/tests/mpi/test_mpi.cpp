@@ -292,7 +292,7 @@ TEST_CASE("MPI: lawa + MC szachownica na bazalcie z mobilnością") {
 
 TEST_CASE("MPI: tryb hybrydowy — procesy × 4 wątki OpenMP") {
     if (worldSize() * 4 > 8) {
-        return;  // tryb oszczędny: razem najwyżej 8 procesów × wątków
+        return;  // rdzenie P: razem najwyżej 8 procesów × wątków
     }
     const std::vector<std::string> t4 = {"parallel.threads=4", "parallel.schedule=dynamic"};
     checkCa(Config::load("", with(kLava3D, t4)));
@@ -495,7 +495,7 @@ bool sameVents(const std::vector<Vent>& a, const std::vector<Vent>& b) {
 
 }  // namespace
 
-TEST_CASE("MPI etap 11: wymiana typami pochodnymi (mpi.pack = datatype) = pakowanie do bufora") {
+TEST_CASE("MPI, typy pochodne: wymiana typami pochodnymi (mpi.pack = datatype) = pakowanie do bufora") {
     const std::vector<std::vector<std::string>> cases = {
         kLava3D, with(kLava3D, {"ca.sweep=full"}), kLava2D, classic(16, 15, 17, 25, "moore", "periodic"),
         with(classic(37, 41, 1, 30, "von_neumann", "absorbing"), {"ca.sweep=full"})};
@@ -533,7 +533,7 @@ TEST_CASE("MPI etap 11: wymiana typami pochodnymi (mpi.pack = datatype) = pakowa
     }
 }
 
-TEST_CASE("MPI etap 11: blok configu i kratery / zarodki jako struktury (mpi.bcast = struct)") {
+TEST_CASE("MPI, typy pochodne: blok configu i kratery / zarodki jako struktury (mpi.bcast = struct)") {
     const MpiType blockType = MpiTypes::configBlockType();
     const MpiType ventType = MpiTypes::ventType();
     MPI_Aint lb = 0;
@@ -584,7 +584,7 @@ TEST_CASE("MPI etap 11: blok configu i kratery / zarodki jako struktury (mpi.bca
     }
 }
 
-TEST_CASE("MPI etap 11: pliki wyników — każda kombinacja pack × bcast × io = engine bajt po bajcie") {
+TEST_CASE("MPI-IO: pliki wyników — każda kombinacja pack × bcast × io = engine bajt po bajcie") {
     const fs::path dir = sharedTempDir("pliki");
     const std::vector<Combo> cs = combos();
     const std::vector<std::string> both = {"output.format=both"};

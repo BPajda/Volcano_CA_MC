@@ -1,6 +1,6 @@
 # Test A/B `ab_k7_gcc`
 
-Optymalizacja 7 (zapis plików tekstowych wyników), GCC, tryb oszczędny (bez turbo); k7 bez wyrównania funkcji — caSim zawiera efekt układu kodu (+16 B), patrz ab_k7a_gcc.md
+Optymalizacja 7 (zapis plików tekstowych wyników), GCC, taktowanie bazowe; k7 bez wyrównania funkcji — caSim zawiera efekt układu kodu (+16 B), patrz ab_k7a_gcc.md
 
 - Tabela z pomiaru `ab_k7_gcc_ca_raw.csv`, `ab_k7_gcc_mc_raw.csv` (te same przebiegi naprzemienne; programy k5, k7; warunki pomiaru i tło — w nagłówku `ab_k7_gcc_ca.md`, `ab_k7_gcc_mc.md`)
 

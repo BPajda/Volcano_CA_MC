@@ -1,6 +1,6 @@
 # Test A/B `ab_k7_msvc`
 
-Optymalizacja 7 (zapis plików tekstowych wyników ca_result.txt / mc_result.txt), MSVC, tryb oszczędny (bez turbo); k5 = poprzedni przyjęty krok (zapis bez zmian od stanu przed etapem 8)
+Optymalizacja 7 (zapis plików tekstowych wyników ca_result.txt / mc_result.txt), MSVC, taktowanie bazowe; k5 = poprzedni przyjęty krok (zapis bez zmian od stanu przed etapem 8)
 
 - Tabela z pomiaru `ab_k7_msvc_ca_raw.csv`, `ab_k7_msvc_mc_raw.csv` (te same przebiegi naprzemienne; programy k5, k7; warunki pomiaru i tło — w nagłówku `ab_k7_msvc_ca.md`, `ab_k7_msvc_mc.md`)
 

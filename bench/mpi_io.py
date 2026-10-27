@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Pomiar etapu 11 (typy pochodne MPI i MPI-IO): porównanie wariantów engine_mpi w tych samych warunkach co pomiar
-skalowania z etapu 10 (bench/scaling_mpi.py: `--high-priority`, `parallel.affinity = pcores`, warianty naprzemiennie,
+"""Pomiar typów pochodnych MPI i MPI-IO: porównanie wariantów engine_mpi w tych samych warunkach co pomiar
+skalowania wersji MPI (bench/scaling_mpi.py: `--high-priority`, `parallel.affinity = pcores`, warianty naprzemiennie,
 kolejność odwracana co powtórzenie, ≥ 5 powtórzeń, mediana [min–max]; wyniki każdego przebiegu porównywane bitowo
 z pierwszym wariantem przypadku).
 
@@ -299,7 +299,7 @@ def main() -> int:
         c["reps"] = max(args.min_reps, args.reps if args.reps else c["reps"])
         too_many = [v["label"] for v in c["variant_list"] if v["cores"] > 8]
         if too_many:
-            ap.error(f"tryb oszczędny: najwyżej 8 procesów × wątków (warianty {', '.join(too_many)})")
+            ap.error(f"pomiary tylko na rdzeniach P: najwyżej 8 procesów × wątków (warianty {', '.join(too_many)})")
     name = args.name or "mpi_io_" + dt.datetime.now().strftime("%Y-%m-%d_%H%M")
 
     if args.wsl and not args.inside_wsl:

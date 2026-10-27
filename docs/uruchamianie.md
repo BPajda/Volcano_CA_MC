@@ -441,7 +441,7 @@ python bench\ab.py --wsl --bin przed=bench/baseline/engine_przed_gcc --bin nowy=
 python bench\ab.py --from-raw bench\results\ab\ab_k7_msvc_ca_raw.csv,bench\results\ab\ab_k7_msvc_mc_raw.csv --labels k5,k7 --name ab_razem --out results\ab_test
 python bench\compare_results.py --bin przed=bench\baseline\engine_przed_msvc.exe --bin msvc=build\Release\engine.exe --bin gcc=wsl:build-gcc-release/bin/engine --name zgodnosc_test --out results\ab_test
 python bench\run_profile.py --full --gcc --groups classic,mc,lava,big,detail --cases test_3d,etna_real --name profil_test --out results\profil_test
-python bench\plot_etap8.py                                             # docs\img\etap8_*.png z profili _przed2/_po i tabel A/B
+python bench\plot_optymalizacja.py                                             # docs\img\optymalizacja_*.png z profili _przed2/_po i tabel A/B
 ```
 
 - `ab.py` uruchamia programy **naprzemiennie** (A B, potem B A), przypięte do procesora 2 (rdzeń P), 5–11 powtórzeń, i po
@@ -458,7 +458,7 @@ python bench\plot_etap8.py                                             # docs\im
   `cmake --preset gcc-release-native && cmake --build --preset gcc-release-native -j 4` (`build-gcc-native/bin/engine`,
   nieprzenośny: instrukcje procesora, na którym kompilujesz).
 - `run_profile.py --cases`: tylko wybrane warianty planu (lista: `--dry-run` z tymi samymi `--groups`); profil gorących
-  miejsc po optymalizacji sekwencyjnej: `wsl -e bash -lc "ETAP8=1 bash bench/profile_gcc.sh"` (po zbudowaniu presetu `gcc-profile-noinline`).
+  miejsc po optymalizacji sekwencyjnej: `wsl -e bash -lc "PO_OPTYMALIZACJI=1 bash bench/profile_gcc.sh"` (po zbudowaniu presetu `gcc-profile-noinline`).
 - Opis metodyki i wyników: `docs\optymalizacja-sekwencyjna.md`.
 
 ### 7.2 Skalowanie OpenMP
@@ -470,7 +470,7 @@ python bench\scaling.py --cases lava_duza_3d_front --name skalowanie_lawa --out 
 python bench\scaling.py --schedules --cases lava_etna_real,lava_duza_3d_front --name harmonogramy_test --out results\skalowanie_test
 python bench\scaling.py --wsl --cases lava_etna_real --threads 1,2 --reps 1 --min-reps 1 --name skalowanie_gcc_test --out results\skalowanie_test
 python bench\scaling.py --from-raw results\skalowanie_test\skalowanie_test_raw.csv,results\skalowanie_test\skalowanie_lawa_raw.csv --name skalowanie_razem --out results\skalowanie_test
-python bench\plot_etap9.py                                              # docs\img\etap9_*.png z bench\results\omp\
+python bench\plot_openmp.py                                              # docs\img\openmp_*.png z bench\results\omp\
 python bench\mc_validation.py --from-csv bench\results\omp\mc_walidacja.csv   # tabela i wykres walidacji szachownicy bez pomiaru
 .\build\Release\omp_overhead.exe --pin                                  # mikrotest: region, bariera, krok z harmonogramami [µs]
 ```
@@ -486,7 +486,7 @@ python bench\mc_validation.py --from-csv bench\results\omp\mc_walidacja.csv   # 
 - **Do pomiarów:** zamknięte inne programy (przy 8 wątkach na 8 rdzeniach P każdy program w tle opóźnia wszystkie wątki),
   zasilanie sieciowe. Pełny zestaw trwa ~30 min; dziel go na części ≤ 10 min (`--cases`) i scalaj `--from-raw`.
 - `mc_validation.py` bez `--from-csv` liczy walidację od nowa (12 ziaren generatora, ~1 min) i **nadpisuje**
-  `bench\results\omp\mc_walidacja.*` oraz `docs\img\etap9_mc_walidacja.png`.
+  `bench\results\omp\mc_walidacja.*` oraz `docs\img\openmp_mc_walidacja.png`.
 - `omp_overhead` (GCC: `build-gcc-release/bin/omp_overhead`): koszt regionu, bariery i kroku „3 fazy po 64 warstwy”
   dla każdego harmonogramu; `--pin` przypina wątki jak `pcores`, `--reps N`.
 - Opis metodyki i wyników: `docs\openmp.md`.
@@ -499,7 +499,7 @@ python bench\scaling_mpi.py --cases lava_etna_real --variants m1,m3 --reps 1 --m
 python bench\scaling_mpi.py --wsl --cases lava_etna_real --variants m1,m3 --reps 1 --min-reps 1 --name skalowanie_mpi_gcc_test --out results\skalowanie_mpi_test
 python bench\scaling_mpi.py --from-raw results\skalowanie_mpi_test\skalowanie_mpi_test_raw.csv --name skalowanie_mpi_razem --out results\skalowanie_mpi_test
 python bench\compare_results.py --set mc.update=checkerboard --bin e=build\Release\engine.exe --bin m3=build\Release\engine_mpi.exe --launch "m3=mpiexec -n 3" --configs test_3d,lava_mc_2d --name zgodnosc_mpi_test --out results\zgodnosc_mpi_test
-python bench\plot_etap10.py                                             # docs\img\etap10_*.png z bench\results\mpi\ (i OpenMP z bench\results\omp\)
+python bench\plot_mpi.py                                             # docs\img\mpi_*.png z bench\results\mpi\ (i OpenMP z bench\results\omp\)
 ```
 
 - Warianty (`--variants`, pierwszy = odniesienie zgodności): `m<p>`: p procesów po 1 wątku, `h<p>x<t>`: p procesów
@@ -511,7 +511,7 @@ python bench\plot_etap10.py                                             # docs\i
   więc próby kieruj do `results\`. Plan pełnego pomiaru (6 części ≤ 6 min, ~30 min razem):
   `bench\results\mpi\PLAN_POMIARU.md`. Do pomiaru zamknięte inne programy: przy 8 procesach na 8 rdzeniach P każdy
   program w tle opóźnia cały krok (pasy czekają na najwolniejszy).
-- `plot_etap10.py` rysuje schemat podziału, S(p) / E(p), Amdahla, MPI vs OpenMP, tryb hybrydowy, udział komunikacji,
+- `plot_mpi.py` rysuje schemat podziału, S(p) / E(p), Amdahla, MPI vs OpenMP, tryb hybrydowy, udział komunikacji,
   czas obliczeń procesów i `changed` vs `always` (`--msvc`, `--gcc`: nazwy pomiarów, domyślnie `skalowanie_mpi_msvc`,
   `skalowanie_mpi_gcc`). Opis wyników: `docs\mpi.md`, punkt 9.
 - `compare_results.py --launch "<etykieta>=<polecenie>"` uruchamia program przez `mpiexec`; `wsl:` przed ścieżką: build
@@ -539,12 +539,12 @@ python bench\scaling_mpi.py --cases classic_2000x2000_s400_vn --variants m1,m4,m
   ROMIO zamiast domyślnego OMPIO w OpenMPI.
 - Domyślny folder to `bench\results\mpi_io\` (plan pomiaru `PLAN_POMIARU.md`, 9 części, ~30 min; wyniki
   `pomiar_msvc.md`, `pomiar_gcc.md`, `pomiar_gcc_romio.md`), więc próby kieruj do `results\`. Wykresy:
-  `python bench\plot_etap11.py` (z `pomiar_*_raw.csv` → `docs\img\etap11_*.png`). Opis: `docs\mpi-typy-i-zapis.md`.
+  `python bench\plot_mpi_io.py` (z `pomiar_*_raw.csv` → `docs\img\mpi_io_*.png`). Opis: `docs\mpi-typy-i-zapis.md`.
 
 ### 7.5 Testy wydajności
 
 ```powershell
-python bench\zestawienie_e12.py                                          # zestawienie S / E optymalizacji, OpenMP, MPI i typów MPI z CSV (bez przebiegów)
+python bench\zestawienie.py                                          # zestawienie S / E optymalizacji, OpenMP, MPI i typów MPI z CSV (bez przebiegów)
 python bench\scaling.py --weak --list                                    # przypadki skalowania słabego
 python bench\scaling.py --weak --threads 1,2 --cases weak_lava_front --reps 1 --min-reps 1 --no-stats --name slabe_test --out results\testy_test
 python bench\scaling_mpi.py --weak --variants m1d,m2d --cases weak_classic_2d --reps 1 --min-reps 1 --name slabe_mpi_test --out results\testy_test
@@ -552,7 +552,7 @@ python bench\cell_time.py --curves mc_random --sizes 256,1024 --reps 1 --name kr
 python bench\memory.py --cases classic2d_2000 --name pamiec_test --out results\testy_test
 cmake --build build --config Release --target bandwidth; build\Release\bandwidth.exe --mode stream --threads 1,8 --reps 5 --pin --high-priority
 wsl -e python3 bench/cachegrind.py --ll L2,L3 --name cachegrind_test     # symulacja pamięci podręcznej (WSL, preset gcc-release-g)
-python bench\plot_etap12.py                                              # docs\img\etap12_*.png
+python bench\plot_testy.py                                              # docs\img\testy_*.png
 ```
 
 - `--weak`: przestrzeń rośnie z p (classic 2000 × 2000·p, MC szachownica 1000 × 1000·p, lawa 128 × 128·p × 64 na p

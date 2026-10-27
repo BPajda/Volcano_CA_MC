@@ -64,12 +64,12 @@ def parse_csv(text: str, name: str = "plik") -> np.ndarray:
             vals.append(v)
         if rows and len(vals) != len(rows[0]):
             raise HeightmapError(f"{name}, wiersz {line_no}: {len(vals)} wartości, a wiersz {first_line} ma "
-                                 f"{len(rows[0])} — mapa musi mieć tyle samo wartości w każdym wierszu (nx)")
+                                 f"{len(rows[0])}; mapa musi mieć tyle samo wartości w każdym wierszu (nx)")
         if not rows:
             first_line = line_no
         rows.append(vals)
         if len(rows) * len(vals) > MAX_MAP_CELLS:
-            raise HeightmapError(f"{name}: mapa ma więcej niż {MAX_MAP_CELLS:,} komórek — zmniejsz rozdzielczość"
+            raise HeightmapError(f"{name}: mapa ma więcej niż {MAX_MAP_CELLS:,} komórek, zmniejsz rozdzielczość"
                                  .replace(",", " "))
     if not rows:
         raise HeightmapError(f"{name}: brak wierszy z liczbami (plik pusty albo same komentarze „#”)")
@@ -138,7 +138,7 @@ def image_to_heights(data: bytes, nx: int, ny: int, nz: int, max_height: float, 
     except ImportError:
         raise HeightmapError("Import obrazów wymaga pakietu Pillow: python -m pip install --user pillow") from None
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HeightmapError(f"{name}: plik ma {len(data) / 2**20:.1f} MiB — maksimum to {MAX_UPLOAD_BYTES // 2**20} MiB")
+        raise HeightmapError(f"{name}: plik ma {len(data) / 2**20:.1f} MiB, a maksimum to {MAX_UPLOAD_BYTES // 2**20} MiB")
     _check_target(nx, ny, nz)
     if not 0 <= base <= max_height:
         raise HeightmapError("Wysokość podstawy musi być z zakresu 0..wysokość maks.")
@@ -151,10 +151,10 @@ def image_to_heights(data: bytes, nx: int, ny: int, nz: int, max_height: float, 
     except (UnidentifiedImageError, OSError):
         raise HeightmapError(f"{name}: to nie jest obraz PNG ani JPG (albo plik jest uszkodzony)") from None
     if fmt not in ("PNG", "JPEG", "BMP", "GIF", "WEBP", "TIFF"):
-        raise HeightmapError(f"{name}: format {fmt} nie jest obsługiwany — użyj PNG albo JPG")
+        raise HeightmapError(f"{name}: format {fmt} nie jest obsługiwany, użyj PNG albo JPG")
     if w * h > MAX_IMAGE_PIXELS:
         raise HeightmapError(f"{name}: obraz {w}×{h} = {w * h / 1e6:.1f} Mpx jest za duży "
-                             f"(maksimum {MAX_IMAGE_PIXELS / 1e6:.0f} Mpx) — zmniejsz go przed importem")
+                             f"(maksimum {MAX_IMAGE_PIXELS / 1e6:.0f} Mpx); zmniejsz go przed importem")
     try:
         if img.mode in ("I;16", "I;16B", "I;16L", "I"):
             gray = np.asarray(img.convert("I"), dtype=np.float64) / 65535.0   # PNG 16-bitowy

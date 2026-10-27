@@ -1,5 +1,5 @@
 {
-  "_opis": "Mapa wysokości z pliku: dwa wulkany — główny w środku i niższy na północnym wschodzie (configs/heightmaps/podwojny_wulkan.csv).",
+  "_opis": "Mapa wysokości z pliku: dwa wulkany: główny w środku i niższy na północnym wschodzie (configs/heightmaps/podwojny_wulkan.csv).",
   "_uwaga": "Krawędź krateru jest obniżona w stronę przełęczy: lawa spływa na przełęcz, a starszy stożek rozdziela strumień.",
   "space": {
     "nx": 100,

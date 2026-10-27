@@ -1,4 +1,4 @@
-"""Przykładowe mapy wysokości terenu (etap 5) -> configs/heightmaps/*.csv (+ podgląd PNG w skali szarości).
+"""Przykładowe mapy wysokości terenu -> configs/heightmaps/*.csv (+ podgląd PNG w skali szarości).
 
 Mapy pokazują, co daje teren z pliku (terrain.type = "file") w porównaniu ze stożkiem z generatora:
   kaldera_wylom     — szeroka kaldera z wyłomem w krawędzi i doliną poniżej: lawa wypełnia kalderę i wypływa

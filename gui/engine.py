@@ -34,7 +34,7 @@ class EngineClient:
 
     def _exe(self) -> Path:
         if self.settings.engine is None:
-            raise EngineMissing("Nie znaleziono programu engine — zbuduj silnik albo ustaw ścieżkę "
+            raise EngineMissing("Nie znaleziono programu engine. Zbuduj silnik albo ustaw ścieżkę "
                                 "w gui/settings.json / VOLCANO_ENGINE.")
         return self.settings.engine
 

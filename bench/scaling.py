@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pomiar skalowania OpenMP (etap 9): przyspieszenie S(p) = T(1)/T(p), efektywność E(p) = S(p)/p i część szeregowa
+"""Pomiar skalowania OpenMP: przyspieszenie S(p) = T(1)/T(p), efektywność E(p) = S(p)/p i część szeregowa
 z prawa Amdahla dla wybranych przypadków CA i MC przy p wątkach (domyślnie 1, 2, 4, 6, 8 — tylko rdzenie P).
 
 Każdy przebieg: silnik z `--threads p --set parallel.affinity=pcores` (jeden wątek na rdzeń fizyczny P, wątek 0 na
@@ -454,7 +454,7 @@ def main() -> int:
     ap.add_argument("--reps", type=int, help="powtórzenia (domyślnie z tabeli przypadków)")
     ap.add_argument("--min-reps", type=int, default=5, help="minimalna liczba powtórzeń (domyślnie 5)")
     ap.add_argument("--schedules", action="store_true", help="porównanie harmonogramów przy --sched-threads wątkach")
-    ap.add_argument("--weak", action="store_true", help="skalowanie słabe (etap 12): przestrzeń p razy większa przy p "
+    ap.add_argument("--weak", action="store_true", help="skalowanie słabe: przestrzeń p razy większa przy p "
                                                          "wątkach, przypadki weak_cases()")
     ap.add_argument("--sched-threads", type=int, default=8, help="liczba wątków w trybie --schedules (domyślnie 8)")
     ap.add_argument("--no-stats", action="store_true", help="bez przebiegów --thread-stats (czas pracy wątków)")
@@ -640,7 +640,7 @@ def main() -> int:
                       f"koniec {load_end.get('totalPercent', 0):.0f}%")
     if args.weak:
         header.append("- Skalowanie słabe: przestrzeń p razy większa przy p wątkach, `output.format = none`; wyników "
-                      "różnych rozmiarów nie porównuje się bitowo (zgodność wątków — etapy 9–10)")
+                      "różnych rozmiarów nie porównuje się bitowo (zgodność wątków sprawdzają pomiary OpenMP i MPI)")
     else:
         header.append("- Zgodność wyników z p = 1 (albo z pierwszym harmonogramem): " +
                       ("wszystkie przebiegi bitowo zgodne" if failures == 0 else f"**{failures} różnic**"))

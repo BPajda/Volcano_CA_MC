@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test A/B (etap 8): porównanie czasu i wyników dwóch lub więcej programów engine na stałym zestawie przypadków.
+"""Test A/B: porównanie czasu i wyników dwóch lub więcej programów engine na stałym zestawie przypadków.
 
 Każdy przypadek jest uruchamiany NAPRZEMIENNIE wszystkimi programami (A B, potem B A, A B …: kolejność odwracana
 co powtórzenie, żeby dryf temperatury i turbo rozkładał się równo), proces przypięty do jednego procesora logicznego

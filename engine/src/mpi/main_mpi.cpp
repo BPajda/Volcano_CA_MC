@@ -33,22 +33,22 @@ int main(int argc, char** argv) {
         const CliOptions opt = Cli::parse(argc, argv);
         if (opt.help) {
             if (rank == 0) {
-                std::cout << "engine_mpi — wersja rozproszona (MPI) programu engine: przestrzeń podzielona na pasy\n"
-                             "warstw (oś z, w płaszczyźnie x–y — y) między procesy, wynik bitowo taki sam.\n"
+                std::cout << "engine_mpi: wersja rozproszona (MPI) programu engine. Przestrzeń podzielona na pasy\n"
+                             "warstw (oś z, w płaszczyźnie x–y oś y) między procesy, wynik bitowo taki sam.\n"
                              "  mpiexec -n <procesy> engine_mpi --config <plik.json> --out <folder> [opcje engine]\n"
-                             "  mpi.exchange = always | changed — wymiana warstw brzegowych co krok albo tylko "
+                             "  mpi.exchange = always | changed: wymiana warstw brzegowych co krok albo tylko "
                              "zmienionych\n"
-                             "  --high-priority — wysoki priorytet procesów (mpiexec uruchamia je z normalnym)\n"
-                             "  parallel.affinity = pcores — proces r z T wątkami na rdzeniach P nr r·T … r·T + T − 1\n"
+                             "  --high-priority: wysoki priorytet procesów (mpiexec uruchamia je z normalnym)\n"
+                             "  parallel.affinity = pcores: proces r z T wątkami na rdzeniach P nr r·T … r·T + T − 1\n"
                              "Bez --batch, --benchmark, --validate i --print-defaults (to robi program engine).\n\n"
                           << Cli::usage();
             }
         } else if (opt.printDefaults || opt.validate || opt.benchmark || !opt.batchDir.empty()) {
-            throw CliError("engine_mpi liczy jedną symulację w wielu procesach — --print-defaults, --validate, "
+            throw CliError("engine_mpi liczy jedną symulację w wielu procesach; --print-defaults, --validate, "
                            "--benchmark i --batch obsługuje program engine");
         } else {
             if (provided < MPI_THREAD_FUNNELED && rank == 0) {
-                std::cerr << "Ostrzeżenie: biblioteka MPI nie zapewnia MPI_THREAD_FUNNELED — tryb hybrydowy "
+                std::cerr << "Ostrzeżenie: biblioteka MPI nie zapewnia MPI_THREAD_FUNNELED, tryb hybrydowy "
                              "(parallel.threads > 1) może być niepoprawny\n";
             }
             code = MpiSimulation::runFromCli(opt, sinceStart, initMs);

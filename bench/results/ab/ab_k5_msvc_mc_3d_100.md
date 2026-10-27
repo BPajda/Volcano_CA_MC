@@ -1,6 +1,6 @@
 # Test A/B `ab_k5_msvc_mc_3d_100`
 
-Optymalizacja 5 (tańsze statystyki MC), MSVC, tryb oszczędny (bez turbo) — część mc_full_3d_100 (scalona tabela: ab_k5_msvc.md)
+Optymalizacja 5 (tańsze statystyki MC), MSVC, taktowanie bazowe — część mc_full_3d_100 (scalona tabela: ab_k5_msvc.md)
 
 - Programy: `przed` = `engine_przed_msvc.exe`, `k4` = `engine_k4_msvc.exe`, `k5` = `engine_k5_msvc.exe`
 - Przypięcie: psutil.cpu_affinity([2]); priorytet: HIGH_PRIORITY_CLASS; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

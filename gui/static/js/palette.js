@@ -175,13 +175,13 @@ export function legendFor(field, meta, presentTypes) {
     if (n <= FLOW_SLOTS.length) {
       L.items = Array.from({ length: n }, (_, k) => ({ rgb: flowColor(k + 1, n), label: `${classic ? 'ziarno' : 'krater'} ${k + 1}` }));
     } else {
-      L.notes.push(`${n} ${classic ? 'ziaren' : 'kraterów'} — kolor stały, wyliczany z ID (ten sam na każdym przekroju)`);
+      L.notes.push(`${n} ${classic ? 'ziaren' : 'kraterów'}: kolor stały, wyliczany z ID (ten sam na każdym przekroju)`);
       L.swatches = Array.from({ length: 24 }, (_, k) => hashColor(k + 1));
     }
     L.items.push(...rockAir);
   } else if (field === 'crystal') {
     const q = r.crystal ? r.crystal[1] : 0;
-    L.notes.push(`orientacje 1…${q} — kolor stały z ID kryształu (jak plot_slice.py --color crystal)`);
+    L.notes.push(`orientacje 1…${q}: kolor stały z ID kryształu (jak plot_slice.py --color crystal)`);
     L.swatches = Array.from({ length: Math.min(q, 24) }, (_, k) => hashColor(k + 1));
     L.items.push(...rockAir);
   } else if (field === 'temp') {

@@ -32,7 +32,7 @@ Sama faza obliczeń przyspiesza 4,8–6,7× przy 8 wątkach. Cały przebieg przy
 też **3,3–4,0× szybsza od wariantu naiwnego już przy 1 wątku**, bo przegląda komórki po kolei zamiast losowych adresów
 (punkt 3.3). Razem z 8 wątkami faza MC 1000² liczy się 25× krócej niż wariant naiwny w jednym wątku (8,3 s → 0,33 s).
 
-![Przyspieszenie i efektywność fazy obliczeń, MSVC](img/etap9_skalowanie.png)
+![Przyspieszenie i efektywność fazy obliczeń, MSVC](img/openmp_skalowanie.png)
 
 ## 1. OpenMP w projekcie
 
@@ -92,7 +92,7 @@ libgomp (OpenMP 4.5) i tego samego kodu.
 
 ### 2.1 Warstwy z jako jednostka pracy
 
-![Podział warstw między wątki: static i static,1, front lawy; kolory szachownicy MC](img/etap9_podzial.png)
+![Podział warstw między wątki: static i static,1, front lawy; kolory szachownicy MC](img/openmp_podzial.png)
 
 Iteracja pętli równoległej to **jedna warstwa** (wszystkie komórki o danym z; w 2D x–y o danym y). Harmonogram decyduje,
 które warstwy dostaje wątek: `static` bez porcji to równe ciągłe pasy, `static,1` warstwy cyklicznie, `dynamic` /
@@ -185,7 +185,7 @@ rozrostu ziaren**. `bench/mc_validation.py` porównuje oba tryby dla 12 ziaren g
 (n: średnia wielkość ziarna ~ MCS^n dla MCS 20–100; pełna tabela z energią i przedziałami ufności:
 [`bench/results/omp/mc_walidacja.md`](../bench/results/omp/mc_walidacja.md).)
 
-![Liczba ziaren i średnia wielkość ziarna vs MCS: szachownica i wariant naiwny](img/etap9_mc_walidacja.png)
+![Liczba ziaren i średnia wielkość ziarna vs MCS: szachownica i wariant naiwny](img/openmp_mc_walidacja.png)
 
 - **Różnice 1–2,4% są istotne statystycznie** (|t| 3–9). Szachownica jest o kilka MCS „przed” wariantem naiwnym, bo
   każda komórka dostaje w MCS dokładnie jedną próbę. W wariancie naiwnym (losowanie ze zwracaniem) ~37% komórek
@@ -315,7 +315,7 @@ kompilatory dają to samo). Dwie przyczyny:
 
 W przypadkach z dużym zapisem albo krótkim krokiem GCC przy 8 wątkach nie przyspiesza już względem 6.
 
-![S(8) fazy i całego przebiegu: MSVC i GCC](img/etap9_msvc_gcc.png)
+![S(8) fazy i całego przebiegu: MSVC i GCC](img/openmp_msvc_gcc.png)
 
 ### 5.2 Co skaluje, a co nie: i dlaczego
 
@@ -342,9 +342,9 @@ W przypadkach z dużym zapisem albo krótkim krokiem GCC przy 8 wątkach nie prz
 
 ### 5.3 Prawo Amdahla i części szeregowe
 
-![Cały przebieg: zmierzone S(p) i krzywe Amdahla z dopasowanym f](img/etap9_amdahl.png)
+![Cały przebieg: zmierzone S(p) i krzywe Amdahla z dopasowanym f](img/openmp_amdahl.png)
 
-![Udział faz w czasie całego przebiegu przy 1 i 8 wątkach](img/etap9_szeregowe.png)
+![Udział faz w czasie całego przebiegu przy 1 i 8 wątkach](img/openmp_szeregowe.png)
 
 | Przypadek | f (cały przebieg) | f (sama faza) | część poza fazą przy p = 1 | S(∞) = 1/f |
 |---|---|---|---|---|
@@ -370,7 +370,7 @@ W przypadkach z dużym zapisem albo krótkim krokiem GCC przy 8 wątkach nie prz
 
 ## 6. Harmonogramy i nierównomierność obciążenia
 
-![Czas fazy przy 8 wątkach dla 6 harmonogramów, MSVC](img/etap9_harmonogramy.png)
+![Czas fazy przy 8 wątkach dla 6 harmonogramów, MSVC](img/openmp_harmonogramy.png)
 
 Najlepszy harmonogram przy 8 wątkach (czas fazy; w nawiasie najgorszy jako krotność najlepszego):
 
@@ -384,7 +384,7 @@ Najlepszy harmonogram przy 8 wątkach (czas fazy; w nawiasie najgorszy jako krot
 | MC szachownica 1000² | **`guided,4`** 322 ms (`dynamic` ×1,31) | — |
 | MC szachownica 100³ | **`guided`** 935 ms (`static,1` ×1,93) | — |
 
-![Czas pracy każdego wątku przy 8 wątkach: static, static,1, dynamic, guided](img/etap9_watki.png)
+![Czas pracy każdego wątku przy 8 wątkach: static, static,1, dynamic, guided](img/openmp_watki.png)
 
 Nierówność = Σ po krokach (maksimum czasu pracy wątku w kroku) / Σ (średnia), mierzone `--thread-stats` bez czekania na
 barierach (wykres wyżej):
@@ -566,8 +566,8 @@ nie płacimy.
 | `engine/CMakeLists.txt` | `VOLCANO_OPENMP`, `VOLCANO_MSVC_OPENMP_LLVM`, cel `omp_overhead` |
 | `engine/tests/test_parallel.cpp` | testy bitowe 1/2/3/4/8 wątków × harmonogramy, kolory szachownicy |
 | `bench/scaling.py` | pomiar skalowania i harmonogramów (S, E, Amdahl, zgodność, `--thread-stats`, `--wsl`, `--from-raw`) |
-| `bench/mc_validation.py` | walidacja statystyczna szachownicy → `mc_walidacja.*`, `docs/img/etap9_mc_walidacja.png` |
-| `bench/plot_etap9.py` | wykresy `docs/img/etap9_*.png` |
+| `bench/mc_validation.py` | walidacja statystyczna szachownicy → `mc_walidacja.*`, `docs/img/openmp_mc_walidacja.png` |
+| `bench/plot_openmp.py` | wykresy `docs/img/openmp_*.png` |
 | `bench/micro/omp_overhead.cpp` | mikrotest: region, bariera, krok z harmonogramami |
 | `bench/ab.py` | sekcja `caStats`; `parallel` i `update` w `stats.json` pomijane w porównaniu (opis liczenia, nie wynik) |
 | `bench/results/omp/` | dziennik `POSTEP.md`, skalowanie, harmonogramy, A/B narzutu, zgodność, walidacja, wstępne porównanie harmonogramów |

@@ -1,4 +1,4 @@
-"""Test A/B narzutu opcji --progress (etap 4): stary program, nowy bez flagi, nowy z --progress.
+"""Test A/B narzutu opcji --progress: stary program, nowy bez flagi, nowy z --progress.
 
 Każdy przypadek uruchamiany przemiennie (A, B, C, potem C, B, A …), proces przypięty do procesora
 logicznego 2 (rdzeń P, jak w run_profile.py), priorytet wysoki, output.format = none. Wynik: mediana

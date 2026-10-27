@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Profil aplikacji (etap 3): automatyczna macierz pomiarów silnika volcano-ca-mc.
+"""Profil aplikacji: automatyczna macierz pomiarów silnika volcano-ca-mc.
 
 Skrypt generuje configi do folderu tymczasowego, uruchamia program engine dla każdego
 wariantu (domyślnie 3 powtórzenia), zbiera times.json (czasy etapów, szczytowa pamięć
@@ -543,7 +543,7 @@ def main() -> int:
     ap.add_argument("--groups", default="classic,mc,lava,big,compilers,detail,benchmark",
                     help="grupy: classic, mc, lava, big, compilers, detail, benchmark")
     ap.add_argument("--cases", help="tylko wybrane warianty z planu grup (id po przecinku, lista: --dry-run); "
-                                    "np. skrócony profil przed/po w etapie 8")
+                                    "np. skrócony profil przed/po optymalizacji sekwencyjnej")
     ap.add_argument("--cpu", type=int, default=2, help="procesor logiczny do przypięcia (domyślnie 2 — rdzeń P)")
     ap.add_argument("--no-pin", action="store_true", help="bez przypinania do rdzenia")
     ap.add_argument("--priority", choices=["high", "normal"], default="high", help="priorytet procesu engine (Windows)")

@@ -15,7 +15,7 @@ TEST_CASE("hashRand: te same wejścia -> ta sama liczba, różne wejścia -> ró
     CHECK(hashRand(42, 7, 1000, kSaltTieBreak) != hashRand(42, 7, 1000, kSaltNeighborhood));
 }
 
-TEST_CASE("hashPrefix/hashIndex/hashSalt: ta sama liczba co hashRand (etap 8)") {
+TEST_CASE("hashPrefix/hashIndex/hashSalt: ta sama liczba co hashRand") {
     for (std::uint64_t seed : {0ULL, 42ULL, 0xFFFFFFFFFFFFFFFFULL}) {
         for (std::uint64_t step : {0ULL, 1ULL, 99ULL}) {
             const std::uint64_t prefix = hashPrefix(seed, step);

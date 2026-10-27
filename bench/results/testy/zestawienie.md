@@ -1,6 +1,6 @@
 # Zestawienie przyspieszenia i efektywności (etapy 8–11)
 
-Bez nowych przebiegów — `python bench/zestawienie_e12.py` czyta CSV etapów 8–11. S = T(1)/T(p), E = S/p, f — część szeregowa z dopasowania prawa Amdahla (z tabel etapów 9 i 10, warianty jednego rodzaju); „faza” = `caSim` / `mcSim`, „total” = cały przebieg. T(1) i T(p) zawsze z tej samej sesji pomiarowej. Warunki wszystkich wierszy: bez turbo, rdzenie P, wysoki priorytet (etap 8 — 1 rdzeń P); każdy przebieg etapów 9–11 bitowo zgodny z wariantem odniesienia.
+Bez nowych przebiegów — `python bench/zestawienie.py` czyta CSV etapów 8–11. S = T(1)/T(p), E = S/p, f — część szeregowa z dopasowania prawa Amdahla (z tabel etapów 9 i 10, warianty jednego rodzaju); „faza” = `caSim` / `mcSim`, „total” = cały przebieg. T(1) i T(p) zawsze z tej samej sesji pomiarowej. Warunki wszystkich wierszy: bez turbo, rdzenie P, wysoki priorytet (etap 8 — 1 rdzeń P); każdy przebieg etapów 9–11 bitowo zgodny z wariantem odniesienia.
 
 ## MSVC / MS-MPI — S / E fazy obliczeń przy 7–8 rdzeniach
 

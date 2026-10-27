@@ -1,6 +1,6 @@
 # Test A/B `ab_k7_gcc_ca`
 
-Optymalizacja 7 (zapis plików tekstowych wyników), GCC, tryb oszczędny (bez turbo) — grupy CA (scalona tabela: ab_k7_gcc.md)
+Optymalizacja 7 (zapis plików tekstowych wyników), GCC, taktowanie bazowe — grupy CA (scalona tabela: ab_k7_gcc.md)
 
 - Programy: `k5` = `engine_k5`, `k7` = `engine_k7`
 - Przypięcie: sched_setaffinity({2}) (WSL2: procesor wirtualny); priorytet: domyślny; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

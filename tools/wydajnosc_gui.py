@@ -8,7 +8,7 @@ skalowanie OpenMP `omp/`, MPI `mpi/`, typy pochodne i MPI-IO `mpi_io/`, testy wy
 z seriami danych. Bez nowych pomiarów. Zakładka (gui/static/js/perf.js) tylko to rysuje — żadna liczba nie jest
 wpisana w JS.
 
-Zasady porównywania jak w bench/zestawienie_e12.py (z niego pochodzi zestawienie S / E i łączne przyspieszenie):
+Zasady porównywania jak w bench/zestawienie.py (z niego pochodzi zestawienie S / E i łączne przyspieszenie):
 S zawsze od T(1) tej samej sesji, kroki optymalizacji k1–k4 (taktowanie dynamiczne) i k5–k8 (taktowanie bazowe) tylko
 jako stosunki z jednego testu A/B, czasy przed / po optymalizacji — z profilu przy taktowaniu bazowym.
 
@@ -20,9 +20,9 @@ gui/tests/test_perf.py.
     python tools/wydajnosc_gui.py            # zapis gui/static/data/wydajnosc.json
     python tools/wydajnosc_gui.py --check    # tylko porównanie z plikiem w repozytorium (kod 1 — dane nieaktualne)
 
-Format pliku (wersja FORMAT): {format, generated, generator, sources[], compilers{}, header{}, glossary[], conditions{},
-summary{}, sections[]}; sekcja: {id, title, intro, doc, charts[]}; wykres: {id, title, kind (line | bar | hbar | scatter
-| dots), wide?, selectors[], compilers[], views{klucz: widok}, lead, conclusion, howto[], steps?, conditions, sources[],
+Format pliku (wersja FORMAT): {format, generated, generator, sources[], compilers{}, compilersShort{}, header{}, glossary[],
+conditions{}, summary{}, sections[]}; sekcja: {id, title, intro, doc, charts[]}; wykres: {id, title, kind (line | bar | hbar | scatter
+| dots), wide?, selectors[], compilers[], mpi, views{klucz: widok}, lead, conclusion, howto[], steps?, conditions, sources[],
 doc{pdf, title, section}}; klucz widoku = kompilator (gdy wykres ma dane kompilatorów) i wartości przełączników
 połączone „|”; widok: {kind?, labels?, headers?, x{}, y{}, series[], hlines?, vlines?, xband?, connect?, rowText?,
 rowNotes?, legend?, legendRows?, note?}; seria: {name, role (kolor z motywu GUI), marker?, dash?, outline?, data, lo?,
@@ -48,6 +48,8 @@ FORMAT = 2
 sys.path.insert(0, str(ROOT / "bench"))
 
 COMPILERS = {"msvc": "MSVC / MS-MPI", "gcc": "GCC / OpenMPI (WSL)"}
+# Plakietka wykresów bez MPI (sekwencyjnie, OpenMP, pamięć podręczna, przepustowość): sam kompilator.
+COMPILERS_SHORT = {"msvc": "MSVC", "gcc": "GCC (WSL)"}
 BUILD = {"msvc": "msvc-O2", "gcc": "gcc-O3"}
 # Dokumenty (PDF w docs/pdf/, budowane z docs/<nazwa>.md przez tools/build_docs_pdf.py): nazwa pliku i tytuł.
 DOCS = {"seq": ("optymalizacja-sekwencyjna", "Optymalizacja wersji sekwencyjnej"),
@@ -107,7 +109,7 @@ def r4(v: float | None) -> float | None:
 
 
 def parts(prefix: str, folder: Path) -> list[Path]:
-    """Części pomiaru <prefix>_cz<N>[litera]_raw.csv — z każdej części ostatnia wersja (jak bench/plot_etap11.py)."""
+    """Części pomiaru <prefix>_cz<N>[litera]_raw.csv — z każdej części ostatnia wersja (jak bench/plot_mpi_io.py)."""
     best: dict[int, Path] = {}
     for p in sorted(folder.glob(f"{prefix}_cz*_raw.csv")):
         m = re.search(r"_cz(\d+)([a-z]?)_raw\.csv$", p.name)
@@ -229,9 +231,11 @@ def ideal_line(xs: list[float], kind: str) -> dict:
 
 def chart(cid: str, title: str, kind: str, sec: str, section: str, lead: str, conclusion: str, howto: list[str],
           conditions: str, selectors: list | None = None, compilers: list | None = None, sources=None,
-          wide: bool = False) -> dict:
+          wide: bool = False, mpi: bool | None = None) -> dict:
+    """Karta wykresu; mpi = czy wykres dotyczy MPI (plakietka „MSVC / MS-MPI” zamiast „MSVC”), domyślnie wg sekcji."""
     name, dtitle = DOCS[sec]
     c = {"id": cid, "title": title, "kind": kind, "selectors": selectors or [], "compilers": compilers or [],
+         "mpi": sec in ("mpi", "mpiio") if mpi is None else mpi,
          "views": {}, "lead": lead, "conclusion": conclusion, "howto": howto, "conditions": conditions,
          "doc": {"pdf": f"{name}.pdf", "title": dtitle, "section": section}, "sources": sorted(set(sources or []))}
     if wide:
@@ -251,7 +255,7 @@ HOW_LOG = "równe odstępy na osi to równe mnożniki: od 1 do 10 jest tyle samo
 HOW_SE = ("S(p) = czas na 1 rdzeniu / czas na p rdzeniach („ile razy szybciej”); E(p) = S(p) / p („jaka część dodanych "
           "rdzeni pracuje użytecznie”, 1,0 = idealnie)")
 
-# Przypadki pomiarów wersji równoległych (ta sama kolejność co bench/zestawienie_e12.py i wykresy w dokumentach).
+# Przypadki pomiarów wersji równoległych (ta sama kolejność co bench/zestawienie.py i wykresy w dokumentach).
 CASES = [("lava_etna_real", "lawa: Etna, automat frontalny", "lawa"),
          ("lava_duza_3d_front", "lawa: teren testowy 128×128×64, automat frontalny", "lawa"),
          ("lava_duza_3d_full", "lawa: teren testowy 128×128×64, pełny przebieg", "lawa"),
@@ -277,7 +281,7 @@ def group_cases(g: str) -> list[str]:
 
 
 def variant_name(v: str) -> str:
-    """Nazwa wariantu z bench/zestawienie_e12.py po polsku, bez skrótów (np. „MPI 7, typy pochodne”)."""
+    """Nazwa wariantu z bench/zestawienie.py po polsku, bez skrótów (np. „MPI 7, typy pochodne”)."""
     m = re.fullmatch(r"MPI (\d+) proces(?:y|ów)? \(bez procesora 0\)", v)
     if m:
         return f"MPI, {m.group(1)} procesów bez procesora 0"
@@ -464,10 +468,10 @@ GLOSSARY = [
 
 
 # ---------------------------------------------------------------------------
-# Zestawienie S / E i łączne przyspieszenie — bench/zestawienie_e12.py
+# Zestawienie S / E i łączne przyspieszenie — bench/zestawienie.py
 # ---------------------------------------------------------------------------
 def zestawienie() -> tuple[dict, dict]:
-    import zestawienie_e12 as z
+    import zestawienie as z
 
     rows, chain = {}, {}
     for comp in COMPILERS:
@@ -503,7 +507,7 @@ def summary(rows: dict, chain: dict) -> dict:
                 "w różne dni, dlatego trochę inny niż iloczyn)."],
                f"Faza obliczeń (sam automat albo samo Monte Carlo, bez przygotowania i zapisu); {CLOCK}; rdzenie "
                "wydajnościowe (P), najwyżej 8; każdy czynnik to iloraz median z jednej sesji pomiarowej",
-               compilers=list(COMPILERS), sources=srcs)
+               compilers=list(COMPILERS), sources=srcs, mpi=True)
     for comp in COMPILERS:
         cs = chain[comp]
         tiles[comp] = [{
@@ -580,7 +584,7 @@ PROFILE_CASES = [("etna_real", "lawa: Etna (rzeczywisty teren)"), ("test_3d", "l
                  ("mcfull_100x100x100_moore_mcs100", "Monte Carlo 100×100×100, Moore")]
 AB = RES / "ab"
 # Kroki: (krótka nazwa, opis, {kompilator: [(plik, kolumna po, kolumna przed)]}, rodziny, których krok dotyczy,
-# miara „zmieniona część programu” dla CA i MC) — jak bench/plot_etap8.py, + k8.
+# miara „zmieniona część programu” dla CA i MC) — jak bench/plot_optymalizacja.py, + k8.
 STEPS = [
     ("k1: Monte Carlo bez skoków", "Monte Carlo bez skoku warunkowego: sąsiedzi liczeni sumą porównań zamiast "
      "instrukcji if, energia przed i po zmianie w jednym przejściu.",
@@ -693,7 +697,8 @@ def section_seq() -> dict:
                ["Wiersz = jeden krok optymalizacji. Długość paska = przyspieszenie kroku, czyli czas przed krokiem / "
                 "czas po kroku: ×1 = bez zmian, w prawo = szybciej, w lewo = wolniej.",
                 "Kolor: rodzina przypadków (lawa, rozrost ziaren, Monte Carlo); pasek to mediana przypadków rodziny, "
-                "każdy przypadek osobno jest w podpowiedzi. Brak paska: krok tej rodziny nie dotyczy.",
+                "każdy przypadek osobno jest w podpowiedzi. Brak paska: krok tej rodziny nie dotyczy. Bardzo krótki "
+                "pasek bez liczby: bez zmian (różnica do 3%), wartość w podpowiedzi.",
                 f"Skala logarytmiczna ({HOW_LOG}), bo zysk kroku k4 jest o rząd wielkości większy niż pozostałych "
                 "kroków.",
                 "Przełącznik „miara”: cały przebieg programu albo tylko część, którą zmienia krok (automat dla k2–k4, "
@@ -743,7 +748,9 @@ def section_seq() -> dict:
                     sp = [x[1] for x in rs]
                     med = statistics.median(sp)
                     vals[g][row] = med
-                    labs[g][row] = ("" if short.startswith("k8") else "bez zmian" if 1 / 1.03 <= med <= 1.03
+                    # bez zmian (±3%): bez etykiety — przy pasku długości ~0 etykiety kilku rodzin nachodziłyby na
+                    # siebie; wartość jest w podpowiedzi
+                    labs[g][row] = ("" if short.startswith("k8") or 1 / 1.03 <= med <= 1.03
                                     else f"×{fx(med)}" if med >= 1 else f"×{fx(1 / med)} wolniej")
                     mets = sorted({STEP_METRIC[x[2]] for x in rs})
                     tips[g][row] = (f"{glbl}, {', '.join(mets)}: mediana {fratio(med)}, rozrzut przypadków od "
@@ -1500,7 +1507,7 @@ def cache_sizes() -> dict:
 
 
 def cg_per_unit(rows: list[dict]) -> dict[str, dict[str, float]]:
-    """Chybienia jądra (funkcje kroku) na jednostkę pracy: CA — komórka × krok, MC — próba (jak bench/plot_etap12.py)."""
+    """Chybienia jądra (funkcje kroku) na jednostkę pracy: CA — komórka × krok, MC — próba (jak bench/plot_testy.py)."""
     res: dict[str, dict[str, float]] = {}
     for r in rows:
         mc = (num(r.get("mcs")) or 0) > 0
@@ -1522,7 +1529,7 @@ def cg_tip(e: dict, v: float | None, name: str = "") -> str:
 
 
 def mem_base(med_: dict) -> tuple[float, dict[int, float]]:
-    """Narzut stały procesu (rozrost ziaren 16³): engine z 1 wątkiem i engine_mpi na p procesach — jak bench/plot_etap12.py."""
+    """Narzut stały procesu (rozrost ziaren 16³): engine z 1 wątkiem i engine_mpi na p procesach — jak bench/plot_testy.py."""
     o1 = med_.get(("base_tiny", "o1"), {})
     end = num(o1.get("endRss"))
     base_omp = min(num(o1["peakRss"]), end) if end else num(o1.get("peakRss")) or 0.0
@@ -1557,7 +1564,8 @@ def section_tests(rows: dict) -> dict:
                COND_PAR + "; siatka p razy większa; silne E(p) z pomiarów OpenMP i MPI",
                [sel("case", "przypadek", [(w, lbl) for w, lbl, _ in WEAK]),
                 sel("measure", "E_w z", [("phase", "czasu fazy"), ("norm", "czasu na komórkę i krok")])],
-               list(COMPILERS), sources=[f"bench/results/testy/slabe_{k}_{c}.csv" for k in ("omp", "mpi") for c in COMPILERS])
+               list(COMPILERS), sources=[f"bench/results/testy/slabe_{k}_{c}.csv" for k in ("omp", "mpi") for c in COMPILERS],
+               mpi=True)
     for comp in COMPILERS:
         weak = {k: read_csv(T / f"slabe_{k}_{comp}.csv") for k in ("omp", "mpi")}
         for wid, _, strong in WEAK:
@@ -1605,7 +1613,8 @@ def section_tests(rows: dict) -> dict:
                [sel("case", "przypadek", [(c, f"{MEM_FAMILY_WORD[next(f for f in MEM_FAMILY if c.startswith(f))]} {lbl}"
                                            if not c.startswith("etna") else f"lawa: {lbl}") for c, lbl in MEM_CASES])],
                list(COMPILERS),
-               sources=[f"bench/results/testy/pamiec_{c}_raw.csv" for c in COMPILERS] + ["bench/results/testy/pamiec_msvc.md"])
+               sources=[f"bench/results/testy/pamiec_{c}_raw.csv" for c in COMPILERS] + ["bench/results/testy/pamiec_msvc.md"],
+               mpi=True)
     SRC.all.add("bench/results/testy/pamiec_msvc.md")
     for comp in COMPILERS:
         med_ = medm[comp]
@@ -1655,19 +1664,24 @@ def section_tests(rows: dict) -> dict:
                ["Widok „błąd modelu w %”: (model − pomiar) / pomiar dla każdego przypadku; 0% = model idealny, wartość "
                 "dodatnia = model zawyża. Szare pasmo: ±10%. Wiersze pogrupowane po rodzinie przypadków; w małych "
                 "siatkach (kilka MB) już 1 MB różnicy to kilkanaście procent.",
-                "Pełne koło: 1 wątek; puste kwadraty: suma po procesach MPI (1–8 procesów, zapis przez zebranie albo "
-                "MPI-IO; każdy znacznik to jeden wariant, szczegóły w podpowiedzi).",
+                "Pełne koło: 1 wątek; pusty kwadrat: suma po procesach MPI z zebraniem wyniku na procesie 0; pełny "
+                "trójkąt: suma po procesach z zapisem MPI-IO (1–8 procesów; każdy znacznik to jeden wariant, szczegóły "
+                "w podpowiedzi). Wniosek „do 8%” dotyczy kwadratów.",
                 f"Widok „model vs pomiar”: oś pozioma model, pionowa pomiar, obie w MB i w skali logarytmicznej ({HOW_LOG}). "
                 "Linia przerywana: pomiar = model, pasmo wokół niej: ±10%. Kolor: tryb (1 wątek albo procesy MPI), "
-                "kształt: rodzina przypadków.",
+                "kształt: rodzina przypadków; u procesów MPI pusty znacznik = zebranie wyniku na procesie 0, pełny = "
+                "zapis MPI-IO.",
                 f"Od pomiaru odjęto stałą pamięć samego programu, niezależną od rozmiaru siatki: {pl(base_omp / 2**20, 1)} MB "
                 f"dla programu jednowątkowego i {pl(base_mpi.get(1, 0.0) / 2**20, 1)} MB na każdy proces MPI."],
                "Szczyt zbioru roboczego procesu minus stała pamięć programu; model: model pamięci silnika (1 wątek) "
                "rozszerzony na pasy procesów MPI; kompilator MSVC",
                [sel("view", "widok", [("err", "błąd modelu w %"), ("xy", "model vs pomiar")])], ["msvc"],
-               sources=["bench/results/testy/pamiec_msvc_raw.csv"], wide=True)
+               sources=["bench/results/testy/pamiec_msvc_raw.csv"], wide=True, mpi=True)
     pts1, ptsm = {}, {}
-    xs, mk, tt, xm, mm_, tm = [], [], [], [], [], []
+    xs, mk, tt = [], [], []
+    xm = {"d": [], "di": []}
+    mm_ = {"d": [], "di": []}
+    tm = {"d": [], "di": []}
     for cid, lbl in MEM_CASES:
         fam = next(f for f in MEM_FAMILY if cid.startswith(f))
         full = f"{MEM_FAMILY_WORD[fam]} {lbl}" if fam != "etna" else f"lawa: {lbl}"
@@ -1684,36 +1698,45 @@ def section_tests(rows: dict) -> dict:
                 m = memory.mpi_model(e) if e else None
                 if m:
                     x, y = m["modelSum"] / 2**20, (num(e["rssAvg"]) * p - p * base_mpi.get(p, 0.0)) / 2**20
-                    xm.append([x, y]), mm_.append(MEM_FAMILY[fam][1])
+                    xm[io].append([x, y]), mm_[io].append(MEM_FAMILY[fam][1])
                     how = "MPI-IO" if io == "di" else "zebranie"
-                    tm.append(f"{full}, {procs_word(p)}, {how}: model {pl(x, 0)} MB, pomiar {pl(y, 0)} MB")
-                    ptsm.setdefault(cid, []).append((100 * (x - y) / y, f"{procs_word(p)}, {how}: model {pl(x, 0)} MB, "
-                                                                        f"pomiar {pl(y, 0)} MB, błąd {fpct(100 * (x - y) / y)}"))
-    labels, headers, d1, t1, dm, tmm, rtext = [], [], [], [], [], [], []
+                    tm[io].append(f"{full}, {procs_word(p)}, {how}: model {pl(x, 0)} MB, pomiar {pl(y, 0)} MB")
+                    ptsm.setdefault((cid, io), []).append((100 * (x - y) / y, f"{procs_word(p)}, {how}: model "
+                                                                              f"{pl(x, 0)} MB, pomiar {pl(y, 0)} MB, błąd "
+                                                                              f"{fpct(100 * (x - y) / y)}"))
+    labels, headers, d1, t1, rtext = [], [], [], [], []
+    dm, tmm = {"d": [], "di": []}, {"d": [], "di": []}
     for gname, fams in MEM_GROUPS:
         headers.append(len(labels))
         labels.append(gname)
-        d1.append(None), t1.append(""), dm.append(None), tmm.append(""), rtext.append("")
+        d1.append(None), t1.append(""), rtext.append("")
+        for io in dm:
+            dm[io].append(None), tmm[io].append("")
         for cid, lbl in MEM_CASES:
             if not cid.startswith(fams):
                 continue
             labels.append(lbl)
             d1.append(pts1[cid][0] if cid in pts1 else None)
             t1.append(pts1[cid][1] if cid in pts1 else "")
-            ms = ptsm.get(cid, [])
-            dm.append([v for v, _ in ms] or None)
-            tmm.append([t for _, t in ms] or "")
+            for io in dm:
+                ms = ptsm.get((cid, io), [])
+                dm[io].append([v for v, _ in ms] or None)
+                tmm[io].append([t for _, t in ms] or "")
             rtext.append("model zawyża" if cid == "mc3d_200" else "")
     c3["views"]["msvc|err"] = {
         "kind": "dots", "labels": labels, "headers": headers,
         "x": {"title": "błąd modelu: (model − pomiar) / pomiar [%]", "fmt": "pct", "min": -30, "max": 30},
         "y": {"title": ""},
         "series": [series("1 wątek", "s1", d1, marker="circle", tips=t1),
-                   series("suma po procesach MPI", "s2", dm, marker="rect", outline=True, tips=tmm)],
+                   series("suma po procesach MPI, zebranie wyniku", "s2", dm["d"], marker="rect", outline=True,
+                          tips=tmm["d"]),
+                   series("suma po procesach MPI, zapis MPI-IO", "s2", dm["di"], marker="triangle", tips=tmm["di"])],
         "xband": {"from": -10, "to": 10, "label": "±10%"}, "vlines": [{"x": 0, "label": ""}], "rowText": rtext,
         "legendRows": [{"label": "znacznik", "items": [{"role": "s1", "label": "1 wątek", "marker": "circle"},
-                                                       {"role": "s2", "label": "suma po procesach MPI (jeden wariant)",
-                                                        "marker": "rect", "outline": True}]}]}
+                                                       {"role": "s2", "label": "procesy MPI, zebranie wyniku na procesie 0",
+                                                        "marker": "rect", "outline": True},
+                                                       {"role": "s2", "label": "procesy MPI, zapis MPI-IO",
+                                                        "marker": "triangle"}]}]}
     c3["views"]["msvc|xy"] = {
         "kind": "scatter",
         "x": {"title": "model [MB] (skala log.)", "log": True, "fmt": "num", "min": 3, "max": 1500},
@@ -1721,10 +1744,15 @@ def section_tests(rows: dict) -> dict:
         "series": [series("pomiar = model", "ideal", [[3, 3], [1500, 1500]], dash=True, marker="none",
                           band={"lo": [2.7, 1350], "hi": [3.3, 1650]}),
                    series("1 wątek", "s1", xs, markers=mk, line=False, tips=tt),
-                   series("suma po procesach MPI (1–8 procesów)", "s2", xm, markers=mm_, line=False, outline=True, tips=tm)],
+                   series("suma po procesach MPI, zebranie wyniku (1–8 procesów)", "s2", xm["d"], markers=mm_["d"],
+                          line=False, outline=True, tips=tm["d"]),
+                   series("suma po procesach MPI, zapis MPI-IO (2–8 procesów)", "s2", xm["di"], markers=mm_["di"],
+                          line=False, tips=tm["di"])],
         "legendRows": [{"label": "kolor", "items": [{"role": "s1", "label": "1 wątek", "marker": "circle"},
-                                                    {"role": "s2", "label": "suma po procesach MPI", "marker": "rect",
-                                                     "outline": True},
+                                                    {"role": "s2", "label": "procesy MPI: zebranie wyniku (pusty)",
+                                                     "marker": "rect", "outline": True},
+                                                    {"role": "s2", "label": "procesy MPI: zapis MPI-IO (pełny)",
+                                                     "marker": "rect"},
                                                     {"role": "ideal", "label": "pomiar = model (±10%)", "marker": "line"}]},
                        {"label": "kształt", "items": [{"label": name, "marker": mrk} for name, mrk in MEM_FAMILY.values()]}]}
     charts.append(c3)
@@ -1916,6 +1944,7 @@ def build() -> dict:
         "generated": dt.datetime.now().replace(microsecond=0).isoformat(),
         "generator": "tools/wydajnosc_gui.py",
         "compilers": COMPILERS,
+        "compilersShort": COMPILERS_SHORT,
         "header": head,
         "glossary": [{"term": t, "def": d} for t, d in GLOSSARY],
         "summary": summary(rows, chain),
@@ -1967,7 +1996,7 @@ def main() -> int:
     if args.check:
         old = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}
         same = strip_generated(old) == strip_generated(json.loads(dumps(data)))
-        print(f"{out}: {'aktualny' if same else 'NIEAKTUALNY — uruchom python tools/wydajnosc_gui.py'}")
+        print(f"{out}: {'aktualny' if same else 'NIEAKTUALNY: uruchom python tools/wydajnosc_gui.py'}")
         return 0 if same else 1
     out.parent.mkdir(parents=True, exist_ok=True)
     text = dumps(data) + "\n"

@@ -1,6 +1,6 @@
 # Test A/B `ab_k5_gcc`
 
-Optymalizacja 5 (tańsze statystyki MC: etykiety ziaren i energia całkowita), GCC, tryb oszczędny (bez turbo) — grupa mc; kontrola CA (k4/k5): ab_k5_gcc_ca.md
+Optymalizacja 5 (tańsze statystyki MC: etykiety ziaren i energia całkowita), GCC, taktowanie bazowe — grupa mc; kontrola CA (k4/k5): ab_k5_gcc_ca.md
 
 - Tabela z pomiaru `ab_k5_gcc_mc_reszta_raw.csv`, `ab_k5_gcc_mc_3d_100_raw.csv` (te same przebiegi naprzemienne; programy przed, k4, k5; warunki pomiaru i tło — w nagłówku `ab_k5_gcc_mc_reszta.md`, `ab_k5_gcc_mc_3d_100.md`)
 

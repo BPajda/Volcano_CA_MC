@@ -1,6 +1,6 @@
 # Test A/B `ab_k7a_gcc_ca`
 
-Próba stabilizacji układu kodu GCC: k7a = kod k7 z -falign-functions=64 (build-gcc-align), tryb oszczędny (bez turbo) — grupy CA
+Próba stabilizacji układu kodu GCC: k7a = kod k7 z -falign-functions=64 (build-gcc-align), taktowanie bazowe — grupy CA
 
 - Programy: `k5` = `engine_k5`, `k7` = `engine_k7`, `k7a` = `engine_k7a`
 - Przypięcie: sched_setaffinity({2}) (WSL2: procesor wirtualny); priorytet: domyślny; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

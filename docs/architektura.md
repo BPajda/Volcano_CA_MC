@@ -79,12 +79,12 @@ volcano-ca-mc/
 │   ├── latlon_to_grid.py               (szer., dł.) ↔ kolumna (x, y) siatki mapy z prawdziwego terenu
 │   └── wydajnosc_gui.py                dane zakładki „Wydajność”: bench/results/ (pomiary wersji szybkich i równoległych) → gui/static/data/wydajnosc.json
 ├── bench/                              profil aplikacji: run_profile.py, plot_profile.py, profile_gcc.sh, profile_msvc.py, results/, profiles/
-│                                       optymalizacja sekwencyjna: ab.py (test A/B), compare_results.py (zgodność bitowa), plot_etap8.py, results/ab/
-│                                       OpenMP: scaling.py (skalowanie OpenMP), mc_validation.py, plot_etap9.py, micro/omp_overhead.cpp, results/omp/
-│                                       MPI: scaling_mpi.py (skalowanie MPI), plot_etap10.py, compare_results.py --launch, results/mpi/
-│                                       typy MPI i MPI-IO: mpi_io.py (typy pochodne i MPI-IO), plot_etap11.py, results/mpi_io/
-│                                       testy wydajności: zestawienie_e12.py, memory.py, cachegrind.py, cache_info.py, cell_time.py,
-│                                       scaling*.py --weak, micro/bandwidth.cpp, plot_etap12.py, results/testy/
+│                                       optymalizacja sekwencyjna: ab.py (test A/B), compare_results.py (zgodność bitowa), plot_optymalizacja.py, results/ab/
+│                                       OpenMP: scaling.py (skalowanie OpenMP), mc_validation.py, plot_openmp.py, micro/omp_overhead.cpp, results/omp/
+│                                       MPI: scaling_mpi.py (skalowanie MPI), plot_mpi.py, compare_results.py --launch, results/mpi/
+│                                       typy MPI i MPI-IO: mpi_io.py (typy pochodne i MPI-IO), plot_mpi_io.py, results/mpi_io/
+│                                       testy wydajności: zestawienie.py, memory.py, cachegrind.py, cache_info.py, cell_time.py,
+│                                       scaling*.py --weak, micro/bandwidth.cpp, plot_testy.py, results/testy/
 ├── configs/                            przykładowe configi (test_2d, test_3d, etna_3d, classic_ref, lava_mc_*, mc_full_*, heightmap_*,
 │                                       etna_real, etna_real_boczna, wezuwiusz_real), heightmaps/ (mapy CSV + PNG + JSON, README z przypisaniem
 │                                       danych); gui/ i series/: generowane (poza repozytorium)
@@ -629,7 +629,7 @@ viewer2d/3d, Chart.js ◀──bajty + X-Meta──  results.py, render.py    �
   `stats.json`, `config_used.json` każdego wyniku i składa tabelę; wykres rysuje Chart.js (`compare.js`, `renderCharts()` 221).
 - **Wydajność** ([zakladka-wydajnosc.md](zakladka-wydajnosc.md)): jedyna zakładka bez wywołań silnika
   i bez endpointu danych: `tools/wydajnosc_gui.py` (`build()` 1910, sekcje `section_seq()` 645 … `section_tests()` 1539;
-  zestawienie S / E z `bench/zestawienie_e12.py`, pamięć z `bench/memory.py`) zapisuje plik statyczny
+  zestawienie S / E z `bench/zestawienie.py`, pamięć z `bench/memory.py`) zapisuje plik statyczny
   `gui/static/data/wydajnosc.json`, a `gui/static/js/perf.js` (`PerfView`) pobiera go raz (`load()` 628) i rysuje:
   sekcja przy pierwszym wejściu (`showSection()` 685 → `buildSection()` 721 → `addCard()` 771: wykres, wniosek, „Jak czytać”, warunki, „Skąd dane”, link PDF), widok wykresu wg kompilatora
   i przełączników (`resolve()` 811: klucz „kompilator|opcja|…”, najbliższy widok, gdy brak pomiaru), konfiguracja Chart.js
@@ -752,12 +752,12 @@ Główne wnioski:
 **Optymalizacja sekwencyjna** zrealizowała większość tej listy (automat frontalny, MC bez skoku warunkowego, ramka tylko w używanych osiach,
 przesunięcia liniowe, tańsze statystyki MC, szybszy zapis txt): `etna_real` ×0,005, CA classic ×0,06–0,14, MC ×0,50–0,70,
 pamięć CA 2D 91 → 28–36 B/komórkę, wyniki bitowo te same. Narzędzia: `bench/ab.py` (test A/B), `bench/compare_results.py`
-(zgodność bitowa configów), `bench/plot_etap8.py`; opis w [optymalizacja-sekwencyjna.md](optymalizacja-sekwencyjna.md).
+(zgodność bitowa configów), `bench/plot_optymalizacja.py`; opis w [optymalizacja-sekwencyjna.md](optymalizacja-sekwencyjna.md).
 
 **Wersja OpenMP** zrównolegliła automat i MC w OpenMP (krok 6a, szachownica w kroku 8): faza obliczeń przy 8 wątkach na rdzeniach
 P przyspiesza 4,8–6,7×, cały przebieg 2,1–6,2× (części sekwencyjne: teren, statystyki ziaren, zapis; prawo Amdahla),
 narzut przy 1 wątku ≤ 3%. Narzędzia: `bench/scaling.py` (S(p), E(p), Amdahl, harmonogramy, zgodność każdego powtórzenia),
-`bench/mc_validation.py`, `bench/plot_etap9.py`; opis w [openmp.md](openmp.md).
+`bench/mc_validation.py`, `bench/plot_openmp.py`; opis w [openmp.md](openmp.md).
 
 ## 7. Kluczowe momenty kodu: ściąga
 
@@ -777,12 +777,12 @@ narzut przy 1 wątku ≤ 3%. Narzędzia: `bench/scaling.py` (S(p), E(p), Amdahl,
 | wątki OpenMP: krok w jednym regionie, fazy z barierami | `LavaCA.hpp`, `frontStepParallel()`, `fullStepParallel()`; `engine/src/parallel/Omp.hpp`, `ompFor()` |
 | szachownica MC (kolory, MCS w wątkach) | `engine/src/mc/PottsMC.cpp`, `buildColors()`, `sweepColors()`, `colorTrials()` |
 | przypinanie wątków do rdzeni P, czas pracy wątków | `engine/src/parallel/Affinity.cpp`, `performanceCores()`, `pinThreads()`; `ThreadStats.cpp` |
-| skalowanie S(p), E(p), Amdahl, harmonogramy (OpenMP) | `bench/scaling.py`, `bench/plot_etap9.py`; walidacja szachownicy `bench/mc_validation.py`; wyniki `bench/results/omp/` |
+| skalowanie S(p), E(p), Amdahl, harmonogramy (OpenMP) | `bench/scaling.py`, `bench/plot_openmp.py`; walidacja szachownicy `bench/mc_validation.py`; wyniki `bench/results/omp/` |
 | procesy MPI: pasy, warstwy brzegowe, wymiana, suma liczników | `engine/src/mpi/MpiSimulation.cpp`, `runCa()`, `runMc()`; `MpiHalo.cpp`, `run()`; `parallel/Strip.cpp`, `planStrip()`; `LavaCA::setStrip()`, `exchangeGhosts()` |
-| skalowanie MPI, hybryda, MPI vs OpenMP | `bench/scaling_mpi.py`, `bench/plot_etap10.py`; zgodność `bench/compare_results.py --launch`; wyniki `bench/results/mpi/` |
+| skalowanie MPI, hybryda, MPI vs OpenMP | `bench/scaling_mpi.py`, `bench/plot_mpi.py`; zgodność `bench/compare_results.py --launch`; wyniki `bench/results/mpi/` |
 | typy pochodne MPI: komunikat warstw z pól SoA, blok configu, tablica kraterów | `engine/src/mpi/MpiHalo.cpp`, `messageType()`, `runTyped()`; `engine/src/mpi/MpiTypes.cpp`, `configBlockType()`, `ventType()`; `MpiSimulation.cpp`, `bcastConfig()`, `bcastVents()` |
 | MPI-IO: pas w pliku (subarray), tekst (`MPI_Exscan`), odczyt `--mc-from` | `engine/src/mpi/MpiIo.cpp`, `writeStrips()`, `writeText()`, `readCaStrip()`; pomiar `bench/mpi_io.py`, wyniki `bench/results/mpi_io/` |
-| testy wydajności: zestawienie S / E, skalowanie słabe, pamięć, pamięć podręczna | `bench/zestawienie_e12.py`, `scaling.py` / `scaling_mpi.py --weak` (`weak_cases()`), `memory.py`, `cachegrind.py`, `cell_time.py`, `micro/bandwidth.cpp`, `plot_etap12.py`; wyniki `bench/results/testy/` |
+| testy wydajności: zestawienie S / E, skalowanie słabe, pamięć, pamięć podręczna | `bench/zestawienie.py`, `scaling.py` / `scaling_mpi.py --weak` (`weak_cases()`), `memory.py`, `cachegrind.py`, `cell_time.py`, `micro/bandwidth.cpp`, `plot_testy.py`; wyniki `bench/results/testy/` |
 | sąsiad przez przesunięcie liniowe | `engine/src/core/Storage.hpp`, `linear()`, `shifted()`, `nextX()`; `LavaCA::nbSteps_` |
 | reguła rozlewania lawy (kierunek największego spadku) | `LavaCA.hpp`, `gatherLavaCandidates()`, `computeDescent()`, `descent()` |
 | wypełnianie krateru (ponding) | `LavaCA.hpp`, `tryPonding()`; opis w `CaRules.hpp` |

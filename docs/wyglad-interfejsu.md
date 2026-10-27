@@ -41,7 +41,7 @@ kontrast 6,1:1, biały miałby tylko ~3:1). Reszta interfejsu jest neutralna, ż
 `prefers-reduced-motion`.
 
 **Nagłówek:** własna ikona SVG (stożek z kraterem, strużka lawy i kropla lawy; gradient lawy; `#i-volcano`
-w `index.html`, ta sama jako favicon), tytuł „Wulkan — spływ lawy (CA) i krystalizacja bazaltu (MC)”, podtytuł
+w `index.html`, ta sama jako favicon), tytuł „Wulkan: spływ lawy (CA) i krystalizacja bazaltu (MC)”, podtytuł
 z metodą („Automat komórkowy + Monte Carlo (model Pottsa)”), status silnika jako pigułka („silnik gotowy” z zieloną kropką, pełna ścieżka i katalogi w podpowiedzi),
 przełącznik motywu (księżyc / słońce). Zakładki: te same nazwy, kolejność i `data-tab`, pogrupowane etykietami
 i separatorami: **Przygotuj** (Nowa symulacja, Seria) · **Licz** (Zadania + licznik aktywnych) · **Analizuj** (Wyniki,

@@ -178,7 +178,7 @@ export class Viewer2D {
       const [nx, ny, nz] = this.meta.dims;
       this.el.status.textContent = `${this.planeName()} · oś pozioma ${this.img.hAxis}, pionowa ${this.img.vAxis}`
         + (step > 1 ? ` · próbkowanie co ${step} komórek (przekrój > 4 mln komórek)` : '')
-        + ` · blok ${nx}×${ny}×${nz} · kółko — powiększenie, przeciąganie — przesuwanie, dwuklik — dopasuj`;
+        + ` · blok ${nx}×${ny}×${nz} · kółko: powiększenie, przeciąganie: przesuwanie, dwuklik: dopasuj`;
     } catch (err) {
       this.el.status.textContent = `Błąd: ${err.message}`;
     } finally {
@@ -241,7 +241,7 @@ export class Viewer2D {
       values = c.arr;
       field = 'crystal';
       this.legend = legendFor('crystal', this.meta, new Set(t.arr));
-      this.legend.title = `Kryształ (MC) — MCS ${mcs}`;
+      this.legend.title = `Kryształ (MC), MCS ${mcs}`;
     }
     this.img = { w, h, step, type: states, values, field, axis: this.axis, index: this.index, hAxis, vAxis,
       canvas: toCanvas(rgba, w, h), canvasDark: null, replayK: k };
@@ -252,7 +252,7 @@ export class Viewer2D {
     setText(this.el.status, `Odtwarzanie ${bar.source === 'ca' ? 'erupcji' : 'krystalizacji MC'} · ${this.planeName()}`
       + ` · oś pozioma ${hAxis}, pionowa ${vAxis}` + (step > 1 ? ` · próbkowanie co ${step}` : '')
       + ` · blok ${nx}×${ny}×${nz}` + (bar.source === 'ca' && bar.info && !bar.info.ventsExact
-        ? ' · kratery nieznane (stats.json) — komórki z arrivalStep = 0 już w kroku 0' : ''));
+        ? ' · kratery nieznane (stats.json): komórki z arrivalStep = 0 już w kroku 0' : ''));
   }
 
   /** Eksport odtwarzania: klatki PNG (ZIP) albo film WebM — kadr jak w „Eksport PNG” (widok + legenda). */
@@ -270,7 +270,7 @@ export class Viewer2D {
       const g = canvas.getContext('2d'), th = themeColors();
       g.fillStyle = th.panel; g.fillRect(0, 0, canvas.width, canvas.height);
       const label = bar.source === 'ca' ? `krok ${k} / ${bar.info.steps}` : `MCS ${bar.mcs[k]}`;
-      frameTitle(g, `${this.meta.name}: ${this.planeName()} — ${label}`);
+      frameTitle(g, `${this.meta.name}: ${this.planeName()}, ${label}`);
       g.save();
       g.translate(0, head);
       g.beginPath(); g.rect(0, 0, r.width, r.height); g.clip();
@@ -425,7 +425,7 @@ export class Viewer2D {
     if (s === LAVA) rows += `<tr><td>temp</td><td>${tempAt(k, t, d.temp[i], d.solidFrom[i], info.steps, info.params).toFixed(0)} °C</td></tr>`;
     if (t === LAVA || t === BASALT) {
       rows += `<tr><td>lawa od kroku</td><td>${d.appear[i]}</td></tr>`;
-      rows += `<tr><td>zastygła w kroku</td><td>${t === BASALT ? d.solidFrom[i] : '— (płynna do końca)'}</td></tr>`;
+      rows += `<tr><td>zastygła w kroku</td><td>${t === BASALT ? d.solidFrom[i] : 'płynna do końca'}</td></tr>`;
       if (s !== AIR) rows += `<tr><td>flowId</td><td>${d.flowId[i]}</td></tr>`;
     }
     tt.innerHTML = `<div class="tt-head">x ${x} · y ${y} · z ${z}</div><table>${rows}</table>`;

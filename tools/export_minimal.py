@@ -14,7 +14,7 @@ Co robi:
      „Pobierz PDF” zakładki „Wydajność” działa także tutaj), szablon `tools/export_minimal/README.md` → `README.md`
      i obrazki, których ten README używa.
   3. W skopiowanych plikach Markdown odnośniki do dokumentacji z `docs/` (której w tej wersji nie ma) zamienia na
-     odnośniki do `raport.pdf`.
+     odnośniki do PDF-u tego dokumentu z `docs/pdf/`, a gdy go nie ma — do `raport.pdf`.
   4. Sprawdza wynik: (a) odnośniki i obrazki we wszystkich plikach .md wskazują istniejące pliki, (b) ścieżki do
      `docs/` w kodzie — błąd poza komentarzami i opisami (w GUI to byłyby martwe linki), w komentarzach tylko
      informacja, (c) słownictwo spoza projektu — 0 trafień wzorców z lokalnego pliku `tools/export_minimal/slownictwo.txt`
@@ -197,7 +197,8 @@ def target_of(md: Path, link: str, dest: Path) -> Path | None:
 
 
 def rewrite_markdown(dest: Path) -> int:
-    """Odnośniki do nieistniejących plików z docs/ → raport.pdf (w każdym pliku .md poza README.md w katalogu głównym)."""
+    """Odnośniki do nieistniejących plików z docs/ → PDF tego dokumentu z docs/pdf/ (jeśli jest w eksporcie), inaczej
+    raport.pdf (w każdym pliku .md poza README.md w katalogu głównym)."""
     changed = 0
     for md in sorted(dest.rglob("*.md")):
         if md == dest / "README.md" or ".git" in md.relative_to(dest).parts:
@@ -205,11 +206,20 @@ def rewrite_markdown(dest: Path) -> int:
         text = md.read_text(encoding="utf-8")
         to_pdf = os.path.relpath(dest / "raport.pdf", md.parent).replace(os.sep, "/")
 
+        def doc_pdf(stem: str) -> Path | None:
+            p = dest / "docs" / "pdf" / f"{stem}.pdf"
+            return p if p.is_file() else None
+
         def repl_link(m: re.Match) -> str:
             bang, label, link = m.groups()
             t = target_of(md, link, dest)
             if t is None or t.exists() or "docs" not in Path(os.path.relpath(t, dest)).parts[:1]:
                 return m.group(0)
+            pdf = doc_pdf(t.stem) if t.suffix == ".md" else None
+            if pdf:  # kotwica rozdziału nie przechodzi do PDF — odnośnik do całego dokumentu
+                rel_pdf = os.path.relpath(pdf, md.parent).replace(os.sep, "/")
+                new_label = f"`docs/pdf/{pdf.name}`" if ("docs/" in label or label.strip("`").endswith(".md")) else label
+                return f"{bang}[{new_label}]({rel_pdf})"
             new_label = "raport.pdf" if ("docs/" in label or label.strip("`").endswith(".md")) else label
             return f"{bang}[{new_label}]({to_pdf})"
 
@@ -222,7 +232,9 @@ def rewrite_markdown(dest: Path) -> int:
         def repl_tick(m: re.Match) -> str:
             path = m.group(1)
             t = (md.parent / path) if path.startswith("../") else (dest / path)
-            return m.group(0) if t.exists() else "`raport.pdf`"
+            if t.exists():
+                return m.group(0)
+            return f"`docs/pdf/{t.stem}.pdf`" if doc_pdf(t.stem) else "`raport.pdf`"
 
         new = re.sub(r"`((?:\.\./)*docs/[\w.\-/]+\.md)`", repl_tick, new)
         new = re.sub(r"`raport\.pdf`(?:(?:,\s*|\s+i\s+)`raport\.pdf`)+", "`raport.pdf`", new)
@@ -361,7 +373,8 @@ def check_vocab_pdf(dest: Path, rx: re.Pattern) -> list[str]:
     for f in pdfs:
         for n, page in enumerate(PdfReader(str(f)).pages, 1):
             # tekst z PDF bywa łamany w środku słowa („wydajno ś ci”) — sklejamy spacje przed polskimi znakami
-            # i normalizujemy znaki złożone (z + kropka → ż), żeby „Pokaż” nie dawało trafienia „Pokaz”
+            # i normalizujemy znaki złożone (z + kropka → ż), żeby słowo z „ż” rozbite na „z” + kropkę nie dawało
+            # fałszywego trafienia wzorca bez polskiej litery
             text = unicodedata.normalize("NFC", page.extract_text() or "")
             text = re.sub(r" (?=[ąćęłńóśźż])|(?<=[ąćęłńóśźż]) ", "", text)
             for line in text.splitlines():
@@ -430,7 +443,7 @@ def main() -> int:
     print(f"Wersja minimalna: {dest}")
     print(f"  usunięto poprzednią zawartość: {removed} elementów (bez .git/)")
     print(f"  skopiowano: {len(copied)} plików, {size / 2**20:.1f} MB")
-    print(f"  pliki .md z odnośnikami do docs/ zamienionymi na raport.pdf: {rewritten}")
+    print(f"  pliki .md z odnośnikami do docs/ zamienionymi na PDF (docs/pdf/ albo raport.pdf): {rewritten}")
     return check(dest, args.verbose, vocab_file)
 
 

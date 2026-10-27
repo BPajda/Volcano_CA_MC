@@ -108,10 +108,10 @@ void setupParallel(const Config& c, TimingReport& timing, std::vector<std::strin
     timing.setInfo("affinityMethod", plan.method);
     if (cpus.empty()) {
         warnings.push_back("nie udało się przypiąć wątków do rdzeni P (" + plan.method +
-                           ") — o rdzeniach decyduje system");
+                           "); o rdzeniach decyduje system");
     } else if (static_cast<std::size_t>(par.threads) > plan.cpus.size()) {
         warnings.push_back("parallel.threads = " + std::to_string(par.threads) + " > liczba rdzeni P (" +
-                           std::to_string(plan.cpus.size()) + ") — część rdzeni dostaje po kilka wątków");
+                           std::to_string(plan.cpus.size()) + "), część rdzeni dostaje po kilka wątków");
     }
 }
 
@@ -334,13 +334,13 @@ RunSummary Simulation::run(const std::string& outDir, TimingReport& timing) {
 McSummary Simulation::runMcFrom(const Config& cfgIn, const std::string& caFolder, const std::string& outDir,
                                 TimingReport& timing, ProgressReporter* progress) {
     if (cfgIn.mc.domain != McDomain::Basalt) {
-        throw ConfigError("--mc-from krystalizuje wynik CA z pliku — wymaga mc.domain = \"basalt\" (podano \"" +
+        throw ConfigError("--mc-from krystalizuje wynik CA z pliku, więc wymaga mc.domain = \"basalt\" (podano \"" +
                           std::string(nameOf(cfgIn.mc.domain)) + "\")");
     }
     Config cfg = cfgIn;
     std::vector<std::string> warnings;
     if (!cfg.mc.enabled) {
-        warnings.push_back("mc.enabled = false — w trybie --mc-from Monte Carlo jest uruchamiane zawsze");
+        warnings.push_back("mc.enabled = false, a w trybie --mc-from Monte Carlo jest uruchamiane zawsze");
         cfg.mc.enabled = true;
     }
 
@@ -357,7 +357,7 @@ McSummary Simulation::runMcFrom(const Config& cfgIn, const std::string& caFolder
         warnings.push_back("wymiary z pliku " + std::to_string(ca.dims.nx) + " x " + std::to_string(ca.dims.ny) +
                            " x " + std::to_string(ca.dims.nz) + " różnią się od space z configu (" +
                            std::to_string(cfg.space.nx) + " x " + std::to_string(cfg.space.ny) + " x " +
-                           std::to_string(cfg.space.nz) + ") — obowiązują wymiary z pliku");
+                           std::to_string(cfg.space.nz) + "); obowiązują wymiary z pliku");
     }
     cfg.space = ca.dims;
     if (cfg.neighborhood == NeighborhoodKind::Hexagonal && !cfg.space.is2D()) {

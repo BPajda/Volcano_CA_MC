@@ -1,6 +1,6 @@
 # Test A/B `ab_k8_msvc`
 
-Optymalizacja 8 (presety kompilatora): MSVC /O2 vs /O2 /arch:AVX2 (preset msvc-release-avx2), tryb oszczędny (bez turbo) — kilka przypadków
+Optymalizacja 8 (presety kompilatora): MSVC /O2 vs /O2 /arch:AVX2 (preset msvc-release-avx2), taktowanie bazowe — kilka przypadków
 
 - Programy: `k7` = `engine_k7_msvc.exe`, `avx2` = `engine_k8avx2_msvc.exe`
 - Przypięcie: psutil.cpu_affinity([2]); priorytet: HIGH_PRIORITY_CLASS; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń

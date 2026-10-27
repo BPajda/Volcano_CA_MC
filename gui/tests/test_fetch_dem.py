@@ -80,7 +80,7 @@ def test_tile_range_and_pixels():
     assert fetch_dem.tile_range((-1, -1, 1, 1), 0) == (0, 0, 0, 0)
     px, py = fetch_dem.latlon_to_pixel(0.0, 0.0, 1)
     assert (px, py) == pytest.approx((256.0, 256.0))
-    assert fetch_dem.ground_resolution(0.0, 10) == pytest.approx(152.874, rel=1e-3)   # tabela z docs/data-sources.md
+    assert fetch_dem.ground_resolution(0.0, 10) == pytest.approx(152.874, rel=1e-3)   # tabela z joerd: docs/data-sources.md
     m_lat, m_lon = fetch_dem.meters_per_degree(45.0)
     assert m_lat == pytest.approx(111132.0, rel=1e-3) and m_lon == pytest.approx(78847.0, rel=1e-3)
 

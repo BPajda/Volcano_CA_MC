@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Krzywa „czas na komórkę i krok” w funkcji rozmiaru siatki (etap 12): empiryczne progi pamięci podręcznej L2 / L3 /
+"""Krzywa „czas na komórkę i krok” w funkcji rozmiaru siatki: empiryczne progi pamięci podręcznej L2 / L3 /
 RAM. Jeden wątek na rdzeniu P (engine `--threads 1 --set parallel.affinity=pcores`, wątek na procesorze logicznym 2,
 priorytet wysoki — jak bench/scaling.py), siatki 2D o boku rosnącym co √2 (128 … 2896), ta sama gęstość zarodków
 i ta sama liczba kroków / MCS dla każdego rozmiaru — praca na komórkę jest porównywalna, zmienia się tylko rozmiar

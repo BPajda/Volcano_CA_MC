@@ -24,7 +24,7 @@ obliczeń przyspiesza tylko o 0–9%; MPI-IO skraca zapis dużych wyników (bina
 małe pliki (≤ 52 MB) przez MPI-IO zapisują się tak samo albo wolniej; rozsyłanie configu strukturą oszczędza ułamek
 milisekundy. Dziennik: [`bench/results/mpi_io/POSTEP.md`](../bench/results/mpi_io/POSTEP.md).
 
-![Schemat: typ struct warstwy z pól SoA, widok subarray pasa w pliku .bin, przesunięcia MPI_Exscan w pliku .txt](img/etap11_schemat.png)
+![Schemat: typ struct warstwy z pól SoA, widok subarray pasa w pliku .bin, przesunięcia MPI_Exscan w pliku .txt](img/mpi_io_schemat.png)
 
 ## 1. Nowe opcje
 
@@ -396,11 +396,11 @@ bajty i komunikaty wymiany, rozmiary plików i liczby typów stałe między powt
 samych warunkach, do pamięci podręcznej systemu („ciepło”, pierwszy przebieg części to rozgrzewka poza wynikami);
 odczyt `--mc-from` jest zawsze z pliku w pamięci podręcznej. Tabele: [`pomiar_msvc.md`](../bench/results/mpi_io/pomiar_msvc.md),
 [`pomiar_gcc.md`](../bench/results/mpi_io/pomiar_gcc.md), [`pomiar_gcc_romio.md`](../bench/results/mpi_io/pomiar_gcc_romio.md)
-(+ `_raw.csv` części); wykresy `python bench\plot_etap11.py`.
+(+ `_raw.csv` części); wykresy `python bench\plot_mpi_io.py`.
 
 ### 8.2 Wymiana warstw: pakowanie vs typy pochodne
 
-![Czas wymiany warstw: pakowanie vs typy pochodne, przypadki × p (MSVC) i p = 8 (GCC)](img/etap11_wymiana.png)
+![Czas wymiany warstw: pakowanie vs typy pochodne, przypadki × p (MSVC) i p = 8 (GCC)](img/mpi_io_wymiana.png)
 
 Czas wymiany = `haloAvg` (średnia po procesach z całej fazy), faza = `caSim` / `mcSim`; d / m: `datatype` / `manual`:
 
@@ -439,7 +439,7 @@ pokazuje typ pochodny z polami różnych typów i jedną listę kraterów / zaro
 
 ### 8.4 Zapis wyników: zebranie na proces 0 vs MPI-IO
 
-![Zapis: czas save i MB/s, gather vs MPI-IO, .bin i .txt, p procesów; przy 8 procesach MS-MPI, OMPIO, ROMIO](img/etap11_zapis.png)
+![Zapis: czas save i MB/s, gather vs MPI-IO, .bin i .txt, p procesów; przy 8 procesach MS-MPI, OMPIO, ROMIO](img/mpi_io_zapis.png)
 
 `save` = od końca fazy CA: kopia pasa bez ramki, (gather) `MPI_Gatherv` na proces 0, zapis pliku; i / m: `mpiio` /
 `gather`; MSVC / MS-MPI na NTFS:
@@ -485,7 +485,7 @@ Gdzie MPI-IO zyskuje, a gdzie nie:
   MPI-IO w MS-MPI) daje zysk we wszystkich czterech przypadkach. W WSL lepszy jest też zwykły zapis tekstu (gather
   1 169 ms wobec 1 843 ms w MSVC; formatowanie i strumień w GCC / glibc są szybsze).
 
-![Udział zapisu (save) w czasie całego przebiegu: gather vs MPI-IO](img/etap11_udzial.png)
+![Udział zapisu (save) w czasie całego przebiegu: gather vs MPI-IO](img/mpi_io_udzial.png)
 
 **Udział zapisu w `total`:** faza obliczeń maleje z liczbą procesów, a zapis w trybie gather nie, więc jego udział
 rośnie: tekst classic 2000² 34% (p = 1) → 65% (p = 8), 300³ 35% → 61%. MPI-IO zatrzymuje ten wzrost na ~42–43%
@@ -495,7 +495,7 @@ całego przebiegu bardziej niż komunikacja.
 
 ### 8.5 Odczyt `--mc-from`
 
-![Odczyt wejścia --mc-from: proces 0 + MPI_Scatterv vs MPI_File_read_at_all](img/etap11_odczyt.png)
+![Odczyt wejścia --mc-from: proces 0 + MPI_Scatterv vs MPI_File_read_at_all](img/mpi_io_odczyt.png)
 
 | Wejście | MSVC p = 1 | MSVC p = 8 | GCC p = 1 | GCC p = 8 | `total` MSVC p = 8 |
 |---|---|---|---|---|---|
@@ -587,7 +587,7 @@ Bez pomiaru, tylko kierunek, wynikający z tego, co zmierzone na jednym komputer
 | `engine/tests/mpi/test_mpi.cpp`, `test_io.cpp`, `test_config.cpp` | testy punktu 6.1; `test_strip.cpp`: nazwy zmiennych `rank0` / `rank1` |
 | `gui/static/js/form.js` | opisy pól `mpi.pack`, `mpi.bcast`, `mpi.io` |
 | `bench/mpi_io.py` | pomiar typów MPI i MPI-IO: grupy `pack` / `bcast` / `io` / `read`, `--wsl` (ext4), `--mpiexec` z opcjami (ROMIO), `--from-raw` |
-| `bench/plot_etap11.py` | wykresy `docs/img/etap11_*.png` (schemat, wymiana, zapis, udział zapisu, odczyt) z `pomiar_*_raw.csv` |
+| `bench/plot_mpi_io.py` | wykresy `docs/img/mpi_io_*.png` (schemat, wymiana, zapis, udział zapisu, odczyt) z `pomiar_*_raw.csv` |
 | `bench/scaling_mpi.py` | przyrostki wariantów `d` / `s` / `i`, `--mc-from`, miary plików, MPI-IO, rozsyłania, pamięci |
 | `bench/compare_results.py` | programy WSL piszą na ext4 (`/tmp/volcano_cmp`), wejście `--mc-from` kopiowane na ext4 |
 | `bench/results/mpi_io/` | dziennik `POSTEP.md`, `PLAN_POMIARU.md`, pomiar `pomiar_msvc.md`, `pomiar_gcc.md`, `pomiar_gcc_romio.md` (+ części `_cz*` i `_raw.csv`), dobór `dobor_{msvc,gcc}*`, zgodność `zgodnosc_*.md`, narzut `ab_e11_*.md` (`ab_e11a_msvc.md`: pierwsza wersja) |

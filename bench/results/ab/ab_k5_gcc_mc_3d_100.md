@@ -1,6 +1,6 @@
 # Test A/B `ab_k5_gcc_mc_3d_100`
 
-Optymalizacja 5 (tańsze statystyki MC), GCC, tryb oszczędny (bez turbo) — część mc_full_3d_100 (scalona tabela: ab_k5_gcc.md)
+Optymalizacja 5 (tańsze statystyki MC), GCC, taktowanie bazowe — część mc_full_3d_100 (scalona tabela: ab_k5_gcc.md)
 
 - Programy: `przed` = `engine_przed`, `k4` = `engine_k4`, `k5` = `engine_k5`
 - Przypięcie: sched_setaffinity({2}) (WSL2: procesor wirtualny); priorytet: domyślny; kolejność naprzemienna (odwracana co powtórzenie); mediana [min–max] z n powtórzeń
