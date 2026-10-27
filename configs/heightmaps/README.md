@@ -24,7 +24,7 @@ python tools\fetch_dem.py --name wezuwiusz --bbox 40.77 14.36 40.87 14.49 --zoom
 python tools\latlon_to_grid.py etna 37.751 14.993        # (szer., dł.) -> kolumna (x, y)
 ```
 
-Opis metody i wyników: [docs/etap-6-prawdziwe-wulkany.md](../../docs/etap-6-prawdziwe-wulkany.md).
+Opis metody i wyników: [docs/prawdziwe-wulkany.md](../../docs/prawdziwe-wulkany.md).
 
 ## Źródło danych i przypisanie (wymagane)
 

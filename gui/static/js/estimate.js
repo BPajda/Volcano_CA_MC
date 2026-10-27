@@ -1,5 +1,5 @@
 // Szacunek pamięci, czasu i rozmiaru plików przed uruchomieniem — prosta heurystyka z pomiarów
-// etapu 3 (docs/etap-3-profilowanie.md, punkty 3.2, 3.3, 4 i 5.1; MSVC Release, rdzeń P i9-13900HX).
+// profilu aplikacji (docs/profilowanie.md, punkty 3.2, 3.3, 4 i 5.1; MSVC Release, rdzeń P i9-13900HX).
 //
 // Pamięć (model z MemoryModel, zgodny z pomiarem do 0–4%), N — komórki, Nf = (nx+2)(ny+2)(nz+2):
 //   CA (lava/classic):  26·Nf + 14·N   (oba bufory z ramką + wynik + D(n))  -> 3D ≈ 40 B/kom., 2D ≈ 91 B/kom.

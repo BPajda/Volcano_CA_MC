@@ -3,7 +3,7 @@
 Mapy pokazują, co daje teren z pliku (terrain.type = "file") w porównaniu ze stożkiem z generatora:
   kaldera_wylom     — szeroka kaldera z wyłomem w krawędzi i doliną poniżej: lawa wypełnia kalderę i wypływa
                       tylko przez wyłom (rozwiązuje znany problem „krater szczytowy przelewa się równo na wszystkie
-                      strony” — docs/etap-1-automat-komorkowy.md, punkt 6),
+                      strony” — docs/automat-komorkowy.md, punkt 6),
   kanion            — stożek z małym kraterem i krętym kanionem wciętym w zbocze i równinę: lawa płynie kanionem,
   podwojny_wulkan   — główny stożek i niższy, starszy stożek obok; krater ma obniżenie krawędzi w stronę drugiego
                       stożka — lawa spływa na przełęcz i rozdziela się na boki starszego stożka.

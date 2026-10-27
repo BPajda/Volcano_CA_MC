@@ -69,9 +69,9 @@ def launch_mode(pin_enabled: bool, threads: int) -> tuple[bool, int]:
     """Jak uruchomić proces silnika: (przypiąć do jednego procesora?, flaga priorytetu dla creationflags).
 
     Jeden wątek: przypięcie i wysoki priorytet razem, gdy przypinanie jest włączone (pomiar jak w etapie 3).
-    Wiele wątków (parallel.threads > 1, etap 9): ZAWSZE wysoki priorytet — przy zajętych wszystkich rdzeniach P wątek
+    Wiele wątków (parallel.threads > 1, wersja OpenMP): ZAWSZE wysoki priorytet — przy zajętych wszystkich rdzeniach P wątek
     o priorytecie normalnym wywłaszczony przez program w tle zatrzymuje pozostałe na barierze (8 wątków liczyło się
-    wolniej niż 6; docs/etap-9-openmp.md, punkt 4.2) — i bez przypięcia procesu do jednego procesora (wszystkie
+    wolniej niż 6; docs/openmp.md, punkt 4.2) — i bez przypięcia procesu do jednego procesora (wszystkie
     wątki na jednym rdzeniu); rdzenie wątków wybiera silnik (parallel.affinity). threads = 0 („wszystkie” = każdy
     procesor logiczny, także rdzenie E): bez przypięcia i z priorytetem normalnym — nie zagładzać systemu."""
     if threads == 1:

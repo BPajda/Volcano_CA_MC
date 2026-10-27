@@ -1,6 +1,6 @@
 // Paleta naukowa GUI — JEDYNE miejsce z kolorami danych: przekroje 2D, ściany / powierzchnia / woksele 3D, legendy,
-// galeria Porównania, eksporty PNG i WebM, odtwarzanie erupcji (etap 7 „Bazalt i lawa”, uzasadnienie i pomiary
-// kontrastu / daltonizmu: docs/etap-7-wyglad-gui.md):
+// galeria Porównania, eksporty PNG i WebM, odtwarzanie erupcji (motyw „Bazalt i lawa”, uzasadnienie i pomiary
+// kontrastu / daltonizmu: docs/wyglad-interfejsu.md):
 //  - typ komórki: powietrze = tło podglądu (wariant ciemny / jasny motywu), skała = ciepła szarość-brąz (ciemniejsza
 //    w motywie ciemnym), lawa = pomarańcz-żar, bazalt = grafit (ten sam w obu motywach — odróżnia się od tła i skały);
 //  - krater / ziarno (flowId): 10 kolorów kategorycznych bez szarości i brązów (nie mylą się ze skałą), w kolejności
@@ -31,7 +31,7 @@ export const BASALT_HEX = '#464a55';
 export const TYPE_RGB = { 0: hex(THEME_CELLS.dark.air), 1: hex(THEME_CELLS.dark.rock), 2: hex(LAVA_HEX), 3: hex(BASALT_HEX) };
 
 // Kratery / ziarna: kolejność wg największej minimalnej odległości OKLab (normalne widzenie i symulacja protanopii /
-// deuteranopii, Machado 2009) — pierwszych 5 kolorów rozróżnialnych parami (ΔE ≥ 13), szczegóły w docs/etap-7-wyglad-gui.md.
+// deuteranopii, Machado 2009) — pierwszych 5 kolorów rozróżnialnych parami (ΔE ≥ 13), szczegóły w docs/wyglad-interfejsu.md.
 export const FLOW_SLOTS = ['#ee7733', '#2f5fd0', '#66ccee', '#f0e442', '#9085e9', '#ccbb44', '#e8402f', '#3d7fc4', '#c39bf0',
   '#5b6ee1'].map(hex);
 // Żar: temperatura i płynna lawa w odtwarzaniu (zastyganie → erupcja).
@@ -216,7 +216,7 @@ export function legendHTML(L) {
 
 const shownLegend = new WeakMap();
 /** Wstawia legendę do panelu tylko, gdy się zmieniła — w odtwarzaniu legenda jest liczona co klatkę, a ponowne
- *  budowanie DOM i przemalowanie panelu w każdej klatce zmniejszało płynność odtwarzania 3D (pomiar: docs/etap-7-wyglad-gui.md). */
+ *  budowanie DOM i przemalowanie panelu w każdej klatce zmniejszało płynność odtwarzania 3D (pomiar: docs/wyglad-interfejsu.md). */
 export function showLegend(el, L) {
   const html = legendHTML(L);
   if (shownLegend.get(el) === html && el.innerHTML) return;

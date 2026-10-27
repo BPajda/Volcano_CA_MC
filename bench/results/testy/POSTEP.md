@@ -1,7 +1,7 @@
 # Etap 12 — dziennik postępu (testy wydajności: przyspieszenie, efektywność, pamięć, pamięć podręczna)
 
 Plik prowadzony na bieżąco w trakcie etapu 12: każdy krok, jego pliki, wyniki i warunki. Opis i wnioski:
-[`docs/etap-12-testy-wydajnosci.md`](../../../docs/etap-12-testy-wydajnosci.md). Poprzednie etapy: OpenMP
+[`docs/testy-wydajnosci.md`](../../../docs/testy-wydajnosci.md). Poprzednie etapy: OpenMP
 [`../omp/POSTEP.md`](../omp/POSTEP.md), MPI [`../mpi/POSTEP.md`](../mpi/POSTEP.md), typy MPI i MPI-IO
 [`../mpi_io/POSTEP.md`](../mpi_io/POSTEP.md), optymalizacja sekwencyjna [`../ab/POSTEP.md`](../ab/POSTEP.md).
 
@@ -232,7 +232,7 @@ buildy `--parallel 4` / `-j 4`, jedna ciężka operacja naraz, łącznie najwyż
   próbnych w folderze tymczasowym (nie w `docs/img`); bez plików części 2 skrypt je pomija.
 - `tools/export_minimal.py`: komentarz listy `bench/micro` uzupełniony o `bandwidth.cpp` (skrypty `bench/*.py`
   kopiuje wzorzec — nowe pliki wchodzą same).
-- **7. Dokumentacja (wstępna)** — [`docs/etap-12-testy-wydajnosci.md`](../../../docs/etap-12-testy-wydajnosci.md):
+- **7. Dokumentacja (wstępna)** — [`docs/testy-wydajnosci.md`](../../../docs/testy-wydajnosci.md):
   metodyka (dane istniejące i nowe, warunki — wszystkie wiersze zestawienia bez turbo, procesor, brak liczników
   sprzętowych, ustawienia MPI), zestawienie S / E i łączne przyspieszenie, superliniowość, skalowanie słabe (przypadki;
   wyniki — część 2), pamięć główna (wątki, procesy i warstwy brzegowe, proces 0 gather vs MPI-IO, bufor agregatora,

@@ -30,7 +30,7 @@ Pomiar dłuższy niż ~10 min dzielić na części (--cases) i scalać: --from-r
 --wsl: skrypt uruchamiany w WSL (python3), program GCC i dane na ext4 maszyny WSL, wątki wiąże libgomp
 (OMP_PROC_BIND=close, OMP_PLACES=cores; program z parallel.affinity = none), priorytet domyślny; tło mierzone po
 stronie Windows. W WSL 2 procesory są wirtualne — maszyna
-wirtualna nie mówi, na których rdzeniach fizycznych (P czy E) pracują (ograniczenie opisane w docs/etap-9-openmp.md).
+wirtualna nie mówi, na których rdzeniach fizycznych (P czy E) pracują (ograniczenie opisane w docs/openmp.md).
 """
 
 from __future__ import annotations

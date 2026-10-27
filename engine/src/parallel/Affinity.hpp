@@ -14,7 +14,7 @@
 //     do jednego procesora przed main()); najpierw pierwszy procesor logiczny każdego rdzenia fizycznego
 //     (topology/thread_siblings_list), potem pozostałe wątki SMT; wątek i -> i-ty procesor listy. W WSL 2 to procesory
 //     wirtualne (zgłaszane jako 4 rdzenie × 2 wątki SMT) — maszyna wirtualna nie mówi, na których rdzeniach fizycznych
-//     pracują (ograniczenie opisane w docs/etap-9-openmp.md).
+//     pracują (ograniczenie opisane w docs/openmp.md).
 // Wątki puli OpenMP są trwałe (te same wątki w kolejnych regionach — sprawdzone w bench/micro/omp_overhead.cpp), więc
 // przypięcie robi się raz, przed obliczeniami; --thread-stats zapisuje, na których procesorach wątki faktycznie
 // pracowały.

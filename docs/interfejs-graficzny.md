@@ -1,13 +1,13 @@
-# Etap 4 — GUI (2D + 3D)
+# Interfejs graficzny
 
 Wprowadzanie danych, uruchamianie obliczeń, wizualizacja 2D i 3D.
 
 **Stan na 09.10.2026.** Projekt ma interfejs użytkownika w przeglądarce (aplikacja web, lokalna). Parametry
 symulacji ustawia się w formularzu. GUI zapisuje z nich plik konfiguracyjny, tworzy folder na wyniki
-i uruchamia silnik C++ jako osobny proces. Postęp widać na liście zadań, a wynik — jako przekroje 2D
+i uruchamia silnik C++ jako osobny proces. Postęp widać na liście zadań, a wynik jako przekroje 2D
 i rzut 3D ścian zewnętrznych bloku (oraz powierzchnię wulkanu i woksele lawy). Silnik dostał trzy małe
 opcje dla GUI (`--print-defaults`, `--validate`, `--progress`). Algorytmy CA i MC się nie zmieniły:
-wyniki są bitowo identyczne z wynikami sprzed etapu (punkt 6).
+wyniki są bitowo identyczne z wynikami sprzed GUI (punkt 6).
 
 Stack: backend **Python 3.12 + FastAPI + uvicorn + numpy**, nasłuch tylko na `127.0.0.1`;
 frontend **HTML + JavaScript (moduły ES) bez kroku budowania**, **three.js r160** z `OrbitControls`
@@ -16,17 +16,17 @@ frontend **HTML + JavaScript (moduły ES) bez kroku budowania**, **three.js r160
 Interfejs jest po polsku.
 
 Uruchomienie jedną komendą (z katalogu projektu): **`python -m gui`** albo dwuklik
-**`gui\run_gui.bat`** — szczegóły w punkcie 4.
+**`gui\run_gui.bat`**: szczegóły w punkcie 4.
 
 ## 1. Funkcje → realizacja
 
 | Funkcja | Realizacja | Ekran GUI | Kod |
 |---|---|---|---|
 | **Pobranie parametrów z GUI** | Formularz ze wszystkimi parametrami silnika, pogrupowany jak config (Przestrzeń, Ogólne, Teren, Kratery/zarodki, Automat CA, Monte Carlo, Wyjście). Formularz powstaje z `engine --print-defaults`, więc ma dokładnie te klucze i wartości domyślne co silnik. Pola mają jednostki i podpowiedzi, wartości wyliczeniowe to listy wyboru. Pola, które w danym trybie nie mają znaczenia, są wyszarzone (np. teren w trybie `classic`, mobilność w MC `full`). Presety to pliki z `configs/*.json` (oraz configi poprzednich zadań). Do tego import configu z pliku, eksport formularza do JSON, przycisk **Sprawdź** (walidacja silnikiem, błędy po polsku przy polach) i szacunek pamięci i czasu | „Nowa symulacja” | `gui/static/js/form.js`, `main.js`, `estimate.js`; `gui/engine.py`; `engine/src/app/ConfigCheck.*` |
-| **Utworzenie plików konfiguracyjnych** | Po **Uruchom** backend zapisuje config do **`configs/gui/<id>.json`**, gdzie `<id>` = data-czas + bezpieczna nazwa zadania, np. `20261009-195824_demo_test_3d_5_kraterow`. Ścieżka pojawia się pod przyciskiem i na liście zadań. Metadane GUI trafiają do klucza `_gui` — silnik pomija klucze zaczynające się od `_` | „Nowa symulacja” (komunikat po uruchomieniu), „Zadania” (kolumna Pliki) | `gui/jobs.py` (`JobManager.create`) |
+| **Utworzenie plików konfiguracyjnych** | Po **Uruchom** backend zapisuje config do **`configs/gui/<id>.json`**, gdzie `<id>` = data-czas + bezpieczna nazwa zadania, np. `20261009-195824_demo_test_3d_5_kraterow`. Ścieżka pojawia się pod przyciskiem i na liście zadań. Metadane GUI trafiają do klucza `_gui`; silnik pomija klucze zaczynające się od `_` | „Nowa symulacja” (komunikat po uruchomieniu), „Zadania” (kolumna Pliki) | `gui/jobs.py` (`JobManager.create`) |
 | **Utworzenie folderów na wyniki** | Folder **`results/gui/<id>/`** tworzy GUI przed startem silnika. Trafiają do niego wyniki silnika, a od GUI dodatkowo `engine.log` (wyjście programu) i `gui_job.json` (nazwa zadania) | jw. | `gui/jobs.py` |
-| **Wizualizacja końcowej mikrostruktury — 2D** | Przekrój ⟂ osi x / y / z z suwakiem warstwy (dla 2D — jedyna płaszczyzna siatki). Kolorowanie: typ komórki, krater/ziarno (`flowId`), temperatura, kryształ (MC), czas stygnięcia. Legenda, granice ziaren, zoom kółkiem i przesuwanie (piksele ostre), podpowiedź z wartościami komórki, eksport PNG | „Podgląd 2D” | `gui/static/js/viewer2d.js`, `palette.js`; `gui/results.py`, `render.py` |
-| **Wizualizacja — 3D (może być rzut samych ścian zewnętrznych)** | **Prostopadłościan nx × ny × nz z 6 ścianami zewnętrznymi** oteksturowanymi wybranym polem (proporcje jak `nx:ny:nz`, osie z podpisami, ta sama paleta i legenda co w 2D). Do tego **powierzchnia** — najwyższa niepusta komórka w każdej kolumnie, czyli zbocze wulkanu z jęzorami lawy — i **woksele** lawy/bazaltu (`InstancedMesh`, limit 150 tys.). Obrót, przesuwanie, powiększenie, reset kamery, eksport PNG | „Podgląd 3D” | `gui/static/js/viewer3d.js` |
+| **Wizualizacja końcowej mikrostruktury: 2D** | Przekrój ⟂ osi x / y / z z suwakiem warstwy (dla 2D jedyna płaszczyzna siatki). Kolorowanie: typ komórki, krater/ziarno (`flowId`), temperatura, kryształ (MC), czas stygnięcia. Legenda, granice ziaren, zoom kółkiem i przesuwanie (piksele ostre), podpowiedź z wartościami komórki, eksport PNG | „Podgląd 2D” | `gui/static/js/viewer2d.js`, `palette.js`; `gui/results.py`, `render.py` |
+| **Wizualizacja: 3D (może być rzut samych ścian zewnętrznych)** | **Prostopadłościan nx × ny × nz z 6 ścianami zewnętrznymi** oteksturowanymi wybranym polem (proporcje jak `nx:ny:nz`, osie z podpisami, ta sama paleta i legenda co w 2D). Do tego **powierzchnia** (najwyższa niepusta komórka w każdej kolumnie, czyli zbocze wulkanu z jęzorami lawy) i **woksele** lawy/bazaltu (`InstancedMesh`, limit 150 tys.). Obrót, przesuwanie, powiększenie, reset kamery, eksport PNG | „Podgląd 3D” | `gui/static/js/viewer3d.js` |
 | **Czasy i statystyki** | zakładka „Czasy i statystyki”: tabela `times.json`, pamięć, pliki, `stats.json` (CA i MC), wykresy liczby ziaren i średniej wielkości ziarna vs MCS (Chart.js), historia płynnej lawy w krokach CA | „Czasy i statystyki” | `gui/static/js/stats.js` |
 
 ## 2. Architektura
@@ -49,7 +49,7 @@ Uruchomienie jedną komendą (z katalogu projektu): **`python -m gui`** albo dwu
                                                    configs/gui/<id>.json, results/gui/jobs.json └─ results/* (z linii poleceń)
 ```
 
-Backend niczego nie liczy — zarządza plikami i procesami i wycina z wyników to, co trzeba pokazać.
+Backend niczego nie liczy: zarządza plikami i procesami i wycina z wyników to, co trzeba pokazać.
 Całe obliczenia robi `engine.exe`. Do przeglądarki nigdy nie idzie cały blok (300³ = 27 mln komórek),
 tylko przekrój, 6 ścian, mapa powierzchni albo ograniczona liczba wokseli.
 
@@ -70,10 +70,10 @@ tylko przekrój, 6 ścian, mapa powierzchni albo ograniczona liczba wokseli.
    zadania odświeża się lista wyników, a „Pokaż wynik” otwiera podgląd 2D.
 
 Statusy: oczekuje / działa / gotowe / błąd / anulowane / przerwane. Po restarcie GUI zadanie, które
-„działało”, dostaje status **przerwane**, a oczekujące wracają do kolejki. **Przygotowanie pod etap 5:** kolejka
+„działało”, dostaje status **przerwane**, a oczekujące wracają do kolejki. **Przygotowanie pod serie zadań:** kolejka
 FIFO z konfigurowalną liczbą workerów już jest (`JobManager.submit()`). Generator serii doda po prostu
 N zadań, a kilka zadań uruchomionych naraz wykonuje się po kolei (widać to na zrzucie z punktu 3). Backend
-obsługuje też `mcFrom` (samo MC na gotowym wyniku CA — `engine --mc-from`): w formularzu to pole
+obsługuje też `mcFrom` (samo MC na gotowym wyniku CA, `engine --mc-from`): w formularzu to pole
 „Źródło danych”.
 
 ### Endpointy
@@ -117,7 +117,7 @@ z dysku tylko potrzebne strony. Mniejsze są wczytywane do RAM: Windows nie pozw
 pliku, a foldery w `results/` bywają nadpisywane z linii poleceń w trakcie oglądania. Płaszczyzny większe
 niż **4 mln komórek** są **próbkowane** co `s` komórek w obu osiach, gdzie s = ⌈√(komórki / 4 mln)⌉ (np. 4000×4000 →
 co 2.). Krok jest w `X-Meta` i na pasku stanu, a współrzędne w podpowiedzi uwzględniają próbkowanie.
-Powierzchnia w 3D ma najwyżej 360 tys. wierzchołków (co s-ta kolumna), woksele — 150 tys. (co k-ty).
+Powierzchnia w 3D ma najwyżej 360 tys. wierzchołków (co s-ta kolumna), woksele 150 tys. (co k-ty).
 Wyniki tylko w `.txt` (starsze uruchomienia) są parsowane `np.loadtxt` (~0,6 s na 1 mln wierszy;
 `np.fromfile(sep=" ")` potrzebował 16 s), do 30 mln komórek. Wczytane wyniki trzyma pamięć podręczna
 LRU (4 ostatnie), unieważniana po zmianie rozmiaru lub daty plików. Zakresy wartości (temperatura,
@@ -125,105 +125,105 @@ LRU (4 ostatnie), unieważniana po zmianie rozmiaru lub daty plików. Zakresy wa
 
 ### Kolory
 
-> **Od etapu 7 GUI ma nową paletę „Bazalt i lawa”** (skała ciepła szarość-brąz, lawa pomarańcz-żar, bazalt grafit,
+> **Później GUI dostało nową paletę „Bazalt i lawa”** (skała ciepła szarość-brąz, lawa pomarańcz-żar, bazalt grafit,
 > kratery z palety sprawdzonej pod kątem daltonizmu, temperatura w skali „żar”, czas stygnięcia granat → turkus;
-> motyw ciemny i jasny) — opis i uzasadnienie w [etap-7-wyglad-gui.md](etap-7-wyglad-gui.md). Zrzuty `img/gui_*.png` w tym
-> dokumencie pokazują już nowy wygląd. Poniżej — pierwotna paleta z tego etapu (została w obrazkach z `tools/plot_slice.py`).
+> motyw ciemny i jasny); opis i uzasadnienie w [wyglad-interfejsu.md](wyglad-interfejsu.md). Zrzuty `img/gui_*.png` w tym
+> dokumencie pokazują już nowy wygląd. Poniżej pierwotna paleta z pierwszej wersji GUI (została w obrazkach z `tools/plot_slice.py`).
 
 Paleta była wspólna z `tools/plot_slice.py`: powietrze = tło `#fcfcfb`, skała `#c3c2b7`, lawa `#eb6834`,
 bazalt `#2a78d6`. Kratery 1–8 mają stałe sloty palety kategorycznej w tej samej kolejności co
 `plot_slice.py`. Więcej ziaren (rozrost `classic`) i kryształy MC dostają kolor wyliczany z ID hashem
-Knutha — dokładnie wzór `crystal_rgb()` z `plot_slice.py`. Ten sam ID ma więc ten sam kolor na każdym
+Knutha, dokładnie wzór `crystal_rgb()` z `plot_slice.py`. Ten sam ID ma więc ten sam kolor na każdym
 przekroju, ścianie 3D i obrazku z narzędzia. Temperatura to jedna barwa pomarańczowa (jasny = chłodniej),
-czas stygnięcia — jedna barwa niebieska (ciemny = długo płynna lawa → duże kryształy). Skala obu
+czas stygnięcia: jedna barwa niebieska (ciemny = długo płynna lawa → duże kryształy). Skala obu
 jest wspólna dla całego wyniku, a nie dla jednego przekroju. W rzucie z góry skała jest cieniowana
 wysokością (jak `--axis top` w `plot_slice.py`). Granice ziaren przy powiększeniu ≥ 5 px/komórkę są
-liniami między komórkami, przy mniejszym — przyciemnionymi komórkami granicznymi.
+liniami między komórkami, przy mniejszym przyciemnionymi komórkami granicznymi.
 
-### Szacunek przed uruchomieniem (heurystyka z etapu 3)
+### Szacunek przed uruchomieniem (heurystyka z profilu aplikacji)
 
-Panel „Podsumowanie i szacunek” liczy na bieżąco (`estimate.js`, dane z `docs/etap-3-profilowanie.md`), gdzie N to liczba
+Panel „Podsumowanie i szacunek” liczy na bieżąco (`estimate.js`, dane z `docs/profilowanie.md`), gdzie N to liczba
 komórek, a Nf = (nx+2)(ny+2)(nz+2):
 - **pamięć** z modelu `MemoryModel` (zgodność z pomiarem 0–4%): CA `26·Nf + 14·N` B (3D ≈ 40 B/komórkę,
-  2D ≈ 91 B przez ramkę w nieużywanej osi), MC `full` `5·Nf + 37·N`, lawa + MC — CA + `5·Nf + 8·N`;
+  2D ≈ 91 B przez ramkę w nieużywanej osi), MC `full` `5·Nf + 37·N`, lawa + MC: CA + `5·Nf + 8·N`;
 - **czas** = koszt × komórki × kroki: CA classic 7 (VN 3D) / 9 (VN 2D) / 11 (Moore 2D) / 20 (Moore 3D)
   ns/(komórka·krok), lawa 32 ns. Liczba kroków classic ≈ promień największej luki między zarodkami
-  (VN: (nx+ny+nz)/2, Moore: max(n)/2, podzielone przez zarodki^(1/d)); lawa — górny szacunek
+  (VN: (nx+ny+nz)/2, Moore: max(n)/2, podzielone przez zarodki^(1/d)); lawa: górny szacunek
   `eruptionSteps + 2·max(n)`. MC: 40–250 ns/próbę zależnie od sąsiedztwa i tego, czy siatka mieści się
   w pamięci podręcznej (domena `basalt` ≈ 5% N);
 - **pliki**: bin 13 B/komórkę (MC 4 B), txt ≈ 15–21 B (MC ≈ 13 B), plus migawki.
 
 Ostrzeżenia: pamięć > 2 GB (żółte), > 8 GB (czerwone), czas > 10 min, txt dla > 10 mln komórek (zalecany bin),
-siatka 2D > 1 mln komórek (ramka zajmuje 2/3 pamięci). To szacunek rzędu wielkości — dla lawy czas zależy
+siatka 2D > 1 mln komórek (ramka zajmuje 2/3 pamięci). To szacunek rzędu wielkości; dla lawy czas zależy
 od parametrów stygnięcia (ile kroków potrwa spływ), a na innym komputerze może się różnić kilkukrotnie.
-Przykład: dla `test_3d` heurystyka daje ~1,8 s (278 kroków), a pomiar — 1,7 s CA (284 kroki).
+Przykład: dla `test_3d` heurystyka daje ~1,8 s (278 kroków), a pomiar 1,7 s CA (284 kroki).
 
 ## 3. Zrzuty ekranu
 
 Wszystkie zrzuty zrobił skrypt `gui/tests/screenshots.py` (Playwright + Chromium, okno 1440×900) w czasie
 scenariusza z punktu 6. Zadania `demo_*` powstały w nim z prawdziwych presetów.
 
-**Nowa symulacja** — preset `test_3d`, zmieniona nazwa i liczba kraterów (5), po „Sprawdź”. Niebieska kropka
+**Nowa symulacja**: preset `test_3d`, zmieniona nazwa i liczba kraterów (5), po „Sprawdź”. Niebieska kropka
 przy etykiecie oznacza wartość inną niż domyślna. Pola terenu, kraterów i CA są aktywne, a parametry MC
 wyszarzone (MC wyłączone):
 
-![Formularz — preset test_3d, 5 kraterów, wynik walidacji](img/gui_formularz.png)
+![Formularz: preset test_3d, 5 kraterów, wynik walidacji](img/gui_formularz.png)
 
-Błędny parametr (`space.nx = −5`) — komunikat silnika przy polu:
+Błędny parametr (`space.nx = −5`): komunikat silnika przy polu:
 
-![Formularz — błąd walidacji](img/gui_formularz_blad.png)
+![Formularz: błąd walidacji](img/gui_formularz_blad.png)
 
-Po „Uruchom” — ścieżki utworzonego configu i folderu wyników:
+Po „Uruchom”: ścieżki utworzonego configu i folderu wyników:
 
-![Formularz — utworzone pliki](img/gui_formularz_uruchomiono.png)
+![Formularz: utworzone pliki](img/gui_formularz_uruchomiono.png)
 
-**Zadania** — trzy zadania dodane naraz: pierwsze działa (CA: krok i liczba komórek płynnej lawy;
+**Zadania**: trzy zadania dodane naraz: pierwsze działa (CA: krok i liczba komórek płynnej lawy;
 dla lawy koniec nie jest znany z góry, stąd animowany pasek), dwa czekają w kolejce FIFO:
 
-![Zadania — kolejka i postęp](img/gui_zadania_postep.png)
+![Zadania: kolejka i postęp](img/gui_zadania_postep.png)
 
 Po zakończeniu: statusy, czasy, parametry, pliki i rozwinięty log silnika:
 
-![Zadania — gotowe, log](img/gui_zadania.png)
+![Zadania: gotowe, log](img/gui_zadania.png)
 
-**Wyniki** — wyniki z GUI (`results/gui/…`) i z linii poleceń (`results/…`), z filtrem i sortowaniem:
+**Wyniki**: wyniki z GUI (`results/gui/…`) i z linii poleceń (`results/…`), z filtrem i sortowaniem:
 
 ![Wyniki](img/gui_wyniki.png)
 
-**Podgląd 2D** — przekrój y = 31 przez wulkan z 5 kraterami (typ komórki) i warstwa z = 1 kolorowana
+**Podgląd 2D**: przekrój y = 31 przez wulkan z 5 kraterami (typ komórki) i warstwa z = 1 kolorowana
 kraterem (`flowId`), z podpowiedzią:
 
-![2D — typ komórki](img/gui_2d_typ.png)
-![2D — krater (flowId)](img/gui_2d_flowid.png)
+![2D: typ komórki](img/gui_2d_typ.png)
+![2D: krater (flowId)](img/gui_2d_flowid.png)
 
 Kryształy MC: przekrój y = 40 przez krater `lava_mc_3d` (jezioro lawy z dużymi kryształami, drobne
 ziarna na zboczu, granice ziaren, podpowiedź z czasem stygnięcia) oraz `mc_full_2d` (MC na całej
 przestrzeni 200×200):
 
-![2D — kryształy w lawie](img/gui_2d_krysztaly_lava.png)
-![2D — kryształy MC full](img/gui_2d_krysztaly_mc_full.png)
+![2D: kryształy w lawie](img/gui_2d_krysztaly_lava.png)
+![2D: kryształy MC full](img/gui_2d_krysztaly_mc_full.png)
 
-**Podgląd 3D** — ściany zewnętrzne bloku 64×64×48 (`flowId`). Górna ściana to domyślnie dla lawy rzut
-z góry (najwyższa niepusta komórka). Dosłowna warstwa z = nz−1 — drugi zrzut — to u wulkanu samo powietrze:
+**Podgląd 3D**: ściany zewnętrzne bloku 64×64×48 (`flowId`). Górna ściana to domyślnie dla lawy rzut
+z góry (najwyższa niepusta komórka). Dosłowna warstwa z = nz−1 (drugi zrzut) to u wulkanu samo powietrze:
 
-![3D — ściany zewnętrzne, góra jako rzut z góry](img/gui_3d_sciany.png)
-![3D — ściany zewnętrzne, góra jako warstwa z = nz−1](img/gui_3d_sciany_warstwa.png)
+![3D: ściany zewnętrzne, góra jako rzut z góry](img/gui_3d_sciany.png)
+![3D: ściany zewnętrzne, góra jako warstwa z = nz−1](img/gui_3d_sciany_warstwa.png)
 
 Powierzchnia (zbocze wulkanu z jęzorami lawy z 5 kraterów) i woksele lawy/bazaltu:
 
-![3D — powierzchnia](img/gui_3d_powierzchnia.png)
-![3D — woksele](img/gui_3d_woksele.png)
+![3D: powierzchnia](img/gui_3d_powierzchnia.png)
+![3D: woksele](img/gui_3d_woksele.png)
 
 Kryształy MC na powierzchni (`lava_mc_3d`) i ściany kostki MC `full` 50³ (kryształy):
 
-![3D — kryształy na powierzchni](img/gui_3d_krysztaly_powierzchnia.png)
-![3D — MC full, ściany](img/gui_3d_mc_full_sciany.png)
+![3D: kryształy na powierzchni](img/gui_3d_krysztaly_powierzchnia.png)
+![3D: MC full, ściany](img/gui_3d_mc_full_sciany.png)
 
-Duży wynik — `etna_3d`, 150×150×80 = 1,8 mln komórek, powierzchnia:
+Duży wynik: `etna_3d`, 150×150×80 = 1,8 mln komórek, powierzchnia:
 
-![3D — etna_3d](img/gui_3d_etna_powierzchnia.png)
+![3D: etna_3d](img/gui_3d_etna_powierzchnia.png)
 
-**Czasy i statystyki** (`lava_mc_3d` z GUI) — sekcje `times.json` z udziałem w całości, pamięć (pomiar
+**Czasy i statystyki** (`lava_mc_3d` z GUI): sekcje `times.json` z udziałem w całości, pamięć (pomiar
 i model), pliki, statystyki CA i MC (z efektem mobilności), wykresy liczby ziaren i średniej wielkości ziarna
 vs MCS oraz liczby komórek płynnej lawy w kolejnych krokach CA:
 
@@ -247,12 +247,12 @@ python -m pip install -r gui\requirements.txt      # pierwsze uruchomienie: fast
 python -m gui                                      # serwer http://127.0.0.1:8000 + otwarcie przeglądarki
 ```
 
-albo dwuklik **`gui\run_gui.bat`** — sam doinstaluje pakiety, jeśli ich brakuje. Opcje:
+albo dwuklik **`gui\run_gui.bat`**, który sam doinstaluje pakiety, jeśli ich brakuje. Opcje:
 `python -m gui --port 8001 --no-browser`. Zatrzymanie: Ctrl+C w oknie konsoli. Alternatywnie:
 `python -m uvicorn gui.app:app` (port 8000).
 
 Uwaga: jeśli Python jest zainstalowany dla wszystkich użytkowników (`C:\Python312`), zwykłe `pip install`
-nie ma prawa zapisu do `C:\Python312\Scripts` — trzeba użyć `python -m pip install --user -r gui\requirements.txt`
+nie ma prawa zapisu do `C:\Python312\Scripts`; trzeba użyć `python -m pip install --user -r gui\requirements.txt`
 (tak robi `run_gui.bat`).
 
 **Silnik** jest wykrywany automatycznie: `build/Release/engine.exe`, `build-msvc-release/…`,
@@ -275,7 +275,7 @@ python gui\tests\screenshots.py                    # scenariusz w Chromium + zrz
 |---|---|---|
 | `engine --print-defaults` | wypisuje `Config::defaultsJson()` (pełny domyślny config) | `app/ConfigCheck.*`, `main.cpp` |
 | `engine --validate [--config f] [--set k=w]… [--mc-from d]` | tylko walidacja (bez symulacji i zapisu): JSON `{"ok": …, "errors": [...], "warnings": [...]}` na stdout, kod wyjścia 0 albo 1. Ten sam kod co uruchomienie (`Config::load`), a dodatkowo sprawdza to, co przy uruchomieniu wyszłoby dopiero w trakcie: plik mapy wysokości (`terrain.type = file`) oraz folder `--mc-from` i `mc.domain` | `app/ConfigCheck.*` |
-| `engine … --progress` | co ~0,5 s (i zawsze na początku i końcu etapu) linia z `flush`: `PROGRESS ca <krok>/<maxSteps> active=<komórki LAVA>`, `PROGRESS mc <MCS>/<mcs>`, `PROGRESS save 0/1`. Bez flagi przebieg idzie dotychczasową ścieżką (`LavaCA::run()`) | `app/Progress.hpp`, `Simulation.cpp`, `McStage.cpp` |
+| `engine … --progress` | co ~0,5 s (i zawsze na początku i końcu fazy) linia z `flush`: `PROGRESS ca <krok>/<maxSteps> active=<komórki LAVA>`, `PROGRESS mc <MCS>/<mcs>`, `PROGRESS save 0/1`. Bez flagi przebieg idzie dotychczasową ścieżką (`LavaCA::run()`) | `app/Progress.hpp`, `Simulation.cpp`, `McStage.cpp` |
 
 Decyzje:
 - `--validate` zawsze wypisuje JSON, także gdy config jest poprawny: `{"ok": true, "errors": [], "warnings": [...]}`.
@@ -289,14 +289,14 @@ Decyzje:
   `MCS / mcs`. W MC raport jest poza pomiarem `mcSim` i `mcStats`.
 - Niedozwolone połączenia dają czytelny błąd argumentów: `--print-defaults` z innymi opcjami,
   `--validate` z `--benchmark`/`--progress`/`--timing-detail`, `--progress` z `--benchmark`.
-- Testy doctest: `engine/tests/test_gui_options.cpp` — 5 przypadków (parser opcji, `--print-defaults` = domyślny
+- Testy doctest: `engine/tests/test_gui_options.cpp`: 5 przypadków (parser opcji, `--print-defaults` = domyślny
   config i przechodzi walidację, walidacja: zła wartość, nieznany klucz, ostrzeżenie, brak pliku configu
   i mapy wysokości, `--mc-from` bez wyniku / brak folderu / zła domena, kod wyjścia i JSON; format i odstęp
   linii `ProgressReporter`; symulacja CA + MC z `--progress` daje bitowo te same `ca_result.bin`,
   `mc_result.bin`, `mc_stats.csv`, a ostatnie linie to stan końcowy) + 4 testy dymne ctest
   (`cli_print_defaults`, `cli_validate_ok`, `cli_validate_bad`, `cli_smoke_progress`).
 
-**Narzut `--progress`** (`bench/ab_progress.py`: stary program sprzed etapu, nowy bez flagi, nowy z flagą;
+**Narzut `--progress`** (`bench/ab_progress.py`: stary program sprzed GUI, nowy bez flagi, nowy z flagą;
 przemiennie, 11 powtórzeń, przypięte do rdzenia P, MSVC Release, `output.format = none`; czas symulacji z `times.json`):
 
 | Przypadek | stary [ms] | nowy [ms] | nowy + `--progress` [ms] | z / bez `--progress` (mediana par) |
@@ -310,7 +310,7 @@ Narzut mieści się w ~1% (mediana stosunku par −0,1…+0,8%), wyraźnie poni�
 W MC raport jest całkowicie poza `mcSim`, więc +0,8% w `mc_full_3d` to sam szum. To pokazuje rozdzielczość
 tego pomiaru. Nowy program bez flagi był w tej sesji 1–7% szybszy od starego (zakresy się pokrywają).
 Kod pętli się nie zmienił, więc traktuję to jako szum/układ kodu, a nie przyspieszenie. Laptop był w tej
-sesji ~20% wolniejszy niż w pomiarach z etapu 3 (np. `test_3d` 2,2 s zamiast 1,77 s), dlatego porównuję
+sesji ~20% wolniejszy niż w pomiarach profilu aplikacji (np. `test_3d` 2,2 s zamiast 1,77 s), dlatego porównuję
 tylko przebiegi z tej samej sesji.
 
 ## 6. Weryfikacja
@@ -320,35 +320,35 @@ tylko przebiegi z tej samej sesji.
 | Build MSVC Release i Debug (`/W4`) | 0 ostrzeżeń; `ctest` 11/11 w obu (7 dotychczasowych + 4 nowe testy dymne) |
 | Build GCC 11.4 Release i Debug (WSL, `-Wall -Wextra`) | 0 ostrzeżeń; `ctest` 11/11 w obu |
 | `pytest gui/tests` | **59 passed** (~2,3 s), także z `-W default` bez ostrzeżeń |
-| Wyniki bitowo identyczne jak przed etapem | `ca_result.bin`, `ca_result.txt`, `mc_result.bin`, `mc_result.txt`, `mc_stats.csv`, `stats.json` dla `test_2d`, `test_3d`, `lava_mc_2d`, `lava_mc_3d`, `mc_full_2d`, `classic_ref` — program sprzed etapu vs nowy bez `--progress` i z `--progress`: wszystkie identyczne (`cmp`). Nowy GCC (z `--progress`) vs stary MSVC: `test_2d`, `lava_mc_2d`, `mc_full_2d` identyczne |
+| Wyniki bitowo identyczne jak przed GUI | `ca_result.bin`, `ca_result.txt`, `mc_result.bin`, `mc_result.txt`, `mc_stats.csv`, `stats.json` dla `test_2d`, `test_3d`, `lava_mc_2d`, `lava_mc_3d`, `mc_full_2d`, `classic_ref`: program sprzed GUI vs nowy bez `--progress` i z `--progress`: wszystkie identyczne (`cmp`). Nowy GCC (z `--progress`) vs stary MSVC: `test_2d`, `lava_mc_2d`, `mc_full_2d` identyczne |
 | Narzut `--progress` | ≤ ~1% (tabela wyżej) |
-| Konsola przeglądarki (Playwright, Chromium) | brak błędów i ostrzeżeń JS w całym scenariuszu. Jedyne komunikaty to ostrzeżenia sterownika GL „GPU stall due to ReadPixels” — wywołuje je sam zrzut ekranu (`preserveDrawingBuffer`), skrypt je pomija |
+| Konsola przeglądarki (Playwright, Chromium) | brak błędów i ostrzeżeń JS w całym scenariuszu. Jedyne komunikaty to ostrzeżenia sterownika GL „GPU stall due to ReadPixels”; wywołuje je sam zrzut ekranu (`preserveDrawingBuffer`), skrypt je pomija |
 
-**Scenariusz end-to-end** (`gui/tests/screenshots.py` w prawdziwym Chromium — te same kliknięcia co ręcznie):
+**Scenariusz end-to-end** (`gui/tests/screenshots.py` w prawdziwym Chromium, te same kliknięcia co ręcznie):
 1. Start GUI → „Nowa symulacja” → preset `test_3d` → nazwa `demo_test_3d_5_kraterow`, kratery 3 → 5 →
    **Sprawdź** („Config poprawny”) → `space.nx = −5` → **Sprawdź** (błąd „Parametr „space.nx” musi być
    z zakresu 1..100000, podano: −5” przy polu) → `nx = 64` → **Uruchom** → komunikat z `configs/gui/…json`
    i `results/gui/…/`.
-2. Tak samo dla presetów `lava_mc_3d` i `mc_full_2d` — trzy zadania w kolejce. Zakładka Zadania: pierwsze
+2. Tak samo dla presetów `lava_mc_3d` i `mc_full_2d`: trzy zadania w kolejce. Zakładka Zadania: pierwsze
    „działa” z krokiem CA, pozostałe „oczekuje”, potem po kolei „gotowe”: test_3d (5 kraterów) 2,2 s,
    lava_mc_3d 1,9 s, mc_full_2d 0,28 s (czas całego procesu silnika). Log silnika rozwija się w tabeli.
 3. Wyniki → zadanie test_3d → Podgląd 2D: typ (przekrój y), `flowId` (warstwa z, 5 kraterów w legendzie,
    podpowiedź); lava_mc_3d → kryształy z granicami ziaren i powiększeniem; mc_full_2d → kryształy.
-4. Podgląd 3D: ściany (górna jako rzut z góry i jako warstwa), powierzchnia, woksele; lava_mc_3d —
-   kryształy na powierzchni; mc_full_3d — ściany kostki MC.
+4. Podgląd 3D: ściany (górna jako rzut z góry i jako warstwa), powierzchnia, woksele; lava_mc_3d:
+   kryształy na powierzchni; mc_full_3d: ściany kostki MC.
 5. Czasy i statystyki lava_mc_3d: tabela czasów, pamięć, statystyki MC z `byMobility`, wykresy Chart.js.
 6. **Duży wynik `etna_3d`** (1,8 mln komórek): podgląd 2D gotowy w **0,7 s** (metadane + przekrój), powierzchnia
    3D w **0,9 s** (czasy z zegara skryptu, łącznie z oczekiwaniem na wyrenderowanie); przeglądarka się nie zawiesza.
 
-Poza scenariuszem: wszystkie 15 wyników w `results/` (12 z etapów 1–3, w tym `classic_ref` 100³, MC `full`
+Poza scenariuszem: wszystkie 15 wyników w `results/` (12 z wcześniejszych prac, w tym `classic_ref` 100³, MC `full`
 i wynik `--mc-from` z typami komórek z folderu wejściowego, oraz 3 z GUI) wczytuje się we wszystkich widokach
-(przekrój każdego pola w 3 osiach, ściany w obu trybach, powierzchnia, woksele, komórka) — skrypt po
+(przekrój każdego pola w 3 osiach, ściany w obu trybach, powierzchnia, woksele, komórka); skrypt po
 `ResultStore`, 0,01–0,10 s na wynik. Wyniki w `results/` mają też pliki `.bin`, więc ścieżkę txt sprawdziłem
-na kopiach samych plików txt: `classic_ref` (`ca_result.txt`, 1 mln wierszy) — pierwsze wczytanie 0,53 s,
-potem z pamięci podręcznej 1 ms, przekrój identyczny jak z `.bin`; `mc_full_3d` (`mc_result.txt`) — 0,04 s.
+na kopiach samych plików txt: `classic_ref` (`ca_result.txt`, 1 mln wierszy): pierwsze wczytanie 0,53 s,
+potem z pamięci podręcznej 1 ms, przekrój identyczny jak z `.bin`; `mc_full_3d` (`mc_result.txt`): 0,04 s.
 
 **Testy pytest** (`gui/tests/test_results.py`, `test_jobs.py`):
-- odczyt `ca_result.bin` v1 i v2, `ca_result.txt`, `mc_result.bin`/`.txt` — porównanie z tablicami
+- odczyt `ca_result.bin` v1 i v2, `ca_result.txt`, `mc_result.bin`/`.txt`: porównanie z tablicami
   sztucznego wyniku zapisanego według specyfikacji formatu (niezależnie od czytnika); pole `cooling`;
   wynik MC `full` bez CA; wynik `--mc-from` (typy z folderu `_mcFrom`); plik obcięty / zła sygnatura;
 - przekrój x / y / z dla każdego pola i 3 indeksów = wycinek numpy; próbkowanie dużej płaszczyzny; 6 ścian
@@ -361,7 +361,7 @@ potem z pamięci podręcznej 1 ms, przekrój identyczny jak z `.bin`; `mc_full_3
   wynik na liście, wczytuje się, statystyki zgodne; kolejka FIFO (drugie zadanie startuje po pierwszym)
   i trwałość `jobs.json` (restart: „działa” → „przerwane”); anulowanie zadania oczekującego i działającego;
   MC na gotowym wyniku CA z zadania GUI (`mcFrom` → `engine --mc-from`: bez ostrzeżeń, wymiary z pliku, typy
-  komórek z folderu wejściowego; przed policzeniem CA — 404; `mcFrom` spoza `results/` — 400);
+  komórek z folderu wejściowego; przed policzeniem CA: 404; `mcFrom` spoza `results/`: 400);
 - bezpieczeństwo ścieżek: nazwa zadania `..\..\..\evil`, `../../etc/passwd`, `C:\Windows…` → tylko
   `[A-Za-z0-9_-]`, config i folder zawsze w `configs/gui/` i `results/gui/`; identyfikator wyniku
   `..`, `..\x`, `gui/../../x`, `C:\Windows`, `/etc`, `a/b/c` → błąd 400/404 (wynik nie może wyjść poza `results/`);
@@ -372,29 +372,29 @@ potem z pamięci podręcznej 1 ms, przekrój identyczny jak z `.bin`; `mc_full_3
 Ograniczenia:
 - GUI jest **lokalne i jednoużytkownikowe**: brak logowania, nasłuch tylko na `127.0.0.1`. Ochronę przed
   stronami z internetu dają tylko sprawdzenie nagłówka `Host` (DNS rebinding) i wymóg JSON w POST (bez CORS).
-  Dwie instancje GUI na jednym katalogu projektu nadpisywałyby sobie `jobs.json` — `python -m gui`
+  Dwie instancje GUI na jednym katalogu projektu nadpisywałyby sobie `jobs.json`; `python -m gui`
   wykrywa zajęty port i otwiera działające GUI zamiast startować drugie.
 - **Postęp lawy** nie ma znanego końca (CA kończy się „brakiem lawy / brakiem zmian”), dlatego pasek jest
   animowany, a GUI pokazuje krok i liczbę komórek płynnej lawy. Szacunek czasu w formularzu to heurystyka
   rzędu wielkości.
-- **Anulowanie** zabija proces — w folderze zostają pliki zapisane do tej chwili (zwykle tylko `config_used.json`).
+- **Anulowanie** zabija proces; w folderze zostają pliki zapisane do tej chwili (zwykle tylko `config_used.json`).
 - Ściany zewnętrzne bloku z wulkanem pośrodku to głównie powietrze (lawa dochodzi do brzegu tylko
-  miejscami) — tak wygląda dosłowny rzut ścian. Dlatego górna ściana ma opcję rzutu z góry,
+  miejscami); tak wygląda dosłowny rzut ścian. Dlatego górna ściana ma opcję rzutu z góry,
   a widok „powierzchnia” pokazuje zbocze.
 - Powierzchnia 3D interpoluje kolor między sąsiednimi kolumnami (gładka siatka), więc granica jęzora lawy
   jest lekko rozmyta. Dokładne granice pokazują przekrój 2D i woksele.
 - Pliki `.txt` powyżej 30 mln komórek nie są wczytywane (komunikat: użyj `output.format = bin`). Pliki
-  `.bin` > 128 MB są mapowane w pamięć — póki są oglądane, Windows nie pozwoli ich nadpisać innym uruchomieniem
+  `.bin` > 128 MB są mapowane w pamięć; póki są oglądane, Windows nie pozwoli ich nadpisać innym uruchomieniem
   silnika do tego samego folderu (zadania z GUI zawsze dostają nowy folder).
-- Migawki `snapshotsEvery` nie są w tym etapie animowane w GUI — odtwarzanie erupcji krok po kroku doszło
-  w etapie 6 ([etap-6-prawdziwe-wulkany.md](etap-6-prawdziwe-wulkany.md), punkt 6).
+- Migawki `snapshotsEvery` nie były w pierwszej wersji GUI animowane; odtwarzanie erupcji krok po kroku doszło
+  później ([prawdziwe-wulkany.md](prawdziwe-wulkany.md), punkt 6).
 - `readConfig` w zadaniach z GUI wynosi 10–18 ms zamiast ~0,3 ms. To koszt pierwszego otwarcia świeżo
-  zapisanego pliku przez system: z linii poleceń nowy plik zapisany z Pythona — 1–18 ms, ten sam plik
-  drugi raz — 0,3 ms. Nie wpływa na `caSim`/`mcSim`.
+  zapisanego pliku przez system: z linii poleceń nowy plik zapisany z Pythona: 1–18 ms, ten sam plik
+  drugi raz: 0,3 ms. Nie wpływa na `caSim`/`mcSim`.
 - GUI sprawdziłem tylko w Chromium (Playwright). Firefoksa i Safari nie testowałem; kod używa
   standardowych modułów ES, *import maps* i WebGL2, obsługiwanych przez aktualne wersje wszystkich trzech.
 
-Co dalej — **etap 5** (architektura gotowa):
+Co dalej: **kolejka, serie i dane wejściowe** ([kolejka-serie-dane.md](kolejka-serie-dane.md); architektura gotowa):
 - **kolejka wielu zadań**: już działa (FIFO, `workers` w ustawieniach); dojdzie widok „seria” w zakładce Zadania;
 - **generator serii**: wybór parametrów i zakresów (np. rozmiar × sąsiedztwo) → N configów → `JobManager.submit()`
   dla każdego (`POST /api/series`);
@@ -403,7 +403,7 @@ Co dalej — **etap 5** (architektura gotowa):
 - MC na wyniku CA z wybranego zadania (`mcFrom`) już działa w backendzie i formularzu;
 - raport techniczny (`docs/raport.md`) ze zrzutami GUI.
 
-## 8. Pliki etapu
+## 8. Pliki
 
 - Silnik: `engine/src/app/ConfigCheck.hpp/.cpp`, `engine/src/app/Progress.hpp`, zmiany w `Cli.*`, `main.cpp`,
   `Simulation.*`, `McStage.*`; testy `engine/tests/test_gui_options.cpp`, testy dymne w `engine/CMakeLists.txt`.
@@ -412,5 +412,5 @@ Co dalej — **etap 5** (architektura gotowa):
 - Frontend `gui/static/`: `index.html`, `css/style.css`, `js/{main,api,form,estimate,palette,viewer2d,viewer3d,stats}.js`,
   `vendor/` (three.js r160 + `OrbitControls`, Chart.js 4.4.1, licencje, `README.md`).
 - Testy: `gui/tests/conftest.py`, `test_results.py`, `test_jobs.py`, `screenshots.py`.
-- `bench/ab_progress.py` (test A/B narzutu `--progress`), `docs/img/gui_*.png` (18 zrzutów), `docs/etap-4-gui.md`.
-- `.gitignore`: `configs/gui/` (configi zadań — generowane jak `results/`) i `gui/settings.json` (ustawienia lokalne).
+- `bench/ab_progress.py` (test A/B narzutu `--progress`), `docs/img/gui_*.png` (18 zrzutów), `docs/interfejs-graficzny.md`.
+- `.gitignore`: `configs/gui/` (configi zadań, generowane jak `results/`) i `gui/settings.json` (ustawienia lokalne).

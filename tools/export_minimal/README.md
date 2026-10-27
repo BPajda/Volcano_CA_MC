@@ -7,7 +7,8 @@ zarodkami, a lawa rośnie po terenie — generowanym albo prawdziwym (Etna, Wezu
 największego spadku, wypełnia krater, stygnie i zastyga w bazalt. Zastygły bazalt krystalizuje metodą Monte Carlo
 (model Pottsa) z mobilnością zależną od czasu stygnięcia. Obliczenia wykonuje silnik C++17 bez interfejsu
 (config JSON → symulacja → pliki wyników i `times.json`), a GUI w przeglądarce przygotowuje konfiguracje, kolejkuje
-zadania i pokazuje wyniki w 2D i 3D (także odtwarzanie erupcji krok po kroku).
+zadania i pokazuje wyniki w 2D i 3D (także odtwarzanie erupcji krok po kroku), a zakładka **Wydajność** pokazuje
+wyniki optymalizacji i zrównoleglenia (OpenMP, MPI) na interaktywnych wykresach z opisem „Jak czytać”.
 
 ![Erupcja Etny w podglądzie 3D — odtwarzanie krok po kroku](docs/img/readme/gui_3_erupcja_3d.png)
 
@@ -100,6 +101,7 @@ gui/         GUI: backend Python (FastAPI, tylko 127.0.0.1), frontend HTML/JS (s
 tools/       podgląd wyników (PNG), seria bez GUI, mapy wysokości, prawdziwy teren, eksport VTK
 bench/       skrypty pomiarów (profil, testy A/B, skalowanie OpenMP i MPI), mikrobenchmarki, dane cytowane w raporcie (results/)
 configs/     przykładowe konfiguracje JSON i mapy wysokości (heightmaps/)
+docs/pdf/    dokumentacja tematyczna w PDF (optymalizacja, OpenMP, MPI, testy wydajności i in.)
 raport.pdf   raport techniczny
 ```
 
@@ -110,3 +112,7 @@ Dane terenu Etny i Wezuwiusza pochodzą z AWS Terrain Tiles — wymagane przypis
 
 Architektura, modele CA i MC, GUI i kolejkowanie zadań, wyniki symulacji oraz profil wydajności:
 **[raport.pdf](raport.pdf)**.
+
+Dokumentacja tematyczna w PDF, od automatu komórkowego po testy wydajności wersji równoległych:
+[docs/pdf/](docs/pdf/) (tytuły w [docs/pdf/index.json](docs/pdf/index.json)). Te same pliki pobiera link
+„Pobierz PDF” pod wykresami zakładki **Wydajność** w GUI.

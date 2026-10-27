@@ -16,7 +16,7 @@ option(VOLCANO_PROFILE_NOINLINE "Kluczowe funkcje bez inline (tylko do profilowa
 # VOLCANO_MSVC_OPENMP_LLVM — MSVC: /openmp:llvm (OpenMP 3.1+, biblioteka libomp140) zamiast domyślnego /openmp
 #   (OpenMP 2.0, vcomp140 z pakietu redystrybucyjnego). Tylko do porównań: w Visual Studio 17.8 libomp140 jest
 #   w katalogu debug_nonredist, a w mikroteście (bench/micro/omp_overhead.cpp) narzut regionu był ~20× większy
-#   (docs/etap-9-openmp.md, punkt 1). Kod jest zgodny z OpenMP 2.0, więc buduje się w obu wariantach.
+#   (docs/openmp.md, punkt 1). Kod jest zgodny z OpenMP 2.0, więc buduje się w obu wariantach.
 option(VOLCANO_OPENMP "Wątki OpenMP (etap 9)" ON)
 option(VOLCANO_MSVC_OPENMP_LLVM "MSVC: /openmp:llvm zamiast /openmp (tylko porównanie)" OFF)
 set(VOLCANO_OMP_TARGET "")

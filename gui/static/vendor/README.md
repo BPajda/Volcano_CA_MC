@@ -11,7 +11,7 @@ w przypiętych wersjach — bez npm i bez kroku budowania. Pobrane 09.10.2026 z 
 
 Łącznie ~0,9 MB. Pliki są niezmienione (sumy SHA-256 powyżej).
 
-## Fonty (etap 7 — wygląd GUI, `docs/gui_wyglad.md`)
+## Fonty (wygląd interfejsu, `docs/wyglad-interfejsu.md`)
 
 Fonty zmiennej grubości (jeden plik na podzbiór znaków, grubości 100–900 / 100–800) w formacie WOFF2, pobrane
 15.10.2026 z paczek npm Fontsource przez jsDelivr. Podzbiór `latin-ext` zawiera polskie litery (ą ć ę ł ń ó ś ź ż);

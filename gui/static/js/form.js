@@ -91,7 +91,7 @@ const SCHEMA = {
   'mc.snapshotsEvery': { label: 'Migawki kryształów co', unit: 'MCS', int: true, min: 0,
     hint: '0 = wyłączone; mc_snapshots/mcs_*.bin — odtwarzanie wzrostu ziaren w podglądzie (czas poza mcSim)' },
   'mc.update': { label: 'Kolejność prób MC', hint: 'random — wariant naiwny, zawsze 1 wątek; checkerboard — kolory komórek niebędących sąsiadami, równolegle (inny proces losowy, statystycznie zgodny)' },
-  'parallel.threads': { label: 'Liczba wątków', int: true, min: 0, hint: '1 = jeden wątek (jak przed etapem 9); 0 = wszystkie wątki OpenMP; pomiary: 1–8 (rdzenie P)' },
+  'parallel.threads': { label: 'Liczba wątków', int: true, min: 0, hint: '1 = jeden wątek (jak przed zrównolegleniem); 0 = wszystkie wątki OpenMP; pomiary: 1–8 (rdzenie P)' },
   'parallel.schedule': { label: 'Harmonogram', hint: 'podział warstw (pasów z) między wątki; lawa (front): static z porcją 1, pełny przebieg: guided' },
   'parallel.chunk': { label: 'Porcja harmonogramu', unit: 'warstw', int: true, min: 0, hint: '0 = domyślna OpenMP (static: równe bloki, dynamic/guided: 1)' },
   'parallel.affinity': { label: 'Przypinanie wątków', hint: 'pcores — wątek i na i-tym rdzeniu wydajnym (P), bez drugiego wątku SMT' },

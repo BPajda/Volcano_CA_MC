@@ -48,7 +48,7 @@ struct VentsConfig {
     // Lista kolumn dla placement = positions (vents.positions) NIE jest polem tej struktury — zwraca ją
     // Config::ventColumns(). Pole-wektor zmieniało kod kopiowania/niszczenia Config i dokładało instancje
     // szablonów, a linker MSVC przesuwał przez to gorącą pętlę automatu (CA wolniejszy o ~7% przy tym samym
-    // kodzie automatu — docs/etap-6-prawdziwe-wulkany.md, punkt 7).
+    // kodzie automatu — docs/prawdziwe-wulkany.md, punkt 7).
     int eruptionSteps = 300;     // przez tyle kroków krater ma stałą temperaturę eruptTemp
     double eruptTemp = 1200.0;   // [°C]
 };
@@ -94,7 +94,7 @@ struct OutputConfig {
     int snapshotsEvery = 0;       // co ile kroków zapisać migawkę .bin (0 = wyłączone)
 };
 
-// Równoległość OpenMP (etap 9, sekcja parallel) — opis w parallel/Omp.hpp i docs/etap-9-openmp.md.
+// Równoległość OpenMP (etap 9, sekcja parallel) — opis w parallel/Omp.hpp i docs/openmp.md.
 struct ParallelConfig {
     int threads = 1;                       // 1 = jeden wątek (kod jak w etapie 8); 0 = omp_get_max_threads()
     Schedule schedule = Schedule::Static;  // harmonogram pętli po warstwach / pasach

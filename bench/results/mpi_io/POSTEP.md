@@ -1,8 +1,8 @@
 # Etap 11 — dziennik postępu (typy pochodne MPI i równoległy zapis MPI-IO)
 
 Plik prowadzony na bieżąco w trakcie etapu 11: każdy krok, jego pliki, wyniki, zgodność bajtowa i obciążenie tła.
-Opis implementacji: [`docs/etap-11-mpi-typy-io.md`](../../../docs/etap-11-mpi-typy-io.md). Etap 10 (MPI):
-[`docs/etap-10-mpi.md`](../../../docs/etap-10-mpi.md), dziennik [`../mpi/POSTEP.md`](../mpi/POSTEP.md).
+Opis implementacji: [`docs/mpi-typy-i-zapis.md`](../../../docs/mpi-typy-i-zapis.md). Etap 10 (MPI):
+[`docs/mpi.md`](../../../docs/mpi.md), dziennik [`../mpi/POSTEP.md`](../mpi/POSTEP.md).
 
 Oznaczenia: `e10` = programy po etapie 10 (`bench/baseline/engine_e10_*`, `engine_mpi_e10_*`; binarki lokalne, katalog
 `bench/baseline/` jest w `.gitignore`), `mN` = `engine_mpi` na N procesach. Nowe opcje (`mpi.pack`, `mpi.bcast`,

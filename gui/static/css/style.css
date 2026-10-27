@@ -1,4 +1,4 @@
-/* GUI symulacji wulkanu — motyw „Bazalt i lawa” (etap 7, opis i uzasadnienie: docs/etap-7-wyglad-gui.md).
+/* GUI symulacji wulkanu — motyw „Bazalt i lawa” (opis i uzasadnienie: docs/wyglad-interfejsu.md).
    Wszystkie kolory interfejsu są zmiennymi: :root = motyw ciemny (domyślny), [data-theme="light"] = jasny „popiół”.
    JS nie wpisuje kolorów na sztywno — canvas 2D, three.js i Chart.js czytają te zmienne przez js/theme.js,
    a kolory komórek (powietrze, skała, lawa, bazalt, kratery, temperatura…) są w js/palette.js. */
@@ -86,6 +86,10 @@
   --series-camc: #1f97a8;
   --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
   --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  /* rampa porządkowa jednego odcienia (zakładka „Wydajność”: poziomy pamięci podręcznej D1 → L2 → L3) — w ciemnym
+     motywie od przygaszonego do jasnego, w jasnym od jasnego do ciemnego; sprawdzona walidatorem (jeden odcień,
+     monotoniczna jasność, kontrast pierwszego stopnia z kartą) */
+  --seq-1: #3a76c4; --seq-2: #6aa6ee; --seq-3: #b3d3f8;
   /* rozmiary */
   --radius: 12px;
   --radius-sm: 8px;
@@ -147,6 +151,7 @@
   --chart-axis: rgba(35, 27, 20, 0.25);
   --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
   --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6; --series-8: #e34948;
+  --seq-1: #5d9be8; --seq-2: #2a78d6; --seq-3: #174a8c;
   --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%235e554b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
@@ -592,7 +597,7 @@ input[type=checkbox]:disabled { opacity: 0.4; cursor: not-allowed; }
 .replay-counts b { color: var(--ink); }
 .replay-export { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; }
 /* Pasek odtwarzania, legenda i linia stanu zmieniają się w każdej klatce — izolacja układu i malowania, żeby nie
-   przeliczać i nie przemalowywać reszty strony (płynność odtwarzania 3D, pomiar w docs/etap-7-wyglad-gui.md). */
+   przeliczać i nie przemalowywać reszty strony (płynność odtwarzania 3D, pomiar w docs/wyglad-interfejsu.md). */
 .replay-bar, .legend-card, .viewer-status, .replay-label, .replay-counts { contain: layout paint; }
 
 .legend-card { margin: 0; overflow: auto; min-height: 0; }
@@ -702,6 +707,100 @@ tr.in-group td:first-child { padding-left: 30px; }
 .gallery figure.failed canvas { opacity: 0.3; }
 .gallery canvas { width: 160px; height: 160px; image-rendering: pixelated; border-radius: 6px; }
 .gallery figcaption { font-size: 12px; text-align: center; line-height: 1.45; }
+
+/* ---------- wydajność (wyniki optymalizacji i zrównoleglenia, js/perf.js) ---------- */
+.perf-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 12px 18px; }
+.perf-gloss-btn { flex: none; }
+.perf-gloss { flex-basis: 100%; border-top: 1px solid var(--line); padding-top: 10px; }
+.perf-gloss dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px 20px; margin: 0; }
+.perf-gloss dt { font-size: 12.5px; font-weight: 650; color: var(--ink); }
+.perf-gloss dd { margin: 1px 0 0; font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.perf-principle { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 15px; }
+.perf-ok { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; flex: none;
+  color: var(--good); background: var(--good-soft); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent); }
+.perf-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.perf-badge {
+  display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 560;
+  border: 1px solid var(--line-2); background: var(--raised); color: var(--ink); cursor: help; white-space: nowrap;
+}
+.perf-nav { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; margin: 0 0 14px; }
+.perf-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; border-radius: 11px; background: var(--panel);
+  border: 1px solid var(--line); }
+.perf-tab {
+  display: inline-flex; align-items: center; gap: 7px; border: 0; background: none; font: inherit; font-weight: 540;
+  font-size: 13.5px; color: var(--ink-2); padding: 6px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.perf-tab:hover { color: var(--ink); background: var(--raised); }
+.perf-tab.active { color: var(--ink); background: var(--raised-2); box-shadow: inset 0 -2px 0 var(--lava); font-weight: 620; }
+.perf-no {
+  display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700;
+  background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-line); font-variant-numeric: tabular-nums;
+}
+.perf-compiler { margin-left: auto; }
+.perf-intro { margin: -4px 2px 12px; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.perf-intro p { margin: 0 0 3px; max-width: 120ch; }
+.perf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 14px; align-items: start; }
+.perf-grid .card { margin: 0; min-width: 0; }
+.perf-grid .perf-card.wide { grid-column: 1 / -1; }
+.perf-card .card-head h3 { font-size: 14.5px; }
+.perf-chip { font-size: 12px; color: var(--ink-2); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line-2);
+  white-space: nowrap; }
+.perf-tools { margin-bottom: 8px; }
+.perf-tools .seg label span { padding: 3px 9px; font-size: 12.5px; }
+.perf-tools select { height: 28px; font-size: 13px; max-width: min(100%, 400px); }
+.perf-best td, .perf-best th { padding: 6px 8px; font-size: 12.5px; }
+.perf-best th.num { white-space: normal; }
+.perf-box { position: relative; height: 300px; }
+.perf-concl { margin: 10px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.perf-concl b { font-weight: 650; }
+.perf-note:empty { display: none; }
+.perf-note { margin: 4px 0 0; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.perf-legend { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 2px 0 0; font-size: 12px; color: var(--ink); }
+.perf-legend-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px 14px; }
+.perf-legend-key { color: var(--ink-2); font-weight: 600; }
+.perf-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.perf-mk { flex: none; }
+.perf-howto {
+  margin: 8px 0 0; padding: 6px 10px 5px; border-radius: 8px; background: var(--raised); border: 1px solid var(--line);
+  font-size: 12px; line-height: 1.45; color: var(--ink-2);
+}
+.perf-howto-title { display: flex; align-items: center; gap: 5px; margin: 0 0 2px; font-weight: 650; color: var(--ink); }
+.perf-howto-title .i { width: 13px; height: 13px; color: var(--accent-text); }
+.perf-howto ul { margin: 0; padding-left: 16px; }
+.perf-howto li { margin: 0 0 2px; }
+.perf-howto-sub { margin: 5px 0 1px; font-weight: 600; color: var(--ink); }
+.perf-card.wide .perf-steps { columns: 2 380px; column-gap: 24px; }
+.perf-steps li { break-inside: avoid; }
+.perf-steps b { color: var(--ink); }
+.perf-cond { margin: 6px 0 0; font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.perf-cond b, .perf-tiles-howto b { color: var(--ink); font-weight: 600; }
+.perf-src { margin: 4px 0 0; font-size: 11.5px; color: var(--ink-2); }
+.perf-src summary { cursor: pointer; width: max-content; }
+.perf-src summary:hover { color: var(--ink); }
+.perf-src p { margin: 3px 0 0; line-height: 1.5; overflow-wrap: anywhere; }
+.perf-src code { font-size: 10.5px; }
+.perf-pdfline { margin: 6px 0 0; font-size: 12.5px; }
+.perf-pdf { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; }
+.perf-pdf a { display: inline-flex; align-items: center; gap: 4px; }
+.perf-pdf .i { width: 14px; height: 14px; }
+.perf-pdf .perf-pdf-open { font-size: 11.5px; color: var(--ink-2); }
+.perf-pdf.missing { color: var(--muted); }
+.perf-intro-pdf { font-size: 12.5px; }
+.perf-table { margin-top: 8px; }
+.perf-table .table-scroll { max-height: 280px; }
+.perf-data td, .perf-data th { padding: 5px 8px; font-size: 12.5px; }
+.perf-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.perf-tile {
+  display: flex; flex-direction: column; gap: 2px; padding: 13px 16px; border-radius: var(--radius); background: var(--panel);
+  border: 1px solid var(--line); box-shadow: var(--shadow); min-width: 0;
+}
+.perf-tile-label { color: var(--ink-2); font-size: 13px; font-weight: 560; }
+.perf-tile-value { font-size: 34px; font-weight: 680; line-height: 1.15; letter-spacing: -0.01em; color: var(--ink); }
+.perf-tile-parts { font-size: 12.5px; color: var(--ink); }
+.perf-tile-detail { font-size: 12px; color: var(--ink-2); }
+.perf-tile-unit { font-size: 0.42em; font-weight: 600; margin-left: 0.35em; opacity: 0.8; letter-spacing: 0; }
+.perf-tiles-howto { margin: -4px 2px 12px; font-size: 12px; line-height: 1.45; }
 
 /* ---------- mniejsze ekrany (1280×720 i 1366×768 przy skalowaniu 125% → 1024–1093 px) ---------- */
 @media (max-width: 1360px) {

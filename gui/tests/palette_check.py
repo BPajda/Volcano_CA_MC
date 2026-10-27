@@ -1,6 +1,7 @@
 """Kontrola palety GUI (etap 7): kontrast tekstu WCAG w obu motywach i rozróżnialność kolorów komórek przy daltonizmie.
 
     python gui/tests/palette_check.py            # tabele na wyjściu + docs/img/ui_paleta_daltonizm.png
+    python gui/tests/palette_check.py --wykresy  # kolory wykresów zakładki „Wydajność” (tylko tabele, bez plików)
 
 Kolory czyta z plików (jedno źródło prawdy): zmienne motywów z gui/static/css/style.css, kolory komórek z
 gui/static/js/palette.js. Daltonizm: Chromium (Playwright) rysuje próbki z emulacją DevTools
@@ -131,9 +132,68 @@ def swatch_page(groups: list[tuple[str, list[tuple[str, str]]]], bg: str) -> str
     </style>{''.join(rows)}"""
 
 
+# ------------------------------------------------------------------ kolory wykresów (zakładka „Wydajność”)
+
+# Zestawy kolorów rysowane razem na jednym wykresie (role serii z gui/static/js/perf.js → zmienne CSS motywu).
+CHART_SETS = [
+    ("metody / przypadki (s1–s3)", ["series-1", "series-2", "series-3"], "categorical"),
+    ("algorytmy CA / MC / CA+MC", ["series-ca", "series-mc", "series-camc"], "categorical"),
+    ("przed / po, najlepszy / pozostałe", ["muted", "series-ca"], "categorical"),
+    ("poziomy pamięci podręcznej D1 / L2 / L3", ["seq-1", "seq-2", "seq-3"], "ordinal"),
+]
+
+
+def chart_check() -> int:
+    """Kontrast kolorów wykresów z tłem karty (element graficzny ≥ 3:1) i najmniejsza ΔE par w zestawie przy normalnym
+    widzeniu i daltonizmie (emulacja Chromium, jak dla palety komórek)."""
+    from PIL import Image
+    from playwright.sync_api import sync_playwright
+
+    th = themes()
+    groups, keys = [], []
+    for name in ("ciemny", "jasny"):
+        for title, vars_, _ in CHART_SETS:
+            groups.append((f"{title} — {name}", [(v, th[name][v]) for v in vars_]))
+            keys.append((name, title, vars_))
+    pages = {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 760, "height": 300}, device_scale_factor=1)
+        cdp = page.context.new_cdp_session(page)
+        for name in ("ciemny", "jasny"):
+            idx = [i for i, k in enumerate(keys) if k[0] == name]
+            page.set_content(swatch_page([groups[i] for i in idx], th[name]["panel"]))
+            boxes = page.evaluate("""() => [...document.querySelectorAll('.g')].map((g) => [...g.querySelectorAll('.s')].map((s) => {
+                const r = s.getBoundingClientRect(); return [s.textContent, Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)]; }))""")
+            for d in DEFICIENCIES:
+                cdp.send("Emulation.setEmulatedVisionDeficiency", {"type": d})
+                page.wait_for_timeout(120)
+                img = Image.open(io.BytesIO(page.screenshot(full_page=True))).convert("RGB")
+                for gi, g in zip(idx, boxes):
+                    pages[(gi, d)] = {label: img.getpixel((x, y)) for label, x, y in g}
+        browser.close()
+    print("## Kolory wykresów: kontrast z kartą (≥ 3:1) i najmniejsza ΔE pary w zestawie (OKLab ×100)\n")
+    print("| zestaw | motyw | kontrast z kartą | normalne | protanopia | deuteranopia | tritanopia |")
+    print("|---|---|---|---|---|---|---|")
+    for gi, (name, title, vars_) in enumerate(keys):
+        t = th[name]
+        con = " / ".join(f"{contrast(t[v], t['panel']):.1f}" for v in vars_)
+        cells = []
+        for d in ("none", "protanopia", "deuteranopia", "tritanopia"):
+            s = pages[(gi, d)]
+            worst = min(delta_e(s[a], s[b]) for a, b in combinations(vars_, 2))
+            cells.append(f"{worst:.1f}")
+        print(f"| {title} | {name} | {con} | " + " | ".join(cells) + " |")
+    print("\nΔE ≥ 8 — rozróżnialne, 6–8 — na granicy (wymaga drugiego kodu: znacznik, etykieta, tabela). Rampa D1 / L2 / L3"
+          " ma jeden odcień — rozróżnia ją jasność.")
+    return 0
+
+
 def main() -> int:
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8", errors="replace")
+    if "--wykresy" in sys.argv[1:]:
+        return chart_check()
     th = themes()
     pal = palette_colors()
     print("## Kontrast tekstu (WCAG 2.1, AA = 4,5:1)\n")

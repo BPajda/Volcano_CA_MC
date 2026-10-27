@@ -2,7 +2,7 @@
 
 Symulacja erupcji wulkanu: spływ lawy jako automat komórkowy i krystalizacja bazaltu metodą Monte Carlo (model Pottsa).
 
-![Erupcja Etny w podglądzie 3D — odtwarzanie krok po kroku (krok 60 z 284, kolor = temperatura lawy)](docs/img/readme/gui_3_erupcja_3d.png)
+![Erupcja Etny w podglądzie 3D: odtwarzanie krok po kroku (krok 60 z 284, kolor = temperatura lawy)](docs/img/readme/gui_3_erupcja_3d.png)
 
 Obliczenia wykonuje silnik C++17 uruchamiany bez interfejsu (config JSON → symulacja → pliki wyników), a GUI
 w przeglądarce przygotowuje konfiguracje, kolejkuje zadania i pokazuje wyniki w 2D i 3D. Dokumentacja i interfejs
@@ -13,18 +13,20 @@ są po polsku.
 - **Spływ lawy jako automat komórkowy (2D i 3D).** Kratery są zarodkami z własnym identyfikatorem, a lawa rośnie
   jak ziarna: spada, rozlewa się w kierunku największego spadku terenu, wypełnia krater i przelewa się przez
   najniższy punkt krawędzi, stygnie i zastyga w bazalt. Sąsiedztwa von Neumanna, Moore'a, losowe pentagonalne
-  i heksagonalne; brzegi absorbujące i periodyczne; tryb `classic` — zwykły rozrost ziaren.
+  i heksagonalne; brzegi absorbujące i periodyczne; tryb `classic` to zwykły rozrost ziaren.
 - **Prawdziwy teren Etny i Wezuwiusza** z publicznych danych wysokościowych (AWS Terrain Tiles), kratery
   w zadanych miejscach wybierane kliknięciem na mapie, teren także z własnego pliku CSV albo obrazu PNG/JPG.
 - **Krystalizacja Monte Carlo** (model Pottsa, akceptacja Metropolisa) na zastygłym bazalcie, z mobilnością
-  zależną od czasu stygnięcia: wolno stygnące jezioro lawy daje duże kryształy, szybko zastygłe zbocze — drobne.
+  zależną od czasu stygnięcia: wolno stygnące jezioro lawy daje duże kryształy, szybko zastygłe zbocze drobne.
 - **Odtwarzanie erupcji krok po kroku** w 2D i 3D (suwak czasu, eksport klatek PNG i filmu WebM) bez ponownego
-  liczenia — stan w kroku k wynika z zapisanych kroków przybycia i zastygnięcia lawy; także wzrost kryształów MC.
+  liczenia: stan w kroku k wynika z zapisanych kroków przybycia i zastygnięcia lawy; także wzrost kryształów MC.
 - **GUI w przeglądarce, działające bez internetu:** formularz budowany z domyślnej konfiguracji silnika,
   walidacja z komunikatami po polsku, kolejka zadań (workery, pauza, kolejność, przypięcie do rdzenia CPU),
-  generator serii, porównanie wyników z wykresami, eksport ZIP i VTK (ParaView).
-- **Wersja serwerowa:** `engine --config …` liczy jedną symulację, `engine --batch <folder>` — całą serię configów,
-  każdy w osobnym procesie; czasy etapów, pamięć i rozmiary plików trafiają do `times.json`.
+  generator serii, porównanie wyników z wykresami, eksport ZIP i VTK (ParaView); zakładka **Wydajność** pokazuje
+  wyniki optymalizacji i zrównoleglenia (przyspieszenie, efektywność, pamięć, pamięć podręczna) na interaktywnych
+  wykresach z podanym źródłem i warunkami każdego pomiaru.
+- **Wersja serwerowa:** `engine --config …` liczy jedną symulację, `engine --batch <folder>` całą serię configów,
+  każdy w osobnym procesie; czasy faz, pamięć i rozmiary plików trafiają do `times.json`.
 - **Profil wydajności:** gprof, callgrind i profiler Visual Studio, model pamięci zgodny z pomiarem w 0–4%,
   wymagania sprzętowe i analiza różnic między kompilatorami.
 - **Deterministyczne wyniki:** losowość pochodzi z funkcji skrótu położenia komórki, więc wynik jest bitowo
@@ -35,7 +37,7 @@ są po polsku.
 
 | Kratery na mapie (Etna) | Kryształy MC na przekroju wulkanu | Kolejka zadań z serią |
 |---|---|---|
-| ![Panel „Kratery na mapie” — prawdziwy teren Etny, trzy kratery szczytowe](docs/img/real_formularz_kratery.png) | ![Kryształy MC: duże w jeziorze lawy w kraterze, drobne na szybko zastygłym zboczu](docs/img/readme/gui_4_krystalizacja_mc.png) | ![Zakładka „Zadania” — seria w kolejce, postęp i czas do końca](docs/img/gui_zadania_seria.png) |
+| ![Panel „Kratery na mapie”: prawdziwy teren Etny, trzy kratery szczytowe](docs/img/real_formularz_kratery.png) | ![Kryształy MC: duże w jeziorze lawy w kraterze, drobne na szybko zastygłym zboczu](docs/img/readme/gui_4_krystalizacja_mc.png) | ![Zakładka „Zadania”: seria w kolejce, postęp i czas do końca](docs/img/gui_zadania_seria.png) |
 
 ## Szybki start
 
@@ -93,27 +95,27 @@ Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie
 - Na tej samej siatce naiwne MC jest **4–56× wolniejsze** od CA. W 2D przewaga CA maleje z rozmiarem (25× → 4×),
   bo liczba kroków CA rośnie jak bok siatki; w 3D zostaje ~30×.
 - Mobilność ze stygnięcia daje w wolno stygnącej lawie ziarna średnio **5,0× większe** niż w szybko zastygłej
-  (`lava_mc_3d`; bez mobilności — 2,2×, tyle wynika z samej geometrii cienkiej warstwy).
+  (`lava_mc_3d`; bez mobilności 2,2×, tyle wynika z samej geometrii cienkiej warstwy).
 - Profil: w CA lawy **68–83% czasu** zajmowało przeszukiwanie sąsiadów komórek powietrza, które w 99,99% przypadków
-  nic nie znajduje — stąd automat frontalny jako pierwsza optymalizacja. Różnica MSVC/GCC w MC (2–3×) to był jeden
+  nic nie znajduje, stąd automat frontalny jako pierwsza optymalizacja. Różnica MSVC/GCC w MC (2–3×) to był jeden
   skok warunkowy w pętli energii.
 - **Optymalizacja sekwencyjna** (automat frontalny, MC bez skoku warunkowego, przesunięcia liniowe sąsiadów, tańsze
   statystyki i zapis): erupcja Etny (1,8 mln komórek) liczy się **~200× szybciej** (automat: 13,1 s → 39 ms), CA classic
-  7–17×, MC 1,4–2×, pamięć CA 2D 91 → 28–36 B na komórkę — przy wynikach **bitowo identycznych** z wersją sprzed zmian,
-  co sprawdza test A/B każdego kroku ([docs/etap-8-optymalizacja-sekwencyjna.md](docs/etap-8-optymalizacja-sekwencyjna.md)).
+  7–17×, MC 1,4–2×, pamięć CA 2D 91 → 28–36 B na komórkę, przy wynikach **bitowo identycznych** z wersją sprzed zmian,
+  co sprawdza test A/B każdego kroku ([docs/optymalizacja-sekwencyjna.md](docs/optymalizacja-sekwencyjna.md)).
 - **OpenMP** (podział przestrzeni na warstwy między wątki, 8 rdzeni wydajnościowych): faza obliczeń przyspiesza
   **4,8–6,7×** przy 8 wątkach (pełny przebieg lawy 6,3×, MC w nowym trybie szachownicy 6,1–6,2×), a wynik jest bitowo
-  ten sam dla każdej liczby wątków. Cały przebieg — 2,1–6,2×, bo przygotowanie terenu, statystyki ziaren i zapis są
-  sekwencyjne (prawo Amdahla) ([docs/etap-9-openmp.md](docs/etap-9-openmp.md)).
+  ten sam dla każdej liczby wątków. Cały przebieg przyspiesza 2,1–6,2×, bo przygotowanie terenu, statystyki ziaren i zapis są
+  sekwencyjne (prawo Amdahla) ([docs/openmp.md](docs/openmp.md)).
 - **MPI** (pasy warstw między procesy, ten sam wynik bitowo): MC szachownicą i CA classic 2D przyspieszają prawie
-  liniowo — **6,7× na 7 procesach**, szybciej niż OpenMP na 8 wątkach; lawa skupia się w kilku warstwach, więc stałe
-  pasy mają nierówną pracę (pełny przebieg 5,4×, automat frontalny ≤ 2,6×), a małą Etnę MPI wręcz spowalnia — wymiana
-  warstw trwa dłużej niż krok ([docs/etap-10-mpi.md](docs/etap-10-mpi.md)).
-- **Wersje równoległe — podsumowanie** (testy wydajności): lawę najlepiej liczy OpenMP, siatki o równej pracy na
-  komórkę — MPI na 7 procesach (E = 0,95–0,96); łącznie z optymalizacją sekwencyjną erupcja Etny liczy się
+  liniowo: **6,7× na 7 procesach**, szybciej niż OpenMP na 8 wątkach; lawa skupia się w kilku warstwach, więc stałe
+  pasy mają nierówną pracę (pełny przebieg 5,4×, automat frontalny ≤ 2,6×), a małą Etnę MPI wręcz spowalnia, bo wymiana
+  warstw trwa dłużej niż krok ([docs/mpi.md](docs/mpi.md)).
+- **Wersje równoległe: podsumowanie** (testy wydajności): lawę najlepiej liczy OpenMP, siatki o równej pracy na
+  komórkę MPI na 7 procesach (E = 0,95–0,96); łącznie z optymalizacją sekwencyjną erupcja Etny liczy się
   **~1 900× szybciej** niż przed zmianami, CA classic 3D ~50×, MC ~40–47×. Przy rosnącym zadaniu (skalowanie słabe)
   MC i lawa utrzymują E = 0,87–1,00 na 8 rdzeniach, a CA classic ogranicza przepustowość pamięci RAM, nasycona już
-  przy 6 rdzeniach ([docs/etap-12-testy-wydajnosci.md](docs/etap-12-testy-wydajnosci.md)).
+  przy 6 rdzeniach ([docs/testy-wydajnosci.md](docs/testy-wydajnosci.md)).
 - Model pamięci z kodu (~40 B na komórkę w CA 3D) zgadza się z pomiarem szczytu procesu z dokładnością 0–4%.
 
 ![Czas symulacji CA i MC vs liczba komórek, 2D i 3D, z krotnością MC/CA](docs/img/raport/ca_vs_mc.png)
@@ -123,36 +125,40 @@ Zestawienie wyników przykładowych przypadków: [docs/wyniki.md](docs/wyniki.md
 
 ## Dokumentacja
 
-Spis dokumentacji — opisy etapów 1–12, architektura, uruchamianie, wyniki i raport: [docs/README.md](docs/README.md).
+Spis dokumentacji (dokumenty tematyczne od automatu komórkowego po zakładkę „Wydajność”, każdy także jako PDF,
+oraz architektura, uruchamianie, wyniki i raport): [docs/README.md](docs/README.md).
 
 ## Dalszy rozwój
 
-- **Optymalizacja sekwencyjna — zrobiona** (etap 8): automat frontalny, przesunięcia liniowe sąsiadów, ramka tylko
-  w osiach używanych przez sąsiedztwo, MC bez skoku warunkowego, tańsze statystyki MC i zapis plików tekstowych.
+- **Optymalizacja sekwencyjna: zrobiona** ([docs/optymalizacja-sekwencyjna.md](docs/optymalizacja-sekwencyjna.md)):
+  automat frontalny, przesunięcia liniowe sąsiadów, ramka tylko w osiach używanych przez sąsiedztwo, MC bez skoku warunkowego, tańsze statystyki MC i zapis plików tekstowych.
   Do zrobienia: warianty MC zmieniające proces losowy (próby tylko na granicach ziaren, losowanie bez powtórzeń,
   propozycja orientacji z sąsiadów) z walidacją statystyczną, mniejsze typy pól.
-- **OpenMP — zrobione** (etap 9): automat (frontalny i pełny przebieg) i MC w trybie szachownicy na 1–8 wątkach,
-  przypinanie do rdzeni wydajnościowych, `--threads`, `--thread-stats`. Do zrobienia: równoległe etykiety ziaren MC
+- **OpenMP: zrobione** ([docs/openmp.md](docs/openmp.md)): automat (frontalny i pełny przebieg) i MC w trybie
+  szachownicy na 1–8 wątkach, przypinanie do rdzeni wydajnościowych, `--threads`, `--thread-stats`. Do zrobienia: równoległe etykiety ziaren MC
   (dziś ~50% czasu MC przy 8 wątkach), równoległe przygotowanie terenu.
-- **MPI — zrobione** (etap 10): program `engine_mpi`, pasy warstw z warstwami brzegowymi wymienianymi przed każdym
-  krokiem (w MC — po każdym kolorze szachownicy), wariant wymiany tylko zmienionych warstw, tryb hybrydowy, przypinanie
+- **MPI: zrobione** ([docs/mpi.md](docs/mpi.md)): program `engine_mpi`, pasy warstw z warstwami brzegowymi
+  wymienianymi przed każdym krokiem (w MC po każdym kolorze szachownicy), wariant wymiany tylko zmienionych warstw, tryb hybrydowy, przypinanie
   procesów do rdzeni wydajnościowych. Do zrobienia: pasy ważone pracą albo podział w poziomie dla lawy, równoległe
-  etykiety ziaren MC ([docs/etap-10-mpi.md, punkt 11](docs/etap-10-mpi.md#11-wnioski-dla-etapu-11-typy-mpi-i-mpi-io)).
-- **Typy pochodne MPI i MPI-IO — zrobione** (etap 11, opcje `mpi.pack`, `mpi.bcast`, `mpi.io`; pliki bajtowo te same):
+  etykiety ziaren MC ([docs/mpi.md, punkt 11](docs/mpi.md#11-wnioski-dla-typów-mpi-i-mpi-io)).
+- **Typy pochodne MPI i MPI-IO: zrobione** (opcje `mpi.pack`, `mpi.bcast`, `mpi.io`; pliki bajtowo te same):
   wymiana warstw typem `MPI_Type_create_struct` bez pakowania skraca wymianę o 25–50%, a równoległy zapis MPI-IO
   zapisuje duże wyniki do 3× szybciej przy 4× mniejszej pamięci procesu 0
-  ([docs/etap-11-mpi-typy-io.md](docs/etap-11-mpi-typy-io.md)).
-- **Testy wydajności — zrobione** (etap 12): zestawienie przyspieszenia i efektywności, skalowanie słabe, pamięć
-  główna wątków i procesów, pamięć podręczna (symulacja cachegrind, czas na komórkę vs rozmiar siatki, przepustowość).
+  ([docs/mpi-typy-i-zapis.md](docs/mpi-typy-i-zapis.md)).
+- **Testy wydajności: zrobione** ([docs/testy-wydajnosci.md](docs/testy-wydajnosci.md)): zestawienie przyspieszenia
+  i efektywności, skalowanie słabe, pamięć główna wątków i procesów, pamięć podręczna (symulacja cachegrind, czas na komórkę vs rozmiar siatki, przepustowość).
   Do zrobienia: mniejszy ruch do pamięci w CA classic (mniejsze typy pól, bloki mieszczące się w L2), podział lawy
   w poziomie, pomiar na klastrze.
+- **Wyniki w GUI: zrobione** ([docs/zakladka-wydajnosc.md](docs/zakladka-wydajnosc.md)): zakładka „Wydajność”
+  z wynikami optymalizacji, OpenMP, MPI i testów wydajności, z linkiem „Pobierz PDF” pod każdym wykresem (dane z plików
+  pomiarów przez `tools/wydajnosc_gui.py`).
 
 ## Dane terenu
 
 Mapy `configs/heightmaps/etna.*` i `wezuwiusz.*` powstały z **AWS Terrain Tiles** (Tilezen / Mapzen „Terrain Tiles”;
-na tych obszarach głównie SRTM — U.S. Geological Survey — i EU-DEM — Copernicus, Unia Europejska). Wymagane
+na tych obszarach głównie SRTM (U.S. Geological Survey) i EU-DEM (Copernicus, Unia Europejska)). Wymagane
 przypisanie danych w pełnym brzmieniu: [configs/heightmaps/README.md](configs/heightmaps/README.md).
-Symulacje na prawdziwym terenie **nie są skalibrowane fizycznie** — to ilustracja modelu, nie prognoza.
+Symulacje na prawdziwym terenie **nie są skalibrowane fizycznie**: to ilustracja modelu, nie prognoza.
 
 ## Autor
 

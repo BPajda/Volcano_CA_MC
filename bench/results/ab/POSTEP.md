@@ -2,7 +2,7 @@
 
 Plik prowadzony na bieżąco w trakcie etapu 8 (optymalizacja wersji sekwencyjnej): każdy krok, jego pliki wyników,
 przyspieszenie, zgodność bitowa i obciążenie tła w czasie pomiaru. Opis metodyki i wnioski:
-[`docs/etap-8-optymalizacja-sekwencyjna.md`](../../../docs/etap-8-optymalizacja-sekwencyjna.md).
+[`docs/optymalizacja-sekwencyjna.md`](../../../docs/optymalizacja-sekwencyjna.md).
 
 Oznaczenia: `przed` = program sprzed etapu 8 (`bench/baseline/engine_przed_*`), `kN` = program po optymalizacji N
 (`bench/baseline/engine_kN_*`; binarki są lokalne, katalog `bench/baseline/` jest w `.gitignore`). Przyspieszenie

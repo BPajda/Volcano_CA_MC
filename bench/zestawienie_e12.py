@@ -7,7 +7,7 @@ kontrolnie (etap 10, `bench/results/mpi/skalowanie_mpi_*.csv`), typy pochodne w 
 `bench/results/mpi_io/pomiar_*_raw.csv`) — z T, S, E i częścią szeregową f (prawo Amdahla), osobno faza obliczeń
 (`caSim` / `mcSim`) i cały przebieg (`total`), MSVC i GCC, z kolumnami „źródło” (plik, etap) i „warunki”.
 
-Zasady porównywania (dokładniej w docs/etap-12-testy-wydajnosci.md, punkt 1):
+Zasady porównywania (dokładniej w docs/testy-wydajnosci.md, punkt 1):
 - S i E wariantu równoległego liczone od T(1) **z tej samej sesji pomiarowej** (etap 9: p = 1, etap 10: m1); wartości
   z różnych dni nie są mieszane w jednym ilorazie — poza „łącznym przyspieszeniem”, które jest iloczynem ilorazów
   z sesji (algorytm × równoległość) i dla kontroli także ilorazem wprost.

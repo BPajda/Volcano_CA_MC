@@ -1,18 +1,18 @@
-# Etap 3 — profilowanie i wydajność
+# Profil aplikacji
 
 Profil aplikacji, wymagania sprzętowe, testy wydajności i zapotrzebowanie na zasoby.
 
-**Stan na 09.10.2026.** Ten etap to analiza, nie optymalizacja.
+**Stan na 09.10.2026.** Ta część to analiza, nie optymalizacja.
 Kod symulacji (reguły CA i MC) się nie zmienił: wyniki `ca_result.bin` i `mc_result.bin` są bitowo
-identyczne z wynikami sprzed etapu, a czasy — w granicach ±1% (test A/B, punkt 1.4). Doszły tylko
+identyczne z wynikami sprzed profilowania, a czasy w granicach ±1% (test A/B, punkt 1.4). Doszły tylko
 pomiary (pamięć procesu, model pamięci, rozmiary plików, czasy faz), skrypty i presety profilowania.
-**Pomiary z tego etapu (`bench/results/profile_2026-10-09*`, `bench/profiles/`) są punktem
+**Pomiary profilu (`bench/results/profile_2026-10-09*`, `bench/profiles/`) są punktem
 odniesienia dla dalszej optymalizacji.**
 
 Najważniejsze wyniki w skrócie:
-- **CA lawy:** 68–83% czasu zajmuje `gatherLavaCandidates` — przeszukanie 26 sąsiadów każdej komórki
+- **CA lawy:** 68–83% czasu zajmuje `gatherLavaCandidates`, czyli przeszukanie 26 sąsiadów każdej komórki
   powietrza w każdym kroku. W `etna_3d` funkcja jest wywoływana 425 mln razy, a lawę znajduje w 0,013%
-  wywołań (55 tys.). Prawie cała praca CA jest zbędna — największy zysk w dalszej optymalizacji da automat
+  wywołań (55 tys.). Prawie cała praca CA jest zbędna; największy zysk w dalszej optymalizacji da automat
   frontalny (przetwarzanie tylko komórek przy lawie).
 - **CA classic 2D:** 45% czasu kroku to wypełnianie ramki w nieużywanej osi z (dwie pełne warstwy
   kopiowane co krok). Ta sama ramka zajmuje 2/3 pamięci siatki 2D (91 B na komórkę zamiast 40).
@@ -20,11 +20,11 @@ Najważniejsze wyniki w skrócie:
   7–13% hash, 9–20% statystyki (union-find).
 - **GCC vs MSVC w MC (2–3× na małych siatkach):** MSVC kompiluje porównanie orientacji sąsiada do
   skoku warunkowego, który procesor często źle przewiduje; GCC liczy je bez skoku. Po przepisaniu
-  jednej linii (i wyciągnięciu stałej części hasha przed pętlę) MSVC dorównuje GCC — sprawdzone
+  jednej linii (i wyciągnięciu stałej części hasha przed pętlę) MSVC dorównuje GCC, sprawdzone
   asemblerem, mikrobenchmarkiem i eksperymentem (punkt 2.4).
 - **Pamięć:** model teoretyczny (tablice × `sizeof`) zgadza się z pomiarem z dokładnością 0–4% (MSVC)
   dla siatek ≥ 1 mln komórek: CA 3D ≈ 40 B/komórkę, CA 2D ≈ 91 B, MC 3D ≈ 42 B, lawa + MC ≈ 47–49 B.
-  Siatka 1000³ wymaga ~40–50 GB RAM — to argument za MPI (planowany dalszy rozwój).
+  Siatka 1000³ wymaga ~40–50 GB RAM; to argument za MPI (planowany dalszy rozwój).
 - **Wyjście:** txt ≈ 17–21 B/komórkę, bin = 13 B/komórkę; zapis txt jest 19–27× wolniejszy niż bin
   (300³: 4,05 s vs 0,22 s, 536 MiB vs 335 MiB).
 
@@ -37,7 +37,7 @@ Pytania, na które odpowiada ten dokument:
 | Profil 3) Jakie mamy możliwości optymalizacji? | 2.3 (+ 2.4: GCC vs MSVC) |
 | Czas 1) IO, przygotowanie przestrzeni, alokacja pamięci | 3.1 |
 | Czas 2) Sama symulacja: zarodki 1/100…, von Neumann/Moore, 100², 1000², 10³, 100³ | 3.2, 3.3 |
-| Czas 3) Output — ile zajmują mikrostruktury | 4 |
+| Czas 3) Output: ile zajmują mikrostruktury | 4 |
 | Czas 4) Automatyzacja | 1.3 (`bench/run_profile.py`) |
 | Tytuł: wymagania sprzętowe, zapotrzebowanie na zasoby | 5 |
 
@@ -55,7 +55,7 @@ Pytania, na które odpowiada ten dokument:
 | System | Windows 11 Home 10.0.26200; WSL2: Ubuntu 22.04.5, jądro 5.15.167.4, 16 GB, 32 wirtualne procesory |
 | Dysk | SSD NVMe: C: SK hynix BC901 1 TB (tu `%TEMP%` z wynikami przebiegów MSVC), D: Samsung 990 EVO 2 TB (projekt); wyniki GCC na ext4 maszyny WSL |
 
-Program jest sekwencyjny — używa jednego rdzenia. Na tym procesorze ten sam program na rdzeniu E jest
+Program jest sekwencyjny: używa jednego rdzenia. Na tym procesorze ten sam program na rdzeniu E jest
 **2,3–2,9× wolniejszy** niż na rdzeniu P (`bench/profiles/pcore_vs_ecore.txt`), dlatego wszystkie
 pomiary są przypięte do procesora logicznego 2 (rdzeń P; procesor 0 obsługuje najwięcej przerwań).
 
@@ -63,7 +63,7 @@ pomiary są przypięte do procesora logicznego 2 (rdzeń P; procesor 0 obsługuj
 
 | Etykieta | Kompilator | Flagi (preset CMake) | Gdzie uruchamiany |
 |---|---|---|---|
-| `msvc-O2` | MSVC 19.38 (VS 2022) | `/O2 /Ob2 /DNDEBUG /W4 /permissive- /utf-8` (`msvc-release`) — **główny build** | Windows |
+| `msvc-O2` | MSVC 19.38 (VS 2022) | `/O2 /Ob2 /DNDEBUG /W4 /permissive- /utf-8` (`msvc-release`), **główny build** | Windows |
 | `msvc-O1` | MSVC 19.38 | `/O1 /DNDEBUG` (`msvc-o1`) | Windows |
 | `msvc-Debug` | MSVC 19.38 | `/Od /Ob0 /RTC1 /Zi /MDd`, asercje (`msvc-debug`) | Windows |
 | `gcc-O3` | GCC 11.4.0 | `-O3 -DNDEBUG -Wall -Wextra` (`gcc-release`) | WSL2 |
@@ -72,7 +72,7 @@ pomiary są przypięte do procesora logicznego 2 (rdzeń P; procesor 0 obsługuj
 | `gcc-Debug` | GCC 11.4.0 | `-g` bez optymalizacji, asercje (`gcc-debug`) | WSL2 |
 
 Profilowanie: `msvc-profile` (kod jak Release + PDB), `gcc-profile` (`-O2 -pg -g`), `gcc-o2` (callgrind)
-oraz warianty `*-noinline` (makro `VOLCANO_NOINLINE` zabrania wstawiania kluczowych funkcji — tylko do
+oraz warianty `*-noinline` (makro `VOLCANO_NOINLINE` zabrania wstawiania kluczowych funkcji; tylko do
 podziału czasu między funkcje; czasów tych buildów nie porównujemy).
 
 ### 1.3 Metoda i automatyzacja (`bench/run_profile.py`)
@@ -83,25 +83,25 @@ Skrypt (Python, tylko `pandas` + opcjonalnie `psutil`) generuje configi do folde
 odchylenie standardowe), `_raw.csv` (426 przebiegów), `_meta.json` (sprzęt, system, flagi, obciążenie tła)
 i `_benchmark.csv` (vector vs macierz).
 
-- **3 powtórzenia** każdego wariantu, buildy przeplatane (MSVC, GCC, MSVC, …) — dryf temperatury
+- **3 powtórzenia** każdego wariantu, buildy przeplatane (MSVC, GCC, MSVC, …), więc dryf temperatury
   rozkłada się równo. W tabelach: mediana, a w nawiasie [min–max].
-- **Przypięcie:** skrypt ustawia sobie powinowactwo `psutil.cpu_affinity([2])` (bez `psutil` —
+- **Przypięcie:** skrypt ustawia sobie powinowactwo `psutil.cpu_affinity([2])` (bez `psutil`:
   `SetProcessAffinityMask` przez `ctypes`), a procesy potomne je dziedziczą (skrypt to sprawdza). Działa jak
-  `start /affinity` z benchmarku etapu 1, ale bez pośrednictwa `cmd` (cytowanie ścieżek ze spacjami, kod
-  wyjścia, stderr). Silnik dostaje `HIGH_PRIORITY_CLASS`. W WSL: `taskset -c 2` — to wirtualny procesor
+  `start /affinity` z benchmarku pierwszej wersji silnika, ale bez pośrednictwa `cmd` (cytowanie ścieżek ze spacjami, kod
+  wyjścia, stderr). Silnik dostaje `HIGH_PRIORITY_CLASS`. W WSL: `taskset -c 2`, czyli wirtualny procesor
   maszyny WSL2, host może go planować na dowolnym rdzeniu fizycznym.
 - **WSL:** program, config i wyniki na ext4 maszyny wirtualnej (`/tmp`), nie na `/mnt/d` (9P jest wolne).
-  W pierwszym przebiegu WSL wyłączył bezczynną maszynę i wyczyścił `/tmp` (zniknął program GCC) — 247
+  W pierwszym przebiegu WSL wyłączył bezczynną maszynę i wyczyścił `/tmp` (zniknął program GCC); 247
   zapisanych przebiegów zostało, reszta dokończona wznowieniem (skrypt pomija zapisane przebiegi). Poprawka:
   proces podtrzymujący maszynę WSL przez cały pomiar i kopia programu przy jego braku.
 - **Tło:** w czasie pomiaru inne programy zajmowały 15–26% całego CPU (stały `WmiPrvSE.exe` ~2 procesory
-  logiczne od 7.10 — zapytania WMI programów działających w tle, np. narzędzi producenta laptopa — oraz
+  logiczne od 7.10: zapytania WMI programów działających w tle (np. narzędzi producenta laptopa) oraz
   przeglądarka; `_meta.json`). Rdzeń 2 nie był przez nie przypisany, ale wspólne
-  są L3 i limit mocy (niższe turbo).
+  są L3 i limit mocy (niższe taktowanie dynamiczne).
 - **Rzetelność:** pomiary < 5 ms traktuję jako zaszumione (rozrzut 10–50%, np. MC 10³ VN: 4,9–7,5 ms);
   nie wyciągam wniosków z różnic mniejszych niż rozrzut. Ten sam wariant w innej sesji (godzinę później)
-  był 5–10% wolniejszy — porównania przed/po optymalizacji robić w jednej sesji, naprzemiennie.
-- **Czas pomiaru:** cała macierz MSVC + GCC — 25 min (426 przebiegów + benchmark).
+  był 5–10% wolniejszy; porównania przed/po optymalizacji robić w jednej sesji, naprzemiennie.
+- **Czas pomiaru:** cała macierz MSVC + GCC: 25 min (426 przebiegów + benchmark).
 
 Ponowne uruchomienie (z katalogu projektu, po zbudowaniu presetów):
 
@@ -125,7 +125,7 @@ Macierz pomiarów (`--full`):
 | Duży przypadek | classic 300³, 100 zarodków, VN, periodyczne | 1 × 2 × 3 |
 | Szczegółowe fazy | `--timing-detail`: classic 100³ i 1000², MC 100³ i 1000² (20 MCS), `test_3d`, `etna_3d`, `lava_mc_3d` | 7 × 2 × 3 |
 
-2D w trybie classic i MC full leży w płaszczyźnie x–y (`nz = 1`). 100 zarodków w 10³ = 10% komórek —
+2D w trybie classic i MC full leży w płaszczyźnie x–y (`nz = 1`). 100 zarodków w 10³ = 10% komórek;
 ma sens (gęste zarodkowanie), więc nic nie pominięto.
 
 ### 1.4 Co doszło w kodzie (tylko pomiary)
@@ -134,24 +134,24 @@ ma sens (gęste zarodkowanie), więc nic nie pominięto.
 |---|---|
 | `core/ProcessInfo.*` | szczytowa pamięć procesu; kod systemowy w `#ifdef`: Windows `GetProcessMemoryInfo` (`PeakWorkingSetSize`, `PeakPagefileUsage`), Linux `getrusage(RUSAGE_SELF).ru_maxrss` + `/proc/self/statm` |
 | `core/MemoryModel.hpp` | model teoretyczny: każda duża tablica jest rejestrowana przy alokacji (rozmiar z `sizeof` × liczba elementów) i zwolnieniu; szczyt = największa suma żyjących tablic + jego skład |
-| `times.json` | wybrałem **rozszerzenie `times.json`** zamiast osobnego `resources.json` — jeden plik na przebieg (skrypt czyta jeden plik), istniejące sekcje bez zmian. Nowe: `memory` (start, koniec, szczyt RSS, szczyt pamięci prywatnej, `model` z bajtami na komórkę), `files` (rozmiar i czas zapisu każdego pliku), `detail` (tylko z `--timing-detail`) |
+| `times.json` | wybrałem **rozszerzenie `times.json`** zamiast osobnego `resources.json`: jeden plik na przebieg (skrypt czyta jeden plik), istniejące sekcje bez zmian. Nowe: `memory` (start, koniec, szczyt RSS, szczyt pamięci prywatnej, `model` z bajtami na komórkę), `files` (rozmiar i czas zapisu każdego pliku), `detail` (tylko z `--timing-detail`) |
 | `--timing-detail` | CA: czasy faz kroku (ramka, D(n), reguły, zamiana buforów); MC: czas pierwszego/ostatniego/min/max MCS, składniki statystyk (kopia mapy, union-find, energia). Zegar czytany raz na fazę kroku, nie na komórkę |
 | `LavaCA` | `stepTimed()` (krok z pomiarem faz), pętle reguł wydzielone do `updateLava()`/`updateClassic()`, `gridBytes()`/`auxBytes()` |
 | `PottsMC` | `bytes()`, `measure(…, McMeasureTimes*)` |
 | CMake | `VOLCANO_OPT_FLAG` (poziom optymalizacji presetów), `VOLCANO_PROFILE_NOINLINE`, `psapi`, cel `mc_kernels` (mikrobenchmark); presety `msvc-o1`, `msvc-profile(-noinline)`, `gcc-o0`, `gcc-o2(-noinline)`, `gcc-profile(-noinline)` |
-| Testy | `engine/tests/test_profile.cpp` — 7 przypadków (pamięć procesu, model, sekcje `times.json`, `--timing-detail`, identyczny wynik CA ze stoperem faz i bez) |
+| Testy | `engine/tests/test_profile.cpp`: 7 przypadków (pamięć procesu, model, sekcje `times.json`, `--timing-detail`, identyczny wynik CA ze stoperem faz i bez) |
 
 **Efekt obserwatora (znaleziony i usunięty).** Pierwsza wersja mierzyła fazy stoperem (`LapTimer`) wewnątrz
 `stepLava`. Stoper był wyłączony (bez odczytu zegara), a mimo to test A/B pokazał, że krok lawy w MSVC
-zwolnił o **9–10%** (`test_3d`: 2075 vs 1911 ms, `lava_mc_3d`: 1516 vs 1377 ms, rozrzuty rozłączne) — sama
+zwolnił o **9–10%** (`test_3d`: 2075 vs 1911 ms, `lava_mc_3d`: 1516 vs 1377 ms, rozrzuty rozłączne); sama
 obecność obiektu stopera zmieniła kod pętli. Wersja bez stopera wróciła do 1865 / 1354 ms. Dlatego krok
 z pomiarem faz ma osobną ścieżkę `stepTimed()`, a zwykły krok nie zawiera żadnego kodu pomiarowego.
 Test A/B końcowej wersji (stary vs nowy exe, przemiennie, 5–7 powtórzeń, przypięte): `test_3d` ×0,990,
-`lava_mc_3d` ×0,994, `classic_ref` ×0,994, `mc_full_3d` ×1,006, `mc_full_2d` ×1,005 — bez zmian.
+`lava_mc_3d` ×0,994, `classic_ref` ×0,994, `mc_full_3d` ×1,006, `mc_full_2d` ×1,005, bez zmian.
 
 **Poprawność:** `ca_result.bin`, `mc_result.bin` (i txt, `stats.json`, `mc_stats.csv`) dla `test_2d`,
 `test_3d`, `classic_ref`, `lava_mc_2d`, `lava_mc_3d`, `mc_full_2d`, `mc_full_3d` są bitowo identyczne
-z wynikami sprzed etapu — także z `--timing-detail` (29 plików, `cmp`). GCC daje te same pliki co MSVC.
+z wynikami sprzed profilowania, także z `--timing-detail` (29 plików, `cmp`). GCC daje te same pliki co MSVC.
 Poprawek błędów w symulacji nie było.
 
 ---
@@ -167,7 +167,7 @@ Cztery niezależne profile tych samych wariantów (`bench/profiles/`):
 | **profiler Visual Studio** (kolektor CPU Usage, `VSDiagnostics.exe`) + **xperf** | próbki stosu co ~1 ms (ETW), symbole z PDB | `msvc-profile`, `msvc-profile-noinline` | `msvc_*.txt` |
 | **mikrobenchmark** `mc_kernels` | czas pojedynczych składników próby MC | `msvc-release`, `gcc-release` | `mc_kernels_*.txt` |
 
-Warianty: CA lava 3D (`test_3d` — 5 przebiegów zsumowanych; `etna_3d`), CA classic 100³ VN 10 zarodków
+Warianty: CA lava 3D (`test_3d`: 5 przebiegów zsumowanych; `etna_3d`), CA classic 100³ VN 10 zarodków
 (`classic_ref`, 10 przebiegów), MC full 3D (`mc_full_3d`: 50³ Moore; dla gprof i MSVC 300 MCS, żeby zebrać
 dość próbek, dla callgrind 50 MCS).
 
@@ -193,7 +193,7 @@ dość próbek, dla callgrind 50 MCS).
 | `LavaCA::updateClassic` | **93,0** | **89,6** | **95,0** (46,8 w `Storage.hpp`: odczyt/zapis komórek) | **87,0** | **86,6** |
 | `Boundary::apply` | 5,1 | 7,1 | 1,4 | 5,9 | 6,0 |
 | `Simulation::buildStats` (`hypot` dla zasięgu) | 0,4 | 1,3 | 1,7 | 1,1 | 1,3 |
-| `CandidateVote::add` / `winner` | (wstawione) | 0,6 / 0,2 (29,4 mln / 10 mln wywołań) | 0,4 / 0,3 | — | 0,6 / — |
+| `CandidateVote::add` / `winner` | (wstawione) | 0,6 / 0,2 (29,4 mln / 10 mln wywołań) | 0,4 / 0,3 | brak | 0,6 / brak |
 | `toMicrostructure` (kopia wyniku) | — | 0,4 | — | 0,5 | 0,5 |
 
 **MC full** 50³, Moore, Q = 50:
@@ -207,19 +207,19 @@ dość próbek, dla callgrind 50 MCS).
 | `PottsMC::totalEnergy` / `measure` | 2,5 | 0,3 | 7,1 | 0,2 | 9,5 (`measure`) | 0,5 |
 | `PottsMC::syncFrame` | 0,0 (95 tys.) | 0,0 | 0,2 | — | 0,1 | — |
 
-Komentarz — co wspólne:
+Komentarz: co wspólne.
 - **Wszystkie profile wskazują te same gorące miejsca.** CA: pętla po komórkach i przeszukiwanie
   sąsiadów (`updateLava` + `gatherLavaCandidates` = 90–95%, `updateClassic` = 87–94%). MC: pętla prób
   i liczenie energii (75–80%), statystyki 9–20%. Reszta programu (config, teren, kratery, zapis) to < 2%
   czasu symulacji.
 - **Liczba wywołań z gprof pokazuje, że praca jest zbędna.** W lawie `gatherLavaCandidates` jest wywoływana
   dla każdej komórki AIR w każdym kroku (`etna_3d`: 424,7 mln razy przy 1,8 mln komórek × 284 kroki),
-  a `CandidateVote::add` (sąsiad jest lawą, która może wpłynąć) tylko 55 tys. razy — 0,013% wywołań coś
+  a `CandidateVote::add` (sąsiad jest lawą, która może wpłynąć) tylko 55 tys. razy: 0,013% wywołań coś
   znajduje. W classic `CandidateVote::winner` wywołano 10 mln razy (= nowe komórki ziaren, 1 mln na
   przebieg), a pętla obejmuje 71 mln komórek na przebieg.
 - **Linie źródła (callgrind, `test_3d`):** obliczenie indeksu sąsiada `x + sx·(y + sy·z)` (2 mnożenia na
-  odczyt) to **~29% wszystkich instrukcji programu**, sprawdzenie `type != Lava` — 18%, pętla po
-  przesunięciach — 11%, warunek `o.dz < 0` — 10%, warunek wypełniania zagłębień — 7%.
+  odczyt) to **~29% wszystkich instrukcji programu**, sprawdzenie `type != Lava` 18%, pętla po
+  przesunięciach 11%, warunek `o.dz < 0` 10%, warunek wypełniania zagłębień 7%.
 
 Co różni profile:
 - **Wstawianie (inline)** zmienia obraz najbardziej. W Release (`-O2`/`/O2`) prawie wszystko jest wstawione
@@ -227,10 +227,10 @@ Co różni profile:
   Wersje `noinline` pokazują podział, ale dodają narzut wywołań: `hashRand` jako osobna funkcja ma
   7–13% zamiast ~5% instrukcji w wersji wstawionej, a `unlikeNeighbors` 28–66%.
 - **gprof vs callgrind:** gprof mierzy czas (z chybieniami pamięci podręcznej i błędnymi przewidywaniami
-  skoków), callgrind — liczbę instrukcji. Dlatego `Boundary::apply` (kopiowanie pamięci) ma w gprof 5–7%,
+  skoków), callgrind liczbę instrukcji. Dlatego `Boundary::apply` (kopiowanie pamięci) ma w gprof 5–7%,
   a w callgrind 1,4%, a `Grains::label` (skoki po pamięci w union-find) w gprof więcej niż w callgrind.
 - **MSVC vs GCC:** MSVC nie wstawił `Neighborhood::offsetsFor` (~2% czasu lawy na samo wywołanie),
-  a `measure` (energia całkowita) zajmuje w MSVC 9,5% wobec 2,5% w GCC — ta sama pętla po sąsiadach jest
+  a `measure` (energia całkowita) zajmuje w MSVC 9,5% wobec 2,5% w GCC: ta sama pętla po sąsiadach jest
   w MSVC kilka razy wolniejsza (wyjaśnienie w 2.4).
 
 Profil Visual Studio z linii poleceń: `VSDiagnostics.exe start … /launch:engine.exe
@@ -250,15 +250,15 @@ administratora nie były potrzebne.
    rozwinąć `engine.exe` → `LavaCA<VectorStorage>::updateLava`.
 3. Zrzut ekranu zapisać jako `docs/img/vs_profiler_hotpath.png`.
 
-![Visual Studio — profil CPU (Najpopularniejsze funkcje + Ścieżka aktywna / Hot Path), lava test_3d, MSVC Release](img/vs_profiler_hotpath.png)
+![Visual Studio: profil CPU (Najpopularniejsze funkcje + Ścieżka aktywna / Hot Path), lava test_3d, MSVC Release](img/vs_profiler_hotpath.png)
 
-*Profiler Visual Studio (Użycie procesora CPU): `LavaCA<VectorStorage>::updateLava` — 93,2% czasu łącznie, 91,0% własnego; potem `computeDescent` 3,7%, `Neighborhood::offsetsFor` 1,9%, `Boundary::apply` 1,4%. Zgodne z gprof i callgrind (funkcja `gatherLavaCandidates` jest w MSVC wkompilowana w `updateLava`).*
+*Profiler Visual Studio (Użycie procesora CPU): `LavaCA<VectorStorage>::updateLava`: 93,2% czasu łącznie, 91,0% własnego; potem `computeDescent` 3,7%, `Neighborhood::offsetsFor` 1,9%, `Boundary::apply` 1,4%. Zgodne z gprof i callgrind (funkcja `gatherLavaCandidates` jest w MSVC wkompilowana w `updateLava`).*
 
 ### 2.2 Czy możemy coś poprawić?
 
-Tak — profil wskazuje konkretne miejsca (plik: funkcja, uzasadnienie):
+Tak: profil wskazuje konkretne miejsca (plik: funkcja, uzasadnienie):
 
-1. **`ca/LavaCA.hpp: updateLava/updateClassic + gatherLavaCandidates` — przetwarzanie wszystkich komórek
+1. **`ca/LavaCA.hpp: updateLava/updateClassic + gatherLavaCandidates`: przetwarzanie wszystkich komórek
    w każdym kroku.** 99,99% przeszukań sąsiadów w lawie nic nie znajduje (gprof: 424,7 mln `gather` vs 55 tys.
    `add`). W classic praca rośnie jak N × liczba kroków, a front rozrostu to cienka warstwa. Poza tym każda
    niezmieniona komórka (ROCK, BASALT, odległe AIR, gotowe ziarna) jest co krok kopiowana z `cur_` do
@@ -267,23 +267,23 @@ Tak — profil wskazuje konkretne miejsca (plik: funkcja, uzasadnienie):
    więc co krok kopiowane są dwie pełne warstwy z = −1 i z = 1 (2 × 1 mln komórek dla 1000²). Pomiar
    `--timing-detail`: **45% czasu kroku** classic 1000² (745 z 1639 ms; GCC 620 z 1384 ms), a ta sama ramka to
    2/3 pamięci siatki. Sąsiedztwo 2D tej osi w ogóle nie używa.
-3. **`core/Storage.hpp: VectorStorage::index` w pętli sąsiadów CA** — dostęp przez współrzędne (2 mnożenia na
+3. **`core/Storage.hpp: VectorStorage::index` w pętli sąsiadów CA**: dostęp przez współrzędne (2 mnożenia na
    każdego sąsiada) to ~29% instrukcji lawy (callgrind). MC używa już stałych przesunięć liniowych.
-   Mikrobenchmark: 27 odczytów przez (x, y, z) — MSVC 4,2 ns, GCC 1,3 ns.
-4. **`mc/PottsMC.hpp: unlikeNeighbors`** — dwa przejścia po sąsiadach (energia przed i po) i warunek
+   Mikrobenchmark: 27 odczytów przez (x, y, z): MSVC 4,2 ns, GCC 1,3 ns.
+4. **`mc/PottsMC.hpp: unlikeNeighbors`**: dwa przejścia po sąsiadach (energia przed i po) i warunek
    kompilowany przez MSVC do nieprzewidywalnego skoku (2.4). 60–66% czasu MC.
-5. **`mc/PottsMC.cpp: sweep`** — naiwny algorytm marnuje próby: akceptacja 13% (etap 2), większość komórek
+5. **`mc/PottsMC.cpp: sweep`**: naiwny algorytm marnuje próby: akceptacja 13% (dokument „Monte Carlo: krystalizacja (model Pottsa)”), większość komórek
    leży wewnątrz ziaren (każda zmiana podnosi energię, przy kT = 0 zawsze odrzucana), nowa orientacja
    losowana z całego Q. Dwa 64-bitowe dzielenia modulo na próbę (~2 ns każde).
-6. **`mc/Grains.cpp: Grains::label` + `PottsMC::totalEnergy`** — statystyki co 10 MCS liczą union-find po całej
+6. **`mc/Grains.cpp: Grains::label` + `PottsMC::totalEnergy`**: statystyki co 10 MCS liczą union-find po całej
    siatce: 9–20% czasu MC (gprof), `mcStats` = 3,5–10% `mcSim` w macierzy (1000²: 369 z 10 496 ms).
-7. **`io/ResultWriter.cpp: writeTxt`** — `snprintf("%.1f")` dla każdej komórki: zapis txt 25× wolniejszy niż
+7. **`io/ResultWriter.cpp: writeTxt`**: `snprintf("%.1f")` dla każdej komórki: zapis txt 25× wolniejszy niż
    bin (147 vs 5,5 ms dla 1 mln komórek), w classic 300³ to 17% czasu całkowitego.
-8. **`app/Simulation.cpp: runWith`** — kopia wyniku (`ca.result()`, 13 B/komórkę) przed zapisem podnosi szczyt
+8. **`app/Simulation.cpp: runWith`**: kopia wyniku (`ca.result()`, 13 B/komórkę) przed zapisem podnosi szczyt
    pamięci CA o 1/3; `mc/PottsMC` trzyma dwie listy domeny (16 B/komórkę, pojemność po `push_back`) także
    w trybie `full`, gdzie są zbędne; `McStage` trzyma etykiety ziaren z początku i końca (16 B/komórkę).
 
-### 2.3 Jakie mamy możliwości optymalizacji? — lista priorytetowa
+### 2.3 Jakie mamy możliwości optymalizacji?: lista priorytetowa
 
 Kategorie typowe dla optymalizacji sekwencyjnej. Zysk szacowany na podstawie profilu i eksperymentów; „bitowo” = wynik ma być
 identyczny (sprawdza to `cmp`/testy); „statystycznie” = zmienia się przebieg losowania, porównujemy krzywą
@@ -291,47 +291,47 @@ liczby ziaren.
 
 | # | Optymalizacja | Kategoria | Spodziewany zysk | Trudność | Ryzyko dla poprawności |
 |---|---|---|---|---|---|
-| 1 | **CA: automat frontalny** — przetwarzać tylko komórki LAVA i AIR sąsiadujące z lawą (lista aktywnych / bounding box), niezmienione komórki nie są kopiowane | inny sposób przetwarzania, redukcja kopiowania | lawa ×10–50 (`etna_3d`: 0,013% użytecznych przeszukań), classic ×5–100 (rośnie z liczbą kroków) | średnia–wysoka | średnie; wynik ma zostać bitowo identyczny (synchroniczność, hash zależy od indeksu, nie od kolejności) |
-| 2 | **MC: liczenie sąsiadów bez skoku + energia przed i po w jednym przejściu + stały początek hasha przed pętlą** | struktury/kod pętli, lepszy kod | MSVC ×2,5–2,6 na małych siatkach (zmierzone, 2.4), GCC ×1,2–1,5 (jedno przejście) | bardzo mała | brak — bitowo (sprawdzone) |
-| 3 | **Ramka tylko w osiach używanych przez sąsiedztwo (2D)** | obniżenie przydziału danych, redukcja kopiowania | classic 2D ×1,8, pamięć 2D 91 → ~39 B/komórkę | mała | małe — bitowo |
-| 4 | **CA: przesunięcia liniowe sąsiadów** zamiast indeksu z (x, y, z) | pamięć cache / arytmetyka adresów | ×1,2–1,4 (29% instrukcji to indeksy) | mała–średnia | małe — bitowo |
+| 1 | **CA: automat frontalny**: przetwarzać tylko komórki LAVA i AIR sąsiadujące z lawą (lista aktywnych / bounding box), niezmienione komórki nie są kopiowane | inny sposób przetwarzania, redukcja kopiowania | lawa ×10–50 (`etna_3d`: 0,013% użytecznych przeszukań), classic ×5–100 (rośnie z liczbą kroków) | średnia–wysoka | średnie; wynik ma zostać bitowo identyczny (synchroniczność, hash zależy od indeksu, nie od kolejności) |
+| 2 | **MC: liczenie sąsiadów bez skoku + energia przed i po w jednym przejściu + stały początek hasha przed pętlą** | struktury/kod pętli, lepszy kod | MSVC ×2,5–2,6 na małych siatkach (zmierzone, 2.4), GCC ×1,2–1,5 (jedno przejście) | bardzo mała | brak, bitowo (sprawdzone) |
+| 3 | **Ramka tylko w osiach używanych przez sąsiedztwo (2D)** | obniżenie przydziału danych, redukcja kopiowania | classic 2D ×1,8, pamięć 2D 91 → ~39 B/komórkę | mała | małe, bitowo |
+| 4 | **CA: przesunięcia liniowe sąsiadów** zamiast indeksu z (x, y, z) | pamięć cache / arytmetyka adresów | ×1,2–1,4 (29% instrukcji to indeksy) | mała–średnia | małe, bitowo |
 | 5 | **MC: próby tylko dla komórek na granicy ziaren, nowa orientacja z orientacji sąsiadów, losowanie bez powtórzeń (permutacja)** | inny sposób losowania komórek, redukcja problemu | ×3–10 na użyteczną zmianę (akceptacja 13% → kilkadziesiąt %) | średnia | statystycznie (inna trajektoria, ta sama fizyka) |
-| 6 | **Mniejsze typy:** MC orientacja `int32` → `uint16` + maska w orientacji (0 = poza domeną); CA classic bez `temp/solidStep/arrivalStep` (13 → 5 B), `flowId` `uint16`; bez list domeny w trybie `full` | mniejsze typy, pamięć cache | pamięć ×2–3 mniej; MC na dużych siatkach (pamięć: 89–250 ns/próbę zamiast 18–50) ×1,3–2 | średnia (szablony/typy) | małe — bitowo (format plików bez zmian) |
+| 6 | **Mniejsze typy:** MC orientacja `int32` → `uint16` + maska w orientacji (0 = poza domeną); CA classic bez `temp/solidStep/arrivalStep` (13 → 5 B), `flowId` `uint16`; bez list domeny w trybie `full` | mniejsze typy, pamięć cache | pamięć ×2–3 mniej; MC na dużych siatkach (pamięć: 89–250 ns/próbę zamiast 18–50) ×1,3–2 | średnia (szablony/typy) | małe, bitowo (format plików bez zmian) |
 | 7 | **Statystyki MC rzadziej / przyrostowo**, bez dwóch kopii etykiet | redukcja problemu, pamięć | −9–20% czasu MC, −16 B/komórkę szczytu | mała | brak (statystyki poza `mcSim`) |
-| 8 | **IO: zapis txt przez `std::to_chars(float)` zamiast `snprintf`, bin domyślnie dla dużych siatek; zapis bez kopii wyniku** | IO | txt ×2–4, szczyt pamięci CA −33% | mała | małe — test porównujący tekst |
-| 9 | **Kompilator i flagi:** GCC zamiast MSVC (lub clang-cl), `/GL`+LTCG, PGO, `-march=native`; MSVC: wymusić wstawienie `Neighborhood::offsetsFor` | lepsze kompilatory | CA lawa ×1,1–1,35 (GCC vs MSVC), MSVC +2% | mała | brak — bitowo (zgodność GCC/MSVC sprawdzona) |
+| 8 | **IO: zapis txt przez `std::to_chars(float)` zamiast `snprintf`, bin domyślnie dla dużych siatek; zapis bez kopii wyniku** | IO | txt ×2–4, szczyt pamięci CA −33% | mała | małe, test porównujący tekst |
+| 9 | **Kompilator i flagi:** GCC zamiast MSVC (lub clang-cl), `/GL`+LTCG, PGO, `-march=native`; MSVC: wymusić wstawienie `Neighborhood::offsetsFor` | lepsze kompilatory | CA lawa ×1,1–1,35 (GCC vs MSVC), MSVC +2% | mała | brak, bitowo (zgodność GCC/MSVC sprawdzona) |
 | 10 | **Szybszy generator / fastrange zamiast `%`** (`(h·n) >> 64`) | lepsze biblioteki | MC ~10% (zmierzone ×0,89–0,90) | mała | statystycznie (inne liczby losowe) |
 
-Proponowana kolejność: najpierw 2, 3, 4 i 7 (tanie, bitowo zgodne — szybki zysk i sprawdzian procedury
+Proponowana kolejność: najpierw 2, 3, 4 i 7 (tanie, bitowo zgodne: szybki zysk i sprawdzian procedury
 przed/po), potem 1 (największy zysk CA, wymaga starannego testu zgodności), 6, 8, a na końcu 5 i 10
-(zmieniają trajektorię losowania — porównanie statystyczne). Pomiar przed/po: te same warianty
+(zmieniają trajektorię losowania, więc porównanie statystyczne). Pomiar przed/po: te same warianty
 `run_profile.py`, ta sama sesja, przemiennie (A/B).
 
 ### 2.4 Dlaczego MC skompilowane GCC -O3 jest ~2–3× szybsze niż z MSVC /O2?
 
-Obserwacja z etapu 2 (2,3×) potwierdza się w macierzy: MC full 100² — 2,1–2,4×, 10³ — 2,9–3,3×, 50³ Moore — 2,6×,
+Obserwacja z pierwszej wersji MC (2,3×) potwierdza się w macierzy: MC full 100²: 2,1–2,4×, 10³: 2,9–3,3×, 50³ Moore: 2,6×,
 ale na siatkach 10⁶ komórek tylko 1,2–1,4×. CA classic: GCC 5–15% szybszy, lawa 1,1–1,35×.
 
 Sprawdziłem po kolei (szczegóły i fragmenty asemblera: `bench/profiles/gcc_vs_msvc_mc.txt`):
 
 1. **Asembler `PottsMC::sweep()`** (MSVC `/FAs /Qvec-report:2`, GCC `-S -fopt-info`). Pętla po sąsiadach
    (`unlikeNeighbors`, wstawiona w obu):
-   - **GCC:** `testb` maski (w trybie full zawsze 1 — skok przewidywalny), potem `cmpl` + **`setne`** + `addl` —
+   - **GCC:** `testb` maski (w trybie full zawsze 1, skok przewidywalny), potem `cmpl` + **`setne`** + `addl`:
      porównanie orientacji **bez skoku**, wskaźnik `spin_` trzymany w rejestrze;
-   - **MSVC:** `test`/`je` maski, ponowny odczyt wskaźnika `spin_` z obiektu, `cmp` + **`je`** — porównanie
+   - **MSVC:** `test`/`je` maski, ponowny odczyt wskaźnika `spin_` z obiektu, `cmp` + **`je`**: porównanie
      orientacji to **skok warunkowy**, potem `mov eax,1`/`xor eax,eax` i `jmp`.
-   Wektoryzacji nie ma w żadnym (pętla po przesunięciach z `std::vector`, długość nieznana; MSVC: „1200” —
+   Wektoryzacji nie ma w żadnym (pętla po przesunięciach z `std::vector`, długość nieznana; MSVC: „1200”,
    zależność pętli). `hashRand` dla wyboru komórki i orientacji oba wstawiają i oba współdzielą część
-   kaskady zależną od numeru próby, ale GCC liczy dwa pierwsze ogniwa (`seed`, krok) raz przed pętlą —
-   w próbie 3× splitmix64 — a MSVC w każdej próbie liczy pełną kaskadę dla wyboru komórki (4×) i jedno
+   kaskady zależną od numeru próby, ale GCC liczy dwa pierwsze ogniwa (`seed`, krok) raz przed pętlą
+   (w próbie 3× splitmix64), a MSVC w każdej próbie liczy pełną kaskadę dla wyboru komórki (4×) i jedno
    ogniwo dla orientacji: 5× splitmix64. Dzielenie modulo: oba używają `div` (dzielnik nieznany
    w czasie kompilacji).
 2. **Mikrobenchmark składników** (`bench/micro/mc_kernels.cpp`, ten sam kod, oba kompilatory, przypięte):
-   `hashRand` 1,3 vs 1,4 ns, modulo 1,95 vs 1,92 ns, `exp` 5,4 vs 4,5 ns — **tu różnicy nie ma**. Liczenie
-   sąsiadów (energia przed + po, VN 6): przy losowych orientacjach (sąsiad prawie zawsze „inny” —
-   skok przewidywalny) MSVC 17,9 ns, GCC 16,0 ns; przy blokach 3×3×3 (jak po zgrubieniu ziaren — wynik
+   `hashRand` 1,3 vs 1,4 ns, modulo 1,95 vs 1,92 ns, `exp` 5,4 vs 4,5 ns: **tu różnicy nie ma**. Liczenie
+   sąsiadów (energia przed + po, VN 6): przy losowych orientacjach (sąsiad prawie zawsze „inny”,
+   skok przewidywalny) MSVC 17,9 ns, GCC 16,0 ns; przy blokach 3×3×3 (jak po zgrubieniu ziaren: wynik
    porównania nieprzewidywalny) **MSVC 38,9 ns, GCC 15,6 ns**. Czas MSVC zależy od przewidywalności
-   danych, czas GCC nie — to sygnatura błędnie przewidywanych skoków (~15–20 cykli każdy). Zgadza się
+   danych, czas GCC nie; to sygnatura błędnie przewidywanych skoków (~15–20 cykli każdy). Zgadza się
    z macierzą: energia całkowita (sama pętla po sąsiadach) w MSVC 3,7× wolniej (144 vs 39 ms, MC 100³ Moore),
    a czas MCS w MSVC rośnie w miarę zgrubiania (174 → 197 ms), w GCC nie (155 → 143 ms).
 3. **Eksperyment** (kopie silnika w katalogu tymczasowym, nie w projekcie; MSVC, przemiennie, 5 powtórzeń):
@@ -344,15 +344,15 @@ Sprawdziłem po kolei (szczegóły i fragmenty asemblera: `bench/profiles/gcc_vs
 | 1000², VN, 10 MCS | 673 ms | 744 | 807 | 721 | — |
 
    Zmiana bez skoku to jedna linia: `n += static_cast<int>(mask_[j] & kInDomain) & static_cast<int>(spin_[j] != s);`
-   — wynik bitowo identyczny. Zastąpienie `%` przez mnożenie (fastrange) dało tylko ×0,89–0,90 i zmienia wynik.
+   (wynik bitowo identyczny). Zastąpienie `%` przez mnożenie (fastrange) dało tylko ×0,89–0,90 i zmienia wynik.
 
 **Odpowiedź:** różnica wynika z generowanego kodu, nie z systemu ani bibliotek. Główna przyczyna to skok
 warunkowy w porównaniu orientacji sąsiada w MSVC (błędne przewidywania skoków; GCC: `setne`), drugorzędna
-— brak wyciągnięcia stałej części kaskady hasha przed pętlę (~9%). Po obu poprawkach w źródle MSVC jest
+oraz brak wyciągnięcia stałej części kaskady hasha przed pętlę (~9%). Po obu poprawkach w źródle MSVC jest
 równie szybki jak GCC. Na dużych siatkach różnica maleje do 1,2–1,4×, bo czas próby dominują chybienia
 pamięci podręcznej przy losowym wyborze komórki (orientacje 4 MB + listy domeny 16 MB > L2 2 MB);
 poprawka skoku nic tam nie daje (wynik w szumie). W CA lawy przewagę GCC (1,1–1,35×) tłumaczy głównie
-arytmetyka adresów sąsiadów (mikrobenchmark: indeks z (x, y, z) — MSVC 4,2 ns, GCC 1,3 ns) i niewstawione
+arytmetyka adresów sąsiadów (mikrobenchmark: indeks z (x, y, z): MSVC 4,2 ns, GCC 1,3 ns) i niewstawione
 `offsetsFor` w MSVC.
 
 ---
@@ -378,16 +378,16 @@ Mediany z 3 powtórzeń [ms], MSVC /O2 (rozrzut sekcji przygotowania < 20%, wart
 
 ![Udział faz w czasie całkowitym](img/profile_phases.png)
 
-- **Odczyt configu** (JSON + walidacja) — stałe ~0,25 ms (GCC/Linux 0,09 ms), niezależnie od rozmiaru.
+- **Odczyt configu** (JSON + walidacja): stałe ~0,25 ms (GCC/Linux 0,09 ms), niezależnie od rozmiaru.
 - **Alokacja** = przydział i wyzerowanie obu buforów z ramką: ~3,8 GB/s (300³: 716 MB w 190 ms, 1000²: 78 MB
   w 20 ms). To koszt pierwszego dotknięcia stron (błędy stron systemu), nie samego `new`. W porównaniu
   z symulacją pomijalna: 0,1–1% czasu.
-- **Teren** (stożek + szum + priority-flood) i **kratery/zarodki** — < 0,1% (300³: rozmieszczenie 100
-  zarodków 13,5 ms — Fisher–Yates po wolnych komórkach).
-- **Zapis** — jedyna faza IO o znaczeniu: dla małych siatek dominuje w czasie całkowitym (100² — 40%,
-  10³ — 51%: koszt otwarcia plików i bufora 1 MB), dla classic 10⁶–2,7·10⁷ komórek 3–23% (głównie txt;
+- **Teren** (stożek + szum + priority-flood) i **kratery/zarodki**: < 0,1% (300³: rozmieszczenie 100
+  zarodków 13,5 ms, Fisher–Yates po wolnych komórkach).
+- **Zapis**: jedyna faza IO o znaczeniu: dla małych siatek dominuje w czasie całkowitym (100²: 40%,
+  10³: 51%, koszt otwarcia plików i bufora 1 MB), dla classic 10⁶–2,7·10⁷ komórek 3–23% (głównie txt;
   mniej, gdy symulacja jest długa), dla lawy 0,1–2%.
-- **„Pozostałe”** (szare na wykresie): tworzenie folderu wyników, `config_used.json`, podsumowanie w konsoli —
+- **„Pozostałe”** (szare na wykresie): tworzenie folderu wyników, `config_used.json`, podsumowanie w konsoli:
   1–2 ms, widoczne tylko dla siatek < 10⁴ komórek.
 - Wniosek: dla każdego przypadku ≥ 10⁵ komórek **symulacja to 74–99,8% czasu**, dlatego profil (rozdział 2)
   dotyczy pętli symulacji.
@@ -423,7 +423,7 @@ Mediany z 3 powtórzeń [ms], MSVC /O2 (rozrzut sekcji przygotowania < 20%, wart
 | 100×100×100 | 100 | VN | 43 | 299 [281–302] | 257 [253–259] | 7,0 | 0,86 |
 | 100×100×100 | 100 | Moore | 23 | 394 [384–409] | 344 [314–361] | 17,1 | 0,87 |
 
-\* < 5 ms — zaszumione (rozrzut 10–20%), bez wniosków.
+\* < 5 ms: zaszumione (rozrzut 10–20%), bez wniosków.
 
 ![Czas i liczba kroków vs liczba zarodków](img/profile_time_vs_seeds.png)
 
@@ -457,14 +457,14 @@ Mediany z 3 powtórzeń [ms], MSVC /O2 (rozrzut sekcji przygotowania < 20%, wart
 ![Czas symulacji vs liczba komórek](img/profile_time_vs_cells.png)
 ![Koszt jednostkowy](img/profile_ns_per_cell.png)
 
-Wnioski — jak czas skaluje się z liczbą komórek i zarodków, i dlaczego:
+Wnioski: jak czas skaluje się z liczbą komórek i zarodków, i dlaczego:
 - **CA: czas = c · N · (liczba kroków)**, a koszt na komórkę i krok `c` jest prawie stały (VN: 2D 8,5–9,2 ns,
   3D 6,7–7,0 ns; Moore: 2D 10–12 ns, 3D 17–26 ns). Każdy krok przechodzi przez **wszystkie** komórki, także
   te już zajęte i te daleko od frontu (2.2, pkt 1).
 - **Liczba kroków** to promień największego „pustego” obszaru w metryce sąsiedztwa: dla 1 zarodka
   i brzegu periodycznego VN = suma połówek boków (100² → 100, 1000² → 1000, 100³ → 150), Moore = połowa
   najdłuższego boku (50, 500, 50). Przy stałej liczbie zarodków liczba kroków rośnie jak N^(1/d), więc czas
-  rośnie **jak N^(1+1/d)**: 2D 100² → 1000² (×100 komórek) — czas ×1430 (≈ N^1,58), 3D 10³ → 100³ (×1000) —
+  rośnie **jak N^(1+1/d)**: 2D 100² → 1000² (×100 komórek): czas ×1430 (≈ N^1,58), 3D 10³ → 100³ (×1000):
   ×4700 (≈ N^1,22). Na wykresie log–log CA ma nachylenie > 1.
 - **Więcej zarodków = mniej kroków = krócej:** 1 → 10 → 100 zarodków skraca 1000² VN z 9,2 s do 5,0 s i 1,7 s.
   Spadek jest wolniejszy niż teoretyczne (zarodki)^(−1/d), bo koniec wyznacza największa luka między
@@ -477,7 +477,7 @@ Wnioski — jak czas skaluje się z liczbą komórek i zarodków, i dlaczego:
 - **Lawa** kosztuje 32 ns na komórkę i krok (`etna_3d`), 4–5× więcej niż classic: reguły (spadek, podparcie,
   kierunek największego spadku, wypełnianie zagłębień) i dodatkowy przebieg D(n).
 
-### 3.3 CA vs MC (zapowiedź wykresu z etapu 5)
+### 3.3 CA vs MC (zapowiedź wykresu z dokumentu „Kolejka zadań, serie, dane wejściowe”)
 
 **MC full** (Q = 50, 100 MCS, periodyczne; ns/próbę = mcSim / (N · MCS)):
 
@@ -493,15 +493,15 @@ Wnioski — jak czas skaluje się z liczbą komórek i zarodków, i dlaczego:
 | 100×100×100 | Moore | 24 956 [24 699–25 116] | 17 369 [17 315–17 895] | 249,6 | 173,7 | 1,44 | 1 656 |
 
 - **MC: czas = c · N · MCS** (liczba MCS zadana, nie zależy od rozmiaru). Koszt próby zależy od tego, czy
-  dane mieszczą się w pamięci podręcznej: 10⁴ komórek — 18–53 ns, 10⁶ komórek — 89–250 ns (losowy wybór
+  dane mieszczą się w pamięci podręcznej: 10⁴ komórek: 18–53 ns, 10⁶ komórek: 89–250 ns (losowy wybór
   komórki = losowy dostęp do 20 MB danych: orientacje, maska, listy domeny). Stąd nachylenie log–log
   MC ≈ 1,1–1,2 zamiast 1.
-- **Na tej samej siatce MC jest 20–30× wolniejsze od CA:** 100³ VN — CA classic (10 zarodków) 0,50 s,
-  MC 100 MCS 10,9 s (×22); Moore — 0,77 s vs 25,0 s (×32); 1000² VN — 4,95 s vs 10,5 s (×2,1, bo CA
+- **Na tej samej siatce MC jest 20–30× wolniejsze od CA:** 100³ VN: CA classic (10 zarodków) 0,50 s,
+  MC 100 MCS 10,9 s (×22); Moore: 0,77 s vs 25,0 s (×32); 1000² VN: 4,95 s vs 10,5 s (×2,1, bo CA
   potrzebuje tu 580 kroków). Krok CA to jedno przejście po komórkach w kolejności pamięci, krok MCS to
   N losowych dostępów, 2 przejścia po sąsiadach i 2 hashe na próbę.
 - W CA + MC na lawie (`lava_mc_3d`) MC to tylko 5% czasu: domena (bazalt) to 1,3% przestrzeni.
-- Statystyki MC (`mcStats`, union-find co 10 MCS) — 3,5–10% `mcSim`.
+- Statystyki MC (`mcStats`, union-find co 10 MCS): 3,5–10% `mcSim`.
 
 ### 3.4 Debug vs Release, poziomy optymalizacji, MSVC vs GCC
 
@@ -514,8 +514,8 @@ Czas samej symulacji (mediana z 3 powtórzeń [ms]; w nawiasie krotność wzglę
 | MC full 100³, Moore, 10 MCS | 2 136 (1,00) | 2 293 (1,07) | 4 575 (2,14) | 1 757 (0,82) | 1 777 (0,83) | 5 146 (2,41) | 5 287 (2,48) |
 | MC full 200², VN, 100 MCS | 164 (1,00) | 185 (1,12) | 415 (2,53) | 82 (0,50) | 75 (0,46) | 530 (3,22) | 541 (3,29) |
 
-Rozrzut (max−min)/mediana: lawa, MC 100³ — 0,5–3%; MC 200² GCC 16–19%; **CA classic 100³ w tej grupie
-15–48%** (przebiegi przeplatane z długimi przebiegami Debug — nagrzany procesor); różnic < 10% w tym wierszu
+Rozrzut (max−min)/mediana: lawa, MC 100³: 0,5–3%; MC 200² GCC 16–19%; **CA classic 100³ w tej grupie
+15–48%** (przebiegi przeplatane z długimi przebiegami Debug, nagrzany procesor); różnic < 10% w tym wierszu
 nie interpretuję.
 
 ![Kompilatory i poziomy optymalizacji](img/profile_compilers.png)
@@ -527,11 +527,11 @@ nie interpretuję.
   i błędnie przewidziane skoki, a tych Debug nie pogarsza.
 - **-O0 vs Debug w GCC:** asercje dodają 2–13% (-O0 z `NDEBUG` vs Debug).
 - **/O1 vs /O2:** /O1 (minimalny rozmiar) wolniejszy o 3–12%. **-O2 vs -O3:** różnice ±8%, w granicach
-  rozrzutu — -O3 nie daje tu nic istotnego (brak pętli do wektoryzacji).
-- **MSVC vs GCC:** GCC szybszy prawie wszędzie — CA classic o 0–18% (w jednym wariancie, 100³ VN 1 zarodek,
+  rozrzutu; -O3 nie daje tu nic istotnego (brak pętli do wektoryzacji).
+- **MSVC vs GCC:** GCC szybszy prawie wszędzie: CA classic o 0–18% (w jednym wariancie, 100³ VN 1 zarodek,
   MSVC szybszy o 5%), lawa o 10–35%, MC 2–3× na małych siatkach i 1,2–1,4× na dużych. Przyczyny: 2.4.
 
-### 3.5 Reprezentacja siatki: vector vs macierz (benchmark z etapu 1, powtórzony)
+### 3.5 Reprezentacja siatki: vector vs macierz (benchmark z pierwszej wersji silnika, powtórzony)
 
 `engine --benchmark --repeats 5` (proces przypięty, MSVC /O2), mediana czasu samego automatu:
 
@@ -548,8 +548,8 @@ nie interpretuję.
 | 200×1×100 | 20 000 | 1 | 351 | 94,9 | 112,2 | 1,18 | tak | lava/Moore |
 | 64×64×48 | 196 608 | 3 | 284 | 1 643 | 1 864 | 1,13 | tak | lava/Moore |
 
-Macierz jest wolniejsza w każdym przypadku (×1,05–1,67), najbardziej w dużym 2D. W etapie 1 lawa
-64×64×48 wyszła na korzyść macierzy (×0,76–0,98) — z przypięciem do rdzenia P i 5 powtórzeniami tego
+Macierz jest wolniejsza w każdym przypadku (×1,05–1,67), najbardziej w dużym 2D. W pierwszej wersji silnika lawa
+64×64×48 wyszła na korzyść macierzy (×0,76–0,98); z przypięciem do rdzenia P i 5 powtórzeniami tego
 efektu nie ma (×1,13), był to szum pomiaru bez przypięcia.
 
 ### 3.6 Fazy wewnątrz kroku (`--timing-detail`)
@@ -569,12 +569,12 @@ efektu nie ma (×1,13), był to szum pomiaru bez przypięcia.
 
 ![Fazy wewnątrz CA i MC](img/profile_detail.png)
 
-Zamiana buforów (`swap` wskaźników) kosztuje mikrosekundy — podwójny bufor nie kopiuje danych. Ramka 2D
+Zamiana buforów (`swap` wskaźników) kosztuje mikrosekundy; podwójny bufor nie kopiuje danych. Ramka 2D
 (pkt 2.2/2) i energia w MSVC (2.4) to dwa największe „niespodziewane” koszty.
 
 ---
 
-## 4. Output — ile zajmują mikrostruktury
+## 4. Output: ile zajmują mikrostruktury
 
 Rozmiary z `times.json` → `files` (MiB = 2²⁰ B), czas zapisu każdego pliku osobno (mediana [min–max] [ms]):
 
@@ -591,20 +591,20 @@ Rozmiary z `times.json` → `files` (MiB = 2²⁰ B), czas zapisu każdego pliku
 | 1000×1000 | 13,0 MiB | 13,6 | 3,81 MiB | 4,0 | 64,7 ms | 3,5 ms |
 | 100×100×100 | 11,9 MiB | 12,5 | 3,81 MiB | 4,0 | 65,5 ms | 1,7 ms |
 
-\* < 5 ms — zaszumione.
+\* < 5 ms: zaszumione.
 
 ![Rozmiar plików i czas zapisu](img/profile_output.png)
 
 Wzory (N = nx·ny·nz):
 - `ca_result.bin` = 20 B nagłówka + **13 B/komórkę** (`uint8 type` + `int32 flowId` + `float temp` +
-  `uint16 solidStep` + `uint16 arrivalStep`) — dokładnie, niezależnie od zawartości.
+  `uint16 solidStep` + `uint16 arrivalStep`): dokładnie, niezależnie od zawartości.
 - `ca_result.txt` ≈ (cyfry x + y + z) + cyfry `flowId` + 1 (typ) + 3–6 (temperatura `%.1f`) + 6 (spacje,
-  nowa linia) ≈ **15–21 B/komórkę** (rośnie z liczbą cyfr współrzędnych: 10³ — 15, 300³ — 21).
+  nowa linia) ≈ **15–21 B/komórkę** (rośnie z liczbą cyfr współrzędnych: 10³: 15, 300³: 21).
 - `mc_result.bin` = 16 B + **4 B/komórkę**, `mc_result.txt` ≈ 12–14 B/komórkę.
-- Pozostałe pliki (`config_used.json` ~1 KB, `stats.json` 1–10 KB, `mc_stats.csv` < 1 KB) — pomijalne.
+- Pozostałe pliki (`config_used.json` ~1 KB, `stats.json` 1–10 KB, `mc_stats.csv` < 1 KB): pomijalne.
 
 Wnioski: plik txt jest 1,3–1,6× większy i **19–27× wolniej zapisywany** niż bin (147 vs 5,5 ms dla 10⁶
-komórek; 4,05 s vs 0,22 s dla 300³ — przy 300³ zapis txt to 17% czasu całkowitego). Prędkość zapisu bin
+komórek; 4,05 s vs 0,22 s dla 300³; przy 300³ zapis txt to 17% czasu całkowitego). Prędkość zapisu bin
 to ~1,6–2,4 GB/s (pamięć podręczna systemu plików i dysk NVMe), txt ~130–140 MB/s (formatowanie liczb
 `snprintf`). GCC/Linux zapisuje txt ~25% szybciej (inna implementacja `snprintf`), bin podobnie.
 
@@ -614,9 +614,9 @@ to ~1,6–2,4 GB/s (pamięć podręczna systemu plików i dysk NVMe), txt ~130�
 
 ### 5.1 Pamięć: wzór teoretyczny vs pomiar
 
-Model w kodzie (`MemoryModel`, rozmiary z `sizeof`), N — komórki, N_f = (nx+2)(ny+2)(nz+2) — komórki z ramką:
+Model w kodzie (`MemoryModel`, rozmiary z `sizeof`), N: komórki, N_f = (nx+2)(ny+2)(nz+2): komórki z ramką:
 
-| Etap | Tablice | Bajty |
+| Faza | Tablice | Bajty |
 |---|---|---|
 | CA (oba bufory `VectorStorage`) | 2 × (1 + 4 + 4 + 2 + 2) B × N_f | **26 · N_f** |
 | CA lava: D(n), poziom przelewu, mapa wysokości | 1 B × N + 2 × 4 B × nx·ny | ~1 · N |
@@ -628,7 +628,7 @@ Model w kodzie (`MemoryModel`, rozmiary z `sizeof`), N — komórki, N_f = (nx+2
 
 Szczyt CA = 26·N_f + 13·N (+ N w lawie). Dla dużych siatek 3D N_f ≈ N, więc **≈ 39–40 B/komórkę**;
 dla 2D (x–y) ramka obejmuje oś z: N_f ≈ 3N → **≈ 91 B/komórkę**. Szczyt MC full 3D ≈ 5·N_f + 16·N + 20·N
-≈ **42 B/komórkę** (2D: ≈ 52). Plan zakładał ~24 B/komórkę — pominął kopię wyniku, ramkę i statystyki MC.
+≈ **42 B/komórkę** (2D: ≈ 52). Plan zakładał ~24 B/komórkę, ale pominął kopię wyniku, ramkę i statystyki MC.
 
 Pomiar (szczyt zbioru roboczego `PeakWorkingSetSize` minus pamięć na starcie programu = dane):
 
@@ -651,7 +651,7 @@ Pomiar (szczyt zbioru roboczego `PeakWorkingSetSize` minus pamięć na starcie p
   co do 0,1%. Reszta to bufor zapisu txt (1 MB), sterta biblioteki standardowej i kod.
 - Małe siatki (< 10⁵) są zdominowane przez stały narzut programu: 5,1 MiB na starcie (Windows) / 2,0 MiB
   (Linux) + ~0,5–1,5 MiB buforów IO i sterty.
-- MC 100³ Moore: pomiar o 1% poniżej modelu — model liczy pojemność list domeny (`capacity()`), a nieużyta
+- MC 100³ Moore: pomiar o 1% poniżej modelu: model liczy pojemność list domeny (`capacity()`), a nieużyta
   część rezerwy po `push_back` nie jest dotykana, więc nie trafia do zbioru roboczego.
 - GCC/Linux (`ru_maxrss`): 1,03–1,13 × model (alokator glibc: osobne `mmap` dla dużych bloków, zaokrąglenia
   do stron, sterty wątków).
@@ -690,7 +690,7 @@ MC: 110–250 ns/próbę dla siatek poza pamięcią podręczną):
 | CA 500³ (ekstrapolacja) | ~5 GB | ~4,2 GB | ~3 min | 8 GB RAM | 16 GB RAM, SSD, zapis bin |
 | 1000³ | ~40–50 GB | 13–34 GB | ~40 min (sam CA) | — | **klaster / MPI (dalszy rozwój)** |
 
-- Program używa **jednego rdzenia** — liczy się wydajność jednowątkowa. Rdzeń E i9-13900HX jest 2,3–2,9×
+- Program używa **jednego rdzenia**, więc liczy się wydajność jednowątkowa. Rdzeń E i9-13900HX jest 2,3–2,9×
   wolniejszy od rdzenia P; na procesorach hybrydowych warto przypiąć program do rdzenia P.
 - Dla MC ważna jest pamięć podręczna: przy 10⁶ komórek koszt próby rośnie 2–5× względem siatek, które
   mieszczą się w L2.
@@ -698,11 +698,11 @@ MC: 110–250 ns/próbę dla siatek poza pamięcią podręczną):
 
 ### 5.4 Dlaczego bardzo duże siatki wymagają MPI
 
-1000³ potrzebuje ~40 GB na same tablice CA (~50 GB z MC) — więcej niż RAM typowego komputera (32 GB) — oraz
+1000³ potrzebuje ~40 GB na same tablice CA (~50 GB z MC), więcej niż RAM typowego komputera (32 GB) oraz
 ~40 min CA i godzin MC na jednym rdzeniu. OpenMP (pamięć wspólna) skróci czas, ale nie zmniejszy pamięci.
 MPI dzieli przestrzeń na pasy/kostki między procesy na wielu maszynach: przy 8 procesach każdy trzyma
 ~5–6 GB plus ramkę wymiany (warstwa 1000² × 13 B = 13 MB na ścianę na krok). Ramka 1 komórki, którą siatka
-ma od etapu 1, stanie się wtedy komórkami nadmiarowymi (ghost cells), a losowość z hasha położenia
+ma od pierwszej wersji, stanie się wtedy komórkami nadmiarowymi (ghost cells), a losowość z hasha położenia
 gwarantuje ten sam wynik niezależnie od liczby procesów. Zapis 13–21 GB wymaga równoległego IO.
 
 ---
@@ -713,18 +713,18 @@ gwarantuje ten sam wynik niezależnie od liczby procesów. Zapis 13–21 GB wyma
    sąsiadów, które w 99,99% przypadków nic nie znajduje; classic: czas ∝ N · kroki. Automat frontalny to
    najważniejsza planowana optymalizacja (szacunkowo ×10–50 dla lawy).
 2. **Czas CA = N × liczba kroków × 7–30 ns**, a liczba kroków zależy od największej luki między zarodkami
-   (∝ N^(1/d)) — stąd 1 zarodek w 1000² trwa 5,5× dłużej niż 100 zarodków, a czas rośnie jak N^1,2–1,6.
+   (∝ N^(1/d)); stąd 1 zarodek w 1000² trwa 5,5× dłużej niż 100 zarodków, a czas rośnie jak N^1,2–1,6.
 3. **MC jest 20–30× wolniejsze od CA na tej samej siatce** i na dużych siatkach ogranicza je pamięć (koszt próby
    ×2–5 poza L2). Naiwny algorytm marnuje 87% prób.
 4. **Różnica GCC vs MSVC w MC (2–3×) to jeden skok warunkowy** w liczeniu sąsiadów (błędne przewidywania
-   skoków w MSVC) + niewyciągnięty stały fragment hasha. Jedna linia kodu wyrównuje kompilatory —
+   skoków w MSVC) + niewyciągnięty stały fragment hasha. Jedna linia kodu wyrównuje kompilatory:
    sprawdzone asemblerem, mikrobenchmarkiem i eksperymentem.
-5. **Model pamięci z kodu przewiduje szczyt procesu z dokładnością 0–4%:** ~40 B/komórkę (CA 3D), 91 B (CA 2D —
+5. **Model pamięci z kodu przewiduje szczyt procesu z dokładnością 0–4%:** ~40 B/komórkę (CA 3D), 91 B (CA 2D:
    ramka w nieużywanej osi), 42–52 B (MC), 47–49 B (lawa + MC). Laptop z 32 GB mieści ~840³; 1000³ wymaga MPI.
 6. **IO poza zapisem txt jest pomijalne** (config 0,25 ms, alokacja ~3,8 GB/s, teren i kratery < 0,1%);
    txt jest 20× wolniejszy od bin i przy 300³ zajmuje 17% czasu.
-7. **Warunki pomiaru zmieniają wynik bardziej niż wiele optymalizacji:** rdzeń E vs P — 2,3–2,9×, Debug vs
-   Release — 2–9×, sama obecność stopera w pętli — +10%, ta sama sesja vs godzinę później — 5–10%.
+7. **Warunki pomiaru zmieniają wynik bardziej niż wiele optymalizacji:** rdzeń E vs P: 2,3–2,9×, Debug vs
+   Release: 2–9×, sama obecność stopera w pętli: +10%, ta sama sesja vs godzinę później: 5–10%.
    Przy optymalizacji porównania przed/po tylko w jednej sesji, przypięte, przemiennie.
 
 ---
@@ -732,7 +732,7 @@ gwarantuje ten sam wynik niezależnie od liczby procesów. Zapis 13–21 GB wyma
 ## 7. Dodatek: orientacyjne porównanie z czasami referencyjnymi innej implementacji
 
 Rozrost klasyczny, von Neumann, periodyczne. Referencja: i5-9600KF 4,3 GHz, C++, Windows; u nas
-i9-13900HX (rdzeń P), MSVC /O2, zapis = plik txt. **Inny sprzęt, inna implementacja i inny format pliku —
+i9-13900HX (rdzeń P), MSVC /O2, zapis = plik txt. **Inny sprzęt, inna implementacja i inny format pliku:
 porównanie wyłącznie orientacyjne, bez wniosków o „lepszości”.**
 
 | Przypadek | Referencja: symulacja | U nas: symulacja (kroki) | Referencja: inne | U nas: inne |
@@ -745,27 +745,27 @@ porównanie wyłącznie orientacyjne, bez wniosków o „lepszości”.**
 
 ---
 
-## 8. Pliki etapu
+## 8. Pliki
 
 - `bench/run_profile.py`, `bench/plot_profile.py`, `bench/profile_gcc.sh`, `bench/profile_msvc.py`,
   `bench/micro/mc_kernels.cpp`, `bench/README.md`.
 - `bench/results/profile_2026-10-09.csv` (183 KB), `_raw.csv` (191 KB), `_raw.jsonl` (544 KB), `_meta.json`,
-  `_benchmark.csv` — dane do raportu i punkt odniesienia dla dalszej optymalizacji (łącznie ~0,9 MB).
-- `bench/profiles/` — raporty gprof (profile płaskie), callgrind (funkcje + linie), MSVC (xperf),
+  `_benchmark.csv`: dane do raportu i punkt odniesienia dla dalszej optymalizacji (łącznie ~0,9 MB).
+- `bench/profiles/`: raporty gprof (profile płaskie), callgrind (funkcje + linie), MSVC (xperf),
   `mc_kernels_*.txt`, `gcc_vs_msvc_mc.txt`, `pcore_vs_ecore.txt`, `asm/` (listingi `sweep()` i raporty
-  wektoryzacji) — łącznie ~0,9 MB tekstu. Pełne grafy wywołań gprof (8 plików po ~0,44 MB) nie są
-  w repozytorium — odtwarza je `bench/profile_gcc.sh`. Ścieżki bezwzględne w surowych raportach narzędzi
+  wektoryzacji), łącznie ~0,9 MB tekstu. Pełne grafy wywołań gprof (8 plików po ~0,44 MB) nie są
+  w repozytorium; odtwarza je `bench/profile_gcc.sh`. Ścieżki bezwzględne w surowych raportach narzędzi
   zastąpiono znacznikiem `<repo>` (katalog projektu).
-- `docs/img/profile_*.png` — 9 wykresów.
-- `results/vs_profiler/*.diagsession` — profile Visual Studio do otwarcia w IDE (poza repozytorium, ~7–8 MB każdy).
+- `docs/img/profile_*.png`: 9 wykresów.
+- `results/vs_profiler/*.diagsession`: profile Visual Studio do otwarcia w IDE (poza repozytorium, ~7–8 MB każdy).
 
 ### Znane ograniczenia pomiaru
 
-- Tło systemu (15–26% CPU, stały `WmiPrvSE.exe`) i laptopowy limit mocy — rozrzut 1–5% dla przebiegów
+- Tło systemu (15–26% CPU, stały `WmiPrvSE.exe`) i laptopowy limit mocy: rozrzut 1–5% dla przebiegów
   > 100 ms, do 50% dla < 5 ms.
 - GCC działa w WSL2 (wirtualizacja; `taskset` przypina do procesora wirtualnego). Porównanie GCC vs MSVC
-  dotyczy kodu, a nie systemu — potwierdza to eksperyment z 2.4 (poprawiony MSVC na Windows = GCC w WSL).
-- gprof próbkuje co 10 ms — krótkie przypadki sumowane z 5–10 przebiegów; profile `noinline` zawyżają koszt
+  dotyczy kodu, a nie systemu; potwierdza to eksperyment z 2.4 (poprawiony MSVC na Windows = GCC w WSL).
+- gprof próbkuje co 10 ms, więc krótkie przypadki sumowane z 5–10 przebiegów; profile `noinline` zawyżają koszt
   małych funkcji (narzut wywołań).
 - Zrzut „Hot Path” z GUI Visual Studio nie jest zautomatyzowany (instrukcja w 2.1); dane tego samego
   kolektora są w `bench/profiles/msvc_*.txt`.

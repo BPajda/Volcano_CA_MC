@@ -550,9 +550,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "openmp_threads", "name": "OpenMP: liczba wątków",
-        "description": "Etap 9: ten sam przypadek przy 1, 2, 4, 6 i 8 wątkach (rdzenie P, przypinanie pcores) — "
+        "description": "Wersja OpenMP: ten sam przypadek przy 1, 2, 4, 6 i 8 wątkach (rdzenie P, przypinanie pcores): "
                        "lawa test_3d w pełnym przebiegu (ca.sweep = full, harmonogram guided) i MC szachownica "
-                       "500² (100 MCS) — 10 zadań. Wynik każdego zadania jest ten sam dla każdej liczby wątków; czas "
+                       "500² (100 MCS), razem 10 zadań. Wynik każdego zadania jest ten sam dla każdej liczby wątków; czas "
                        "maleje. Do pomiarów: 1 worker (zadania nie mogą liczyć się równocześnie). Dokładny pomiar "
                        "przyspieszenia: bench/scaling.py (wysoki priorytet, powtórzenia).",
         "basePreset": "test_3d", "measure": True,

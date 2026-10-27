@@ -12,7 +12,7 @@
 // równoległa wymaga indeksu ze znakiem (std::ptrdiff_t), nie ma collapse, zadań (task) ani omp_set_schedule().
 // Harmonogramu z configu nie da się więc przekazać przez schedule(runtime) — ompFor wybiera jeden z sześciu wariantów
 // dyrektywy (static / dynamic / guided, z porcją i bez) instrukcją switch. Ten sam kod kompiluje GCC (OpenMP 4.5).
-// Dlaczego nie /openmp:llvm (OpenMP 3.1+): docs/etap-9-openmp.md, punkt 1.
+// Dlaczego nie /openmp:llvm (OpenMP 3.1+): docs/openmp.md, punkt 1.
 //
 // Zasady kodu równoległego (wynik nie zależy od liczby wątków ani harmonogramu):
 //   * w pętli równoległej wątek pisze tylko do „swoich” elementów (komórki swojej warstwy, swoje listy, swój slot);

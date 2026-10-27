@@ -51,6 +51,7 @@ export function themeColors() {
     chartGrid: css(s, '--chart-grid'), chartAxis: css(s, '--chart-axis'),
     seriesCa: css(s, '--series-ca'), seriesMc: css(s, '--series-mc'), seriesCaMc: css(s, '--series-camc'),
     series: [1, 2, 3, 4, 5, 6, 7, 8].map((k) => css(s, `--series-${k}`)),
+    seq: [1, 2, 3].map((k) => css(s, `--seq-${k}`)),
     font: '"Inter", system-ui, "Segoe UI", sans-serif',
     mono: '"JetBrains Mono", ui-monospace, Consolas, monospace',
   };

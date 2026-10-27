@@ -11,7 +11,7 @@ i `python -m playwright install chromium`):
     python gui/tests/screenshots.py --out X    # inny katalog
     python gui/tests/screenshots.py --theme light   # motyw jasny „popiół” (domyślnie ciemny „bazalt”, etap 7)
 
-Skrypt sam uruchamia GUI (python -m gui na wolnym porcie), przechodzi scenariusz z docs/etap-4-gui.md:
+Skrypt sam uruchamia GUI (python -m gui na wolnym porcie), przechodzi scenariusz z docs/interfejs-graficzny.md:
 preset test_3d -> zmiana nazwy i liczby kraterów -> Sprawdź -> Uruchom (+ lava_mc_3d i mc_full_2d w kolejce)
 -> postęp w zakładce Zadania -> log -> Wyniki -> podgląd 2D (typ, flowId, kryształy) -> podgląd 3D (ściany,
 powierzchnia, woksele) -> Czasy i statystyki -> duży wynik etna_3d. Zadania tworzą prawdziwe configi

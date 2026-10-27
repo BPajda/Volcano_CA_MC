@@ -20,7 +20,7 @@ Kodowanie (fmt):
 W obu wariantach base64 nagłówek i dane są kodowane OSOBNO (tak zapisuje sam VTK i meshio) — czytnik
 VTK najpierw dekoduje nagłówek (znana liczba bajtów), a potem od nowa dane.
 Plik jest poprawnym XML-em, więc test sprawdza go zwykłym parserem (xml.etree) i porównuje tablice
-z danymi źródłowymi; dodatkowo sprawdziłem go czytnikiem VTK z ParaView (pvpython, docs/etap-5-kolejka-serie-dane.md).
+z danymi źródłowymi; dodatkowo sprawdziłem go czytnikiem VTK z ParaView (pvpython, docs/kolejka-serie-dane.md).
 """
 
 from __future__ import annotations

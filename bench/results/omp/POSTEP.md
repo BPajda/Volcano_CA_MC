@@ -2,7 +2,7 @@
 
 Plik prowadzony na bieżąco w trakcie etapu 9 (zrównoleglenie silnika w OpenMP): każdy krok, jego pliki wyników,
 przyspieszenie, zgodność bitowa i obciążenie tła w czasie pomiaru. Opis metodyki i wnioski:
-[`docs/etap-9-openmp.md`](../../../docs/etap-9-openmp.md).
+[`docs/openmp.md`](../../../docs/openmp.md).
 
 Oznaczenia: `e8` = program po etapie 8 (`bench/baseline/engine_e8_msvc.exe`, `engine_e8_gcc`; binarki lokalne,
 katalog `bench/baseline/` jest w `.gitignore`), `tN` = nowy program z `--threads N`. Przyspieszenie S(p) = T(1)/T(p),

@@ -1,7 +1,7 @@
 # Etap 10 — dziennik pomiarów i postępu (MPI)
 
 Plik prowadzony na bieżąco w trakcie etapu 10 (wersja rozproszona silnika w MPI): każdy krok, jego pliki, wyniki,
-zgodność bitowa i obciążenie tła. Opis implementacji i wnioski: [`docs/etap-10-mpi.md`](../../../docs/etap-10-mpi.md).
+zgodność bitowa i obciążenie tła. Opis implementacji i wnioski: [`docs/mpi.md`](../../../docs/mpi.md).
 
 Oznaczenia: `e9` = program po etapie 9 (`bench/baseline/engine_e9_msvc.exe`, `engine_e9_gcc`; binarki lokalne,
 katalog `bench/baseline/` jest w `.gitignore`), `mN` = `engine_mpi` uruchomiony na N procesach, `mN×T` — N procesów

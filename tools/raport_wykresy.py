@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Wykresy do raportu (docs/raport.md) — jasna paleta do druku, kolory jak w GUI (etap 7):
-CA = lawa #e8682a, MC = chłodny fiolet #7d68dd (para sprawdzona walidatorem palety, docs/etap-7-wyglad-gui.md).
+CA = lawa #e8682a, MC = chłodny fiolet #7d68dd (para sprawdzona walidatorem palety, docs/wyglad-interfejsu.md).
 
     python tools/raport_wykresy.py            # -> docs/img/raport/ca_vs_mc.png, docs/img/raport/profil.png
 
 Dane (bez nowych pomiarów — tylko odczyt plików z repozytorium):
   ca_vs_mc.png  docs/data/ca_vs_mc.csv — seria „CA vs MC — rozmiar siatki” policzona przez GUI 10.10.2026
-                (1 worker, przypięcie do CPU 2; docs/etap-5-kolejka-serie-dane.md, punkt 4.2): caSim / mcSim vs liczba komórek.
+                (1 worker, przypięcie do CPU 2; docs/kolejka-serie-dane.md, punkt 4.2): caSim / mcSim vs liczba komórek.
   profil.png    bench/results/profile_2026-10-09.csv — pomiar z 9.10.2026 (MSVC /O2, mediana z 3 powtórzeń):
                 (a) koszt jednostkowy CA classic (10 zarodków) i MC full (Q = 50, 100 MCS) vs liczba komórek,
-                (b) fazy kroku CA z --timing-detail (docs/etap-3-profilowanie.md, punkty 3.2, 3.3, 3.6).
+                (b) fazy kroku CA z --timing-detail (docs/profilowanie.md, punkty 3.2, 3.3, 3.6).
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def ca_vs_mc() -> Path:
         for n in ca.index:  # stosunek MC / CA przy każdym rozmiarze
             r = mc[n] / ca[n]
             txt = f"×{r:.0f}" if r >= 10 else f"×{r:.1f}".replace(".", ",")
-            if mc[n] < 5:  # oba czasy < 5 ms — zaszumione (docs/etap-5-kolejka-serie-dane.md: wartość w nawiasie)
+            if mc[n] < 5:  # oba czasy < 5 ms — zaszumione (docs/kolejka-serie-dane.md: wartość w nawiasie)
                 txt = f"({txt})"
             ax.annotate(txt, (n, (mc[n] * ca[n]) ** 0.5),
                         ha="center", va="center", fontsize=6.5, color=INK2,

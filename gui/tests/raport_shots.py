@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from screenshots import ROOT, SCROLL_TOP, api, api_post, free_port  # noqa: E402
 
 JOBS_FILE = ROOT / "results" / "gui" / "jobs.json"
-ETNA_SUMMIT = (74, 82)       # najwyższa komórka mapy Etny (Krater Płn.-Wsch., docs/etap-6-prawdziwe-wulkany.md)
+ETNA_SUMMIT = (74, 82)       # najwyższa komórka mapy Etny (Krater Płn.-Wsch., docs/prawdziwe-wulkany.md)
 REPLAY_STEP = 60
 MC_RESULT = "lava_mc_2d_migawki"
 # Okno przekroju 2D (komórki x, z): krater z jeziorem lawy (x ≈ 104–136) i prawe zbocze.

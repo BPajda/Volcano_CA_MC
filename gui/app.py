@@ -1,6 +1,6 @@
 """Backend GUI (FastAPI): formularz -> config -> zadanie -> silnik -> wyniki -> wizualizacja.
 
-Endpointy (wszystkie pod /api, opis w docs/etap-4-gui.md i docs/etap-5-kolejka-serie-dane.md; dokumentacja interaktywna: /api/docs):
+Endpointy (wszystkie pod /api, opis w docs/interfejs-graficzny.md i docs/kolejka-serie-dane.md; dokumentacja interaktywna: /api/docs):
   GET  /api/info                     ustawienia: program silnika, katalogi, liczba workerów, ostrzeżenia
   GET  /api/defaults                 pełny domyślny config (engine --print-defaults)
   GET  /api/presets                  presety: configs/*.json (+ configi zadań z configs/gui/)
@@ -35,6 +35,9 @@ Endpointy (wszystkie pod /api, opis w docs/etap-4-gui.md i docs/etap-5-kolejka-s
   (slice/faces/surface: pola appear, solidFrom — odtwarzanie; mcs=<k> — kryształy z migawki MC mc_snapshots/)
   GET  /api/result/zip?id=                          folder wyniku jako ZIP (etap 5)
   GET  /api/result/vtk?id=&format=zlib|binary|ascii plik VTK ImageData (.vti) dla ParaView (etap 5)
+  GET  /api/doc/list, GET /api/doc?name=           dokumentacja (lista .md i .pdf, treść .md jako tekst)
+  GET  /api/doc/pdf?name=<plik>.pdf[&inline=1]      dokument PDF z docs/pdf/ do pobrania — link „Pobierz PDF” zakładki
+                                                    „Wydajność” (dane wykresów: plik statyczny /data/wydajnosc.json)
 
 Dane tablicowe idą jako application/octet-stream (little-endian, wiersz po wierszu), a opis
 (typ tablicy, wymiary, krok próbkowania) w nagłówku X-Meta (JSON). Kolorowanie robi przeglądarka.
@@ -53,8 +56,10 @@ import json
 import mimetypes
 import os
 import tempfile
+import unicodedata
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import quote
 
 import numpy as np
 from fastapi import FastAPI, Query, Request
@@ -75,6 +80,14 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 # Fonty GUI (static/vendor/fonts, etap 7): Python na Windows nie zna typu .woff2 — bez tego plik szedłby jako text/plain.
 mimetypes.add_type("font/woff2", ".woff2")
 FIELD_PATTERN = "^(type|flowId|temp|crystal|cooling|appear|solidFrom)$"   # appear, solidFrom — odtwarzanie (etap 6)
+
+
+def ascii_name(text: str) -> str:
+    """Nazwa pliku w nagłówku Content-Disposition bez znaków spoza ASCII („Wydajność” → „Wydajnosc”); pełna nazwa
+    idzie obok w filename* (RFC 6266)."""
+    text = text.replace("ł", "l").replace("Ł", "L")
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    return "".join(ch for ch in text if ch.isalnum() or ch in " .,()_-").strip()
 
 
 class ValidateBody(BaseModel):
@@ -574,6 +587,51 @@ def create_app(settings: Settings | None = None, start_workers: bool = True) -> 
             raise
         return FileResponse(tmp, media_type="application/xml", filename=f"{name}.vti",
                             headers={"Cache-Control": "no-store"}, background=BackgroundTask(_unlink, Path(tmp)))
+
+    # ------------------------------------------------------------------ dokumenty (zakładka „Wydajność”)
+
+    docs_dir = settings.root / "docs"
+    pdf_dir = docs_dir / "pdf"
+
+    def pdf_files() -> dict[str, Path]:
+        """Lista dozwolonych PDF: pliki *.pdf leżące bezpośrednio w docs/pdf/ (tools/build_docs_pdf.py)."""
+        return {p.name: p for p in pdf_dir.glob("*.pdf") if p.is_file()} if pdf_dir.is_dir() else {}
+
+    def pdf_title(name: str) -> str:
+        """Tytuł dokumentu z docs/pdf/index.json (zapisuje go tools/build_docs_pdf.py); bez pliku — nazwa pliku."""
+        try:
+            titles = json.loads((pdf_dir / "index.json").read_text(encoding="utf-8")).get("titles", {})
+        except (OSError, ValueError, AttributeError):
+            titles = {}
+        return str(titles.get(name) or name[:-4])
+
+    @app.get("/api/doc/list")
+    def doc_list():
+        """Dokumenty dostępne w tej kopii projektu: Markdown z docs/ i PDF z docs/pdf/ (wersja minimalna ma tylko PDF)."""
+        return {"docs": sorted(p.name for p in docs_dir.glob("*.md")) if docs_dir.is_dir() else [],
+                "pdf": sorted(pdf_files())}
+
+    @app.get("/api/doc", response_class=PlainTextResponse)
+    def doc(name: str = Query(..., pattern=r"^[A-Za-z0-9_.-]+\.md$")):
+        """Dokument jako zwykły tekst (bez renderowania Markdown); tylko pliki .md z folderu dokumentacji."""
+        path = (docs_dir / name).resolve()
+        if path.parent != docs_dir.resolve() or not path.is_file():
+            raise ResultError(f"Brak dokumentu {name} w tej kopii projektu", 404)
+        return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="text/plain; charset=utf-8",
+                                 headers={"Cache-Control": "no-cache"})
+
+    @app.get("/api/doc/pdf")
+    def doc_pdf(name: str = Query(..., pattern=r"^[A-Za-z0-9_.-]+\.pdf$"), inline: bool = False):
+        """Dokument PDF do pobrania (link „Pobierz PDF” w zakładce „Wydajność”) albo do otwarcia w przeglądarce
+        (inline=1); tylko pliki z listy docs/pdf/ — nazwa spoza listy (także z „..”) daje 404."""
+        path = pdf_files().get(name)
+        if path is None or path.resolve().parent != pdf_dir.resolve():
+            raise ResultError(f"Brak dokumentu {name} w tej kopii projektu", 404)
+        title = f"volcano-ca-mc - {pdf_title(name)}.pdf"
+        disposition = "inline" if inline else "attachment"
+        return FileResponse(path, media_type="application/pdf", headers={
+            "Content-Disposition": f'{disposition}; filename="{ascii_name(title)}"; filename*=UTF-8\'\'{quote(title)}',
+            "Cache-Control": "no-cache"})
 
     # ------------------------------------------------------------------ frontend (bez kroku budowania)
 

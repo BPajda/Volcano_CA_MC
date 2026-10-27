@@ -23,7 +23,7 @@ const charts = [];
 let last = null;  // { root, d } — do ponownego narysowania po zmianie motywu
 onThemeChange(() => { if (last && last.root.isConnected) renderStats(last.root, last.d); });
 
-/** Rodzaj paska czasu etapu: obliczenia CA (lawa), MC (fiolet), reszta (wczytanie, alokacja, zapis) — neutralnie. */
+/** Rodzaj paska czasu fazy: obliczenia CA (lawa), MC (fiolet), reszta (wczytanie, alokacja, zapis) — neutralnie. */
 const barKind = (k) => (k === 'caSim' ? '' : k === 'mcSim' ? ' mc' : ' other');
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -39,7 +39,7 @@ function timesCard(t) {
   const total = t.total || 0;
   const rows = Object.keys(SECTION_NAMES).filter((k) => typeof t[k] === 'number');
   const max = Math.max(...rows.map((k) => t[k]), 1);
-  let html = `<div class="card"><h3>Czasy etapów (times.json)</h3><table class="table"><thead><tr><th>Etap</th>
+  let html = `<div class="card"><h3>Czasy faz (times.json)</h3><table class="table"><thead><tr><th>Faza</th>
     <th class="num">ms</th><th class="num">% całości</th><th></th></tr></thead><tbody>`;
   for (const k of rows) {
     html += `<tr><td>${SECTION_NAMES[k]} <span class="sub mono">${k}</span></td><td class="num">${ms(t[k])}</td>

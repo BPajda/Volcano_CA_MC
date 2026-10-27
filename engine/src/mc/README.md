@@ -1,8 +1,8 @@
 # src/mc — krystalizacja Monte Carlo
 
 Naiwny rozrost ziaren Monte Carlo (model Pottsa, kroki 1–5 wersji naiwnej) — krystalizacja zastygłej lawy
-albo klasyczny rozrost MC na całej przestrzeni. Opis reguł: `McRules.hpp`; podsumowanie etapu:
-`docs/etap-2-monte-carlo.md`.
+albo klasyczny rozrost MC na całej przestrzeni. Opis reguł: `McRules.hpp`; opis wersji:
+`docs/monte-carlo.md`.
 
 | Plik | Zawartość |
 |---|---|

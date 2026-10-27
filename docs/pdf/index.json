@@ -1,0 +1,39 @@
+{
+ "titles": {
+  "architektura.pdf": "Jak to działa: architektura i kluczowe miejsca w kodzie",
+  "automat-komorkowy.pdf": "Automat komórkowy: spływ lawy i rozrost ziaren",
+  "interfejs-graficzny.pdf": "Interfejs graficzny",
+  "kolejka-serie-dane.pdf": "Kolejka zadań, serie, dane wejściowe",
+  "monte-carlo.pdf": "Monte Carlo: krystalizacja (model Pottsa)",
+  "mpi-typy-i-zapis.pdf": "Typy pochodne MPI i równoległy zapis",
+  "mpi.pdf": "Wersja rozproszona MPI",
+  "openmp.pdf": "Zrównoleglenie OpenMP",
+  "optymalizacja-sekwencyjna.pdf": "Optymalizacja wersji sekwencyjnej",
+  "prawdziwe-wulkany.pdf": "Prawdziwy teren i odtwarzanie erupcji",
+  "profilowanie.pdf": "Profil aplikacji",
+  "testy-wydajnosci.pdf": "Testy wydajności",
+  "uruchamianie.pdf": "Instalacja, budowanie i uruchamianie",
+  "wyglad-interfejsu.pdf": "Wygląd interfejsu",
+  "wyniki.pdf": "Zestawienie wyników: przykładowe przypadki (wulkan: CA + MC)",
+  "zakladka-wydajnosc.pdf": "Zakładka „Wydajność” w interfejsie"
+ },
+ "pages": {
+  "architektura.pdf": 20,
+  "automat-komorkowy.pdf": 7,
+  "interfejs-graficzny.pdf": 18,
+  "kolejka-serie-dane.pdf": 19,
+  "monte-carlo.pdf": 13,
+  "mpi-typy-i-zapis.pdf": 15,
+  "mpi.pdf": 18,
+  "openmp.pdf": 16,
+  "optymalizacja-sekwencyjna.pdf": 11,
+  "prawdziwe-wulkany.pdf": 18,
+  "profilowanie.pdf": 21,
+  "testy-wydajnosci.pdf": 16,
+  "uruchamianie.pdf": 19,
+  "wyglad-interfejsu.pdf": 13,
+  "wyniki.pdf": 6,
+  "zakladka-wydajnosc.pdf": 14
+ },
+ "generated": "2026-10-22"
+}

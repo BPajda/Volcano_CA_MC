@@ -669,7 +669,7 @@ function withRv(objects, rv) {
 }
 
 /** Położenie i obrót płaszczyzny każdej ściany (PlaneGeometry leży w XY, normalna +Z) oraz odbicia tekstury,
- *  tak żeby wiersz/kolumna danych trafiły na właściwą komórkę ściany (opis w docs/etap-4-gui.md). */
+ *  tak żeby wiersz/kolumna danych trafiły na właściwą komórkę ściany (opis w docs/interfejs-graficzny.md). */
 function facePlacement(nx, ny, nz) {
   return {
     x0: { size: [ny, nz], p: [-nx / 2, 0, 0], rot: [0, -Math.PI / 2, 0], flipCols: true },

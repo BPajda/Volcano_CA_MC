@@ -33,7 +33,7 @@ function progressHTML(job) {
   let frac = null, text = 'start…';
   if (p.stage === 'ca') {
     const classic = String(job.summary?.mode || '').startsWith('classic');
-    const stage = mc ? 'etap 1/2 · ' : '';
+    const stage = mc ? 'faza 1/2 · ' : '';
     if (classic && job.cells) {
       frac = Math.min(1, (p.active || 0) / job.cells);
       text = `${stage}CA: krok ${fmtInt(p.done)} · wypełnienie ${(100 * frac).toFixed(0)}%`;
@@ -42,7 +42,7 @@ function progressHTML(job) {
     }
   } else if (p.stage === 'mc') {
     frac = p.total ? p.done / p.total : 1;
-    text = `${mc ? 'etap 2/2 · ' : ''}MC: ${fmtInt(p.done)} / ${fmtInt(p.total)} MCS`;
+    text = `${mc ? 'faza 2/2 · ' : ''}MC: ${fmtInt(p.done)} / ${fmtInt(p.total)} MCS`;
   } else if (p.stage === 'save') {
     text = 'zapis wyników…';
   }

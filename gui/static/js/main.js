@@ -2,7 +2,7 @@
 // wyniku CA), wybór wyniku do podglądu 2D / 3D / czasów. Zakładki „Seria”, „Zadania” i „Porównanie” mają
 // własne moduły (series.js, jobs.js, compare.js). Cała logika obliczeń jest w silniku C++ — tu tylko
 // zbieranie parametrów, wywołania API i wizualizacja. Wygląd (etap 7): motyw ciemny / jasny — theme.js, kolory
-// danych — palette.js.
+// danych — palette.js. Zakładka „Wydajność” (wyniki etapów 8–12 z data/wydajnosc.json) — perf.js.
 
 import { getJSON, postJSON, url } from './api.js';
 import { ConfigForm } from './form.js';
@@ -13,6 +13,7 @@ import { renderStats } from './stats.js';
 import { JobsView } from './jobs.js';
 import { SeriesView } from './series.js';
 import { CompareView } from './compare.js';
+import { PerfView } from './perf.js';
 import { HeightmapPanel } from './heightmap.js';
 import { VentPicker } from './ventpicker.js';
 import { initTheme } from './theme.js';
@@ -23,11 +24,11 @@ const state = {
   selected: null, meta: null, tab: 'form',
   sort: { key: 'modified', dir: -1 },
 };
-let form, viewer2d, viewer3d, jobsView, seriesView, compareView, heightmapPanel, ventPicker;
+let form, viewer2d, viewer3d, jobsView, seriesView, compareView, heightmapPanel, ventPicker, perfView;
 
 // ---------------------------------------------------------------- zakładki
 
-const TABS = ['form', 'series', 'jobs', 'results', 'compare', 'view2d', 'view3d', 'stats'];
+const TABS = ['form', 'series', 'jobs', 'results', 'compare', 'view2d', 'view3d', 'stats', 'perf'];
 
 function showTab(name) {
   if (!TABS.includes(name)) name = 'form';
@@ -40,6 +41,7 @@ function showTab(name) {
   if (name === 'jobs') jobsView.refresh();
   if (name === 'series') seriesView.onShow();
   if (name === 'results') refreshResults();
+  if (name === 'perf') perfView?.show();
   if (['view2d', 'view3d', 'stats'].includes(name)) ensureSelection().then(() => showSelected());
 }
 
@@ -417,6 +419,7 @@ async function init() {
   });
 
   compareView = new CompareView({ results: () => state.results, openResult });
+  perfView = new PerfView($('#perf-content'));
   seriesView = new SeriesView({
     defaults: () => state.defaults || {},
     presets: () => state.presets,

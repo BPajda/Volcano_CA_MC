@@ -1,4 +1,4 @@
-# Etap 1 — automat komórkowy, wersja serwerowa, porównanie reprezentacji siatki
+# Automat komórkowy: spływ lawy i rozrost ziaren
 
 **Stan na 08.10.2026.** Silnik C++17 działa bez interfejsu użytkownika: dane z pliku JSON i argumentów
 `main`, zapis mikrostruktury końcowej (txt/bin), pomiar czasu z zapisem do `times.json`, dwie
@@ -14,7 +14,7 @@ Sprzęt pomiarowy: **Intel Core i9-13900HX** (laptop, rdzenie P+E), Windows 11, 
 | Usunięcie interfejsu użytkownika, symulacja bez ingerencji | program `engine` działa od startu do zapisu bez interakcji | `src/main.cpp`, `src/app/Simulation.cpp` |
 | Dane początkowe z pliku konfiguracyjnego | JSON z wartościami domyślnymi, walidacją i komunikatami po polsku; nieznane klucze = błąd | `src/io/Config.hpp/.cpp` |
 | Dane początkowe z argumentów `main` | `--config`, `--out`, `--set klucz=wartość`, `--grid`, `--benchmark` | `src/app/Cli.hpp/.cpp` |
-| Funkcja nasłuchująca | nie zaimplementowano — możliwe rozszerzenie (punkt 6) | — |
+| Funkcja nasłuchująca | nie zaimplementowano, możliwe rozszerzenie (punkt 6) | — |
 | Zapis mikrostruktury końcowej (txt/xml/json) | `ca_result.txt` (`x y z type flowId temp`), opcjonalnie `ca_result.bin`; `config_used.json`, `stats.json` | `src/io/ResultWriter.*`, `ResultReader.*` |
 | Pomiar czasu działania, zapis do pliku | `times.json`: `readConfig, allocate, terrain, vents, caSim, save, total` [ms] + kroki, siatka, CPU; `steady_clock` | `src/core/Timer.hpp`, `src/io/TimingReport.*` |
 | Sąsiedztwa: von Neumann, Moore, losowe pentagonalne, losowe heksagonalne | prekomputowane offsety; losowy wariant z hasha (seed, krok, komórka) | `src/core/Neighborhood.*` |
@@ -25,16 +25,16 @@ Sprzęt pomiarowy: **Intel Core i9-13900HX** (laptop, rdzenie P+E), Windows 11, 
 
 Przygotowanie pod planowane zrównoleglenie (OpenMP, MPI): płaskie tablice SoA, ramka = przyszłe komórki nadmiarowe MPI, synchroniczny
 CA z podwójnym buforem (`swap` bez kopiowania), losowość wyłącznie z hasha położenia (wynik nie zależy od
-kolejności przetwarzania ani od reprezentacji siatki — sprawdzone bitowo).
+kolejności przetwarzania ani od reprezentacji siatki, co sprawdzono bitowo).
 
-## 2. Model i zmiany względem opisu etapu
+## 2. Model i zmiany względem pierwotnego opisu
 
 Tryb `lava`: teren to stożek wulkanu z kraterem i gładkim szumem (lub mapa wysokości z CSV), kratery to
 zarodki. Lawa spada, rozlewa się, stygnie (`coolingFall`, `coolingLateral`, `coolingAmbient`) i poniżej
 `solidusTemp` zastyga w bazalt. Nowa komórka dostaje najczęstszy `flowId` wśród kandydatów (remis → hash).
 Pełny opis reguł: `engine/src/ca/CaRules.hpp`.
 
-Reguły z opisu etapu dawały wyraźnie błędne obrazy. Każdą zmianę wprowadziłem dopiero po obejrzeniu przekroju:
+Reguły z pierwotnego opisu modelu dawały wyraźnie błędne obrazy. Każdą zmianę wprowadziłem dopiero po obejrzeniu przekroju:
 
 | Problem (zaobserwowany na wykresie) | Zmiana |
 |---|---|
@@ -49,11 +49,11 @@ Pozostałe decyzje:
 - Warunek stopu „brak zmian” dotyczy tylko sąsiedztw deterministycznych. Przy losowych krok bez zmian nie oznacza końca.
 - W trybie `classic` ziarno ma `type = LAVA`, `temp = 0`.
 - Kratery i zarodki są losowane przez `mt19937_64` z własnym Fisherem–Yatesem, bo `std::shuffle` daje różne wyniki w MSVC i GCC.
-- `ca_result.bin` zawiera dodatkowo `solidStep` (wejście dla MC w etapie 2).
+- `ca_result.bin` zawiera dodatkowo `solidStep` (wejście dla Monte Carlo, [monte-carlo.md](monte-carlo.md)).
 
 ## 3. Wyniki symulacji
 
-**`test_2d`** — przekrój 200×1×100, 1 krater. W kroku 40 lawa wypełnia krater i spływa lewym, niższym
+**`test_2d`**: przekrój 200×1×100, 1 krater. W kroku 40 lawa wypełnia krater i spływa lewym, niższym
 zboczem (kolor = temperatura: przy kraterze 1200 °C, czoło ok. 1000 °C):
 
 ![test_2d, krok 40, temperatura](img/test_2d_krok40_temp.png)
@@ -62,16 +62,16 @@ Stan końcowy (351 kroków): bazalt w kraterze i jęzor zatrzymany w ok. 2/3 zbo
 
 ![test_2d, stan końcowy](img/test_2d_typ.png)
 
-**`test_3d`** — 64×64×48, 3 kratery boczne. Widok z góry, kolor = krater (`flowId`): trzy pola lawy
+**`test_3d`**: 64×64×48, 3 kratery boczne. Widok z góry, kolor = krater (`flowId`): trzy pola lawy
 spływają w dół zbocza i zatrzymują się; szczyt i duża część stoku pozostają wolne:
 
 ![test_3d, widok z góry](img/test_3d_gora_krater.png)
 
-**`etna_3d`** — 150×150×80, 5 kraterów bocznych (284 kroki, CA 27,9 s):
+**`etna_3d`**: 150×150×80, 5 kraterów bocznych (284 kroki, CA 27,9 s):
 
 ![etna_3d, widok z góry](img/etna_3d_gora_krater.png)
 
-**`classic_ref`** — klasyczny rozrost 100×100×100, 10 ziaren, von Neumann, periodyczne (warstwa z = 50):
+**`classic_ref`**: klasyczny rozrost 100×100×100, 10 ziaren, von Neumann, periodyczne (warstwa z = 50):
 
 ![classic_ref, warstwa z=50](img/classic_ref_z50.png)
 
@@ -116,14 +116,14 @@ Wnioski:
   na optymalizację (offsety liniowe sąsiadów zamiast współrzędnych).
 - Pomiary są zaszumione: przy małych przypadkach (< 5 ms) różnice między przebiegami sięgają kilkudziesięciu
   procent. Na procesorze hybrydowym bez przypięcia do rdzenia P pierwszy przebieg pełnego benchmarku dał
-  np. 64×64×48: 3094 / 3024 ms (×0,98), 25³/Moore ×1,12. W etapie profilowania (etap 3): więcej powtórzeń
+  np. 64×64×48: 3094 / 3024 ms (×0,98), 25³/Moore ×1,12. W profilu aplikacji ([profilowanie.md](profilowanie.md)): więcej powtórzeń
   i przypięcie procesu.
 - Liczba kroków w tabeli referencyjnej (10³/10 ziaren → 4, 25³/62 → 7) zgadza się z naszym sąsiedztwem **Moore'a**
   (4 i 6–7 dla różnych ziaren losowania). Von Neumann daje ok. 2× więcej kroków (7–9 i 10–12), dlatego
   benchmark zawiera oba warianty.
 
 Orientacyjne porównanie z czasami referencyjnymi innej implementacji rozrostu ziaren CA (rozrost klasyczny,
-von Neumann, periodyczne; referencja na i5-9600KF 4,3 GHz, inny sprzęt i implementacja — bez wniosków o „lepszości”):
+von Neumann, periodyczne; referencja na i5-9600KF 4,3 GHz, inny sprzęt i implementacja, więc bez wniosków o „lepszości”):
 
 | Przypadek | Referencja | U nas (vector) |
 |---|---|---|
@@ -133,7 +133,7 @@ von Neumann, periodyczne; referencja na i5-9600KF 4,3 GHz, inny sprzęt i implem
 | 25×25×25, 62 ziarna (tabela benchmarku) | 215,2 ms | 2,0 ms (Moore) |
 
 Pełne dane: `results/benchmark_doc/benchmark.csv` i `benchmark_meta.json` (folder `results/` nie trafia
-do repozytorium — tabelę można odtworzyć poleceniem `engine --benchmark --repeats 5`).
+do repozytorium; tabelę można odtworzyć poleceniem `engine --benchmark --repeats 5`).
 
 ## 5. Testy
 
@@ -159,22 +159,22 @@ Sprawdzane są między innymi:
   (koszty stygnięcia na krok i na przeskok). Parametry stygnięcia w configach są dobrane do kształtu
   wyniku, nie są wartościami fizycznymi.
 - Na symetrycznym stożku krater szczytowy przelewa się równo na wszystkie strony (krawędź ma prawie
-  wszędzie tę samą wysokość) — dlatego `test_3d` i `etna_3d` mają kratery boczne. Kierunkowy wypływ
-  z krateru szczytowego wymagałby wyłomu w krawędzi (rozwiązane w etapie 5: mapa `kaldera_wylom`).
+  wszędzie tę samą wysokość), dlatego `test_3d` i `etna_3d` mają kratery boczne. Kierunkowy wypływ
+  z krateru szczytowego wymagałby wyłomu w krawędzi (rozwiązane później mapą `kaldera_wylom`, [kolejka-serie-dane.md](kolejka-serie-dane.md)).
 - Pola lawy w 3D mają kanciaste, szerokie kształty (geometria sąsiedztwa Moore'a), a nie wąskie jęzory.
 - Stop „brak zmian w kroku” może zakończyć symulację, gdy krater jest jeszcze w trakcie erupcji, ale jest
-  całkowicie otoczony zastygłą lawą — w wyniku zostaje wtedy jedna komórka płynnej lawy (sam krater).
+  całkowicie otoczony zastygłą lawą; w wyniku zostaje wtedy jedna komórka płynnej lawy (sam krater).
 - Wydajność: dostęp do sąsiadów przez współrzędne (bez offsetów liniowych), każda komórka przepisywana
-  co krok; 1,8 mln komórek lawy ≈ 28 s. Optymalizacje — planowany dalszy rozwój (etap 3, punkt 2.3).
+  co krok; 1,8 mln komórek lawy ≈ 28 s. Optymalizacje: [optymalizacja-sekwencyjna.md](optymalizacja-sekwencyjna.md) (plan w [profilowanie.md](profilowanie.md), punkt 2.3).
 - `solidStep` jest typu `uint16`, stąd `ca.maxSteps ≤ 65535`.
-- Kompilacja GCC/Clang nie była sprawdzona w tym etapie (WSL bez g++) — nadrobione w etapie 2 (GCC 11.4,
+- Kompilacja GCC/Clang nie była sprawdzona w tej wersji (WSL bez g++); nadrobione razem z Monte Carlo (GCC 11.4,
   0 ostrzeżeń, wyniki bitowo identyczne z MSVC). Kod nie używa rozszerzeń kompilatora; jedyne fragmenty zależne
   od systemu (konsola UTF-8, nazwa CPU, `localtime_s/_r`) są w `#ifdef _WIN32`.
 - „Funkcja nasłuchująca” (trzecie źródło danych wejściowych obok pliku i argumentów `main`) nie jest
   zaimplementowana. Możliwe rozszerzenie: tryb `--listen <port>` przyjmujący config JSON przez gniazdo i odsyłający
-  ścieżkę wyników. Jej rolę pełnią kolejka zadań GUI (HTTP na 127.0.0.1) i `engine --batch` (etap 5).
+  ścieżkę wyników. Jej rolę pełnią kolejka zadań GUI (HTTP na 127.0.0.1) i `engine --batch` ([kolejka-serie-dane.md](kolejka-serie-dane.md)).
 
-## 7. Co dalej — etap 2 (Monte Carlo)
+## 7. Co dalej: Monte Carlo
 
 Krystalizacja zastygłej lawy modelem Pottsa: domena = komórki `BASALT` z wyniku CA (albo cała
 przestrzeń w trybie `full`), losowe orientacje 1…Q, energia `E = J·Σ(1 − δ)`, akceptacja Metropolis,

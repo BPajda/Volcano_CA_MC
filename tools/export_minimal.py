@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Eksport wersji minimalnej projektu: tylko kod, README i raport PDF — do osobnego folderu (osobnego repozytorium).
+"""Eksport wersji minimalnej projektu: kod, README, raport PDF i PDF-y dokumentacji, do osobnego folderu (repozytorium).
 
     python tools/export_minimal.py                          # domyślnie ../volcano-ca-mc-minimal
     python tools/export_minimal.py ..\\volcano-ca-mc-minimal
@@ -10,14 +10,16 @@ Co robi:
      komendą po kolejnych zmianach (eksport → commit w folderze minimalnym → push).
   2. Kopiuje pliki z listy „kopiuj” (COPY niżej — lista dozwolonych, nie lista pomijanych): silnik z testami, GUI
      z testami pytest, narzędzia potrzebne do działania, configi i mapy wysokości, skrypty pomiarów z danymi cytowanymi
-     w raporcie, pliki CMake, `.gitignore`, `docs/raport.pdf` → `raport.pdf`, szablon `tools/export_minimal/README.md`
-     → `README.md` i obrazki, których ten README używa.
+     w raporcie, pliki CMake, `.gitignore`, `docs/raport.pdf` → `raport.pdf`, PDF-y dokumentów `docs/pdf/` (link
+     „Pobierz PDF” zakładki „Wydajność” działa także tutaj), szablon `tools/export_minimal/README.md` → `README.md`
+     i obrazki, których ten README używa.
   3. W skopiowanych plikach Markdown odnośniki do dokumentacji z `docs/` (której w tej wersji nie ma) zamienia na
      odnośniki do `raport.pdf`.
   4. Sprawdza wynik: (a) odnośniki i obrazki we wszystkich plikach .md wskazują istniejące pliki, (b) ścieżki do
      `docs/` w kodzie — błąd poza komentarzami i opisami (w GUI to byłyby martwe linki), w komentarzach tylko
      informacja, (c) słownictwo spoza projektu — 0 trafień wzorców z lokalnego pliku `tools/export_minimal/slownictwo.txt`
-     (w .gitignore; bez niego ta kontrola jest pomijana z ostrzeżeniem). Kod wyjścia 1, gdy kontrola wykryła błędy.
+     (w .gitignore; bez niego ta kontrola jest pomijana z ostrzeżeniem), także w tekście PDF-ów dokumentacji (pypdf).
+     Kod wyjścia 1, gdy kontrola wykryła błędy.
 
 Folder docelowy nie może być katalogiem projektu ani go zawierać; niepusty folder bez śladów poprzedniego eksportu
 (README.md + raport.pdf + engine/) wymaga opcji --force.
@@ -32,6 +34,7 @@ import re
 import shutil
 import sys
 import tokenize
+import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,6 +63,7 @@ COPY: list[tuple[str, str]] = [
     ("CMakePresets.json", "CMakePresets.json"),
     (".gitignore", ".gitignore"),
     ("docs/raport.pdf", "raport.pdf"),
+    ("docs/pdf", "docs/pdf"),                   # PDF-y dokumentów + index.json (tytuły) dla /api/doc/pdf zakładki „Wydajność”
 ]
 # Obrazki używane przez README wersji minimalnej (sprawdzane z szablonem — każdy musi być na tej liście).
 README_IMAGES = ["docs/img/readme/gui_3_erupcja_3d.png"]
@@ -340,6 +344,29 @@ def check_vocab(dest: Path, rx: re.Pattern) -> list[str]:
         for i, line in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             for m in rx.finditer(line):
                 hits.append(f"{r}:{i}: „{m.group(0)}” — {line.strip()[:120]}")
+    return hits + check_vocab_pdf(dest, rx)
+
+
+def check_vocab_pdf(dest: Path, rx: re.Pattern) -> list[str]:
+    """Słownictwo w tekście PDF-ów dokumentacji (docs/pdf/*.pdf); raport ma własną kontrolę przy budowaniu."""
+    pdfs = sorted((dest / "docs" / "pdf").glob("*.pdf"))
+    if not pdfs:
+        return []
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        print("  UWAGA: brak pypdf — słownictwo w PDF-ach dokumentacji niesprawdzone (pip install --user pypdf)")
+        return []
+    hits = []
+    for f in pdfs:
+        for n, page in enumerate(PdfReader(str(f)).pages, 1):
+            # tekst z PDF bywa łamany w środku słowa („wydajno ś ci”) — sklejamy spacje przed polskimi znakami
+            # i normalizujemy znaki złożone (z + kropka → ż), żeby „Pokaż” nie dawało trafienia „Pokaz”
+            text = unicodedata.normalize("NFC", page.extract_text() or "")
+            text = re.sub(r" (?=[ąćęłńóśźż])|(?<=[ąćęłńóśźż]) ", "", text)
+            for line in text.splitlines():
+                for m in rx.finditer(line):
+                    hits.append(f"{rel(f, dest)}, str. {n}: „{m.group(0)}” — {line.strip()[:120]}")
     return hits
 
 

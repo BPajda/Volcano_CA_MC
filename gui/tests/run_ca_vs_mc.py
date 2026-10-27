@@ -38,7 +38,7 @@ def api(base: str, path: str):
 
 def background_load(seconds: float = 2.0) -> dict:
     """Obciążenie komputera przez inne programy (psutil, opcjonalnie): całe CPU [%] i 5 najbardziej zajętych procesów
-    — zapisywane obok wyników, bo tło zmienia czasy (wspólne L3, limit mocy; docs/etap-3-profilowanie.md, punkt 1.3)."""
+    — zapisywane obok wyników, bo tło zmienia czasy (wspólne L3, limit mocy; docs/profilowanie.md, punkt 1.3)."""
     try:
         import psutil
     except ImportError:

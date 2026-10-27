@@ -1,9 +1,9 @@
-# Etap 2 — Monte Carlo (model Pottsa)
+# Monte Carlo: krystalizacja (model Pottsa)
 
 **Stan na 09.10.2026.** Silnik ma drugi algorytm: naiwny rozrost ziaren Monte Carlo (model Pottsa)
 w wersji naiwnej (kroki 1–5 niżej). Działa w dwóch trybach:
-- `full` — klasyczny rozrost MC na całej przestrzeni, bez terenu i CA (do porównań czasów CA vs MC),
-- `basalt` — krystalizacja zastygłej lawy z wyniku CA, z mobilnością zależną od czasu stygnięcia.
+- `full`: klasyczny rozrost MC na całej przestrzeni, bez terenu i CA (do porównań czasów CA vs MC),
+- `basalt`: krystalizacja zastygłej lawy z wyniku CA, z mobilnością zależną od czasu stygnięcia.
 
 MC startuje z wyniku CA w pamięci albo z pliku (`engine --mc-from`). Kod kompiluje się i przechodzi
 testy w MSVC i w GCC (WSL), a oba kompilatory dają bitowo identyczne wyniki.
@@ -14,15 +14,15 @@ Sprzęt: **Intel Core i9-13900HX**, Windows 11, **MSVC 19.38** (Release, `/O2`);
 
 | Element algorytmu (wersja naiwna) | Realizacja | Gdzie w kodzie |
 |---|---|---|
-| **Krok 1:** losowa selekcja elementu | komórka `k = hashRand(seed, mcs, nrPróby, kSaltMcPick) mod N` — losowanie **ze zwracaniem** z listy komórek domeny | `PottsMC::sweep()`, komentarz „Krok 1” ([PottsMC.cpp](../engine/src/mc/PottsMC.cpp)) |
-| **Krok 2:** energia otoczenia `E = J_gb · Σ(1 − δ(Si, Sj))` | `J · unlikeNeighbors(i, S_i)` — liczba sąsiadów w domenie o innej orientacji; sąsiad spoza domeny nie wnosi energii | `PottsMC::unlikeNeighbors()` ([PottsMC.hpp](../engine/src/mc/PottsMC.hpp)), „Krok 2” w `sweep()` |
+| **Krok 1:** losowa selekcja elementu | komórka `k = hashRand(seed, mcs, nrPróby, kSaltMcPick) mod N`: losowanie **ze zwracaniem** z listy komórek domeny | `PottsMC::sweep()`, komentarz „Krok 1” ([PottsMC.cpp](../engine/src/mc/PottsMC.cpp)) |
+| **Krok 2:** energia otoczenia `E = J_gb · Σ(1 − δ(Si, Sj))` | `J · unlikeNeighbors(i, S_i)`: liczba sąsiadów w domenie o innej orientacji; sąsiad spoza domeny nie wnosi energii | `PottsMC::unlikeNeighbors()` ([PottsMC.hpp](../engine/src/mc/PottsMC.hpp)), „Krok 2” w `sweep()` |
 | **Krok 3:** nowy stan losowany ze zbioru W orientacji | losowanie z całego zbioru 1…Q z pominięciem obecnej orientacji (Q − 1 możliwości) | „Krok 3” w `sweep()` |
 | **Krok 4:** zmiana energii ΔE | `E_po` tą samą funkcją dla nowej orientacji, `ΔE = E_po − E_przed` | „Krok 4” w `sweep()` |
 | **Krok 5:** akceptacja (p = 1 dla ΔE ≤ 0, p = 0 dla ΔE > 0) | Metropolis: ΔE ≤ 0 zawsze; ΔE > 0 z p = exp(−ΔE/kT) dla kT > 0, a przy domyślnym `kT = 0` nigdy (dokładnie jak w wersji naiwnej) | „Krok 5” w `sweep()` |
 | 1 MCS = tyle losowań, ile komórek | pętla `N_domena` prób w jednym `sweep()` | `PottsMC::sweep()` |
 | Dane wejściowe: rozmiar przestrzeni | `space.nx, ny, nz` (tryb `full`) albo wymiary wyniku CA | `io/Config.*`, `app/McStage.cpp` |
 | Liczba stanów początkowych | `mc.Q`; inicjalizacja `1 + hashRand(seed, 0, idx, kSaltMcInit) mod Q` | `PottsMC::initialize()` |
-| Sąsiedztwo | `neighborhood` (von Neumann, Moore, pentagonal i hexagonal losowe) — ta sama klasa `Neighborhood` co w CA | `core/Neighborhood.*` (`variantFor`) |
+| Sąsiedztwo | `neighborhood` (von Neumann, Moore, pentagonal i hexagonal losowe), ta sama klasa `Neighborhood` co w CA | `core/Neighborhood.*` (`variantFor`) |
 | Warunki brzegowe | `boundary`: absorbujące (ramka poza domeną) lub periodyczne (ramka = kopia przeciwległej warstwy) | `PottsMC::fillFrame()`, `syncFrame()` |
 | Liczba kroków MCS | `mc.mcs` | `McStage::run()` |
 | Obiektowość, komentarze, pomiar czasu | klasy `PottsMC`, `Grains`, `CoolingMobility`, `McStage`; komentarze po polsku; czasy `mcInit`, `mcSim`, `mcStats`, `mcSave` w `times.json` | `engine/src/mc/`, `app/McStage.*` |
@@ -38,13 +38,13 @@ MC przyjmuje zmiany, które nie zwiększają energii, więc granice się skracaj
 
 **Domena.** W trybie `basalt` należą do niej komórki `BASALT` z wyniku CA oraz ewentualna
 pozostała płynna `LAVA` (krater otoczony zastygłą lawą). Skała, powietrze i ramka nie należą do domeny
-i nie wnoszą energii — granica bazaltu ze skałą jest „darmowa” i nie kształtuje kryształów.
+i nie wnoszą energii: granica bazaltu ze skałą jest „darmowa” i nie kształtuje kryształów.
 W trybie `full` domeną jest cała przestrzeń, a teren i CA są pomijane.
 
 **Brzegi.** Siatka ma ramkę 1 komórki (jak `VectorStorage`), sąsiad to indeks + stałe przesunięcie liniowe.
 Przy brzegu periodycznym ramka jest kopią przeciwległej warstwy. Po każdej **zaakceptowanej** zmianie
-komórki leżącej przy ścianie periodycznej odświeżamy jej kopie w ramce — do 7 kopii w narożniku 3D
-(`PottsMC::syncFrame`). Wybrałem to zamiast zawijania indeksu sąsiada: pętla próby zostaje bez
+komórki leżącej przy ścianie periodycznej odświeżamy jej kopie w ramce (do 7 kopii w narożniku 3D,
+`PottsMC::syncFrame`). Wybrałem to zamiast zawijania indeksu sąsiada: pętla próby zostaje bez
 rozgałęzień, a zmian przy brzegu jest mało. W trybie `basalt` oś z nie jest periodyczna (jak w CA:
 grawitacja), w trybie `full` zawijane są wszystkie osie.
 
@@ -67,7 +67,7 @@ zmienia i zostają **drobne** ziarna. Tak wyglądają prawdziwe skały wulkanicz
 wylewu lub dajki („chilled margin”) jest drobnokrystaliczny albo szklisty, a wolno stygnące wnętrze
 ma duże kryształy.
 
-Mapa czasu w stanie płynnym (`plot_slice.py --color cooling`) — ciemne = długo płynne:
+Mapa czasu w stanie płynnym (`plot_slice.py --color cooling`); ciemne = długo płynne:
 
 ![lava_mc_2d, czas w stanie płynnym](img/lava_mc_2d_cooling.png)
 
@@ -80,7 +80,7 @@ Co `mc.statsEvery` MCS (oraz dla MCS 0 i ostatniego) do `mc_stats.csv` trafia wi
   a Moore dla Moore'a i sąsiedztw losowych (suma ich wariantów to Moore). Dwie komórki należą więc do
   jednego ziarna wtedy, gdy granica między nimi nie kosztuje energii. Pierwotne założenie mówiło o samym von
   Neumannie, ale wtedy cienka warstwa bazaltu na „schodkowym” stoku (komórki stykają się tylko
-  krawędziami) rozpadałaby się na jednokomórkowe ziarna niezależnie od przebiegu MC — liczba ziaren
+  krawędziami) rozpadałaby się na jednokomórkowe ziarna niezależnie od przebiegu MC, a liczba ziaren
   mierzyłaby geometrię terenu, a nie krystalizację;
 - **średnia wielkość ziarna** = komórki domeny / liczba ziaren;
 - **energia** = ½ · Σ E_i (każda para sąsiadów liczona raz);
@@ -90,9 +90,9 @@ Co `mc.statsEvery` MCS (oraz dla MCS 0 i ostatniego) do `mc_stats.csv` trafia wi
 Czas liczenia statystyk to osobna sekcja `mcStats` i **nie** wlicza się do `mcSim`.
 
 `stats.json` dostaje sekcję `mc`: liczbę ziaren i średnią wielkość na początku i na końcu, największe
-ziarno, energię oraz `byMobility` — te same wielkości osobno dla klas mobilności ≥ 0,5 i < 0,5.
+ziarno, energię oraz `byMobility`: te same wielkości osobno dla klas mobilności ≥ 0,5 i < 0,5.
 Ziarno należy do klasy, w której leży większość jego komórek. Klasy liczymy zawsze, gdy są dane
-o stygnięciu — także w przebiegu bez mobilności, żeby dało się porównać oba warianty.
+o stygnięciu, także w przebiegu bez mobilności, żeby dało się porównać oba warianty.
 
 ## 3. Zmiany w CA i formatach
 
@@ -105,7 +105,7 @@ o stygnięciu — także w przebiegu bez mobilności, żeby dało się porówna�
   `ResultReader::readBin` czyta wersje 1 i 2 (w v1 `arrivalStep = 0`). `readFolder` informuje,
   co wczytano (`ResultSource`), co pozwala MC wyłączyć mobilność dla pliku txt. Format txt bez zmian.
 - Wynik CA się nie zmienił: liczby kroków i objętości lawy wszystkich starych configów są takie same
-  jak w etapie 1 (`test_2d` 351 kroków, `test_3d` i `etna_3d` 284, `classic_ref` 71).
+  jak w pierwszej wersji automatu (`test_2d` 351 kroków, `test_3d` i `etna_3d` 284, `classic_ref` 71).
 
 ## 4. Konfiguracja, wywołanie, pliki wynikowe
 
@@ -114,12 +114,12 @@ o stygnięciu — także w przebiegu bez mobilności, żeby dało się porówna�
         "mobilityFromCooling": true, "mobilityMin": 0.05, "statsEvery": 10 }
 ```
 
-- `enabled: true` + `domain: "basalt"` — CA, potem MC na wyniku w pamięci (wymaga `ca.mode = lava`;
+- `enabled: true` + `domain: "basalt"`: CA, potem MC na wyniku w pamięci (wymaga `ca.mode = lava`;
   w trybie `classic` nie ma bazaltu, więc config zgłasza błąd).
-- `enabled: true` + `domain: "full"` — samo MC na całej przestrzeni. Teren i CA są pomijane razem z ich
+- `enabled: true` + `domain: "full"`: samo MC na całej przestrzeni. Teren i CA są pomijane razem z ich
   walidacją (np. 2D może leżeć w płaszczyźnie x–y). W `times.json` **nie ma** sekcji `allocate`,
-  `terrain`, `vents`, `caSim`, `save` ani pól `steps`/`stopReason` (zamiast zer — zero sugerowałoby,
-  że etap trwał 0 ms), a `mode = "mc_full"`.
+  `terrain`, `vents`, `caSim`, `save` ani pól `steps`/`stopReason` (zamiast zer, bo zero sugerowałoby,
+  że faza trwała 0 ms), a `mode = "mc_full"`.
 - Walidacja z komunikatami po polsku: `Q ≥ 2`, `mcs ≥ 0`, `J > 0`, `kT ≥ 0`, `0 ≤ mobilityMin ≤ 1`,
   `statsEvery ≥ 1`; `mobilityFromCooling` w trybie `full` daje ostrzeżenie i jest ignorowane.
   Dawne ostrzeżenie „mc.enabled ignorowane” usunięte.
@@ -130,7 +130,7 @@ o stygnięciu — także w przebiegu bez mobilności, żeby dało się porówna�
 engine --mc-from results\lava_mc_2d --config configs\mc_basalt.json --out results\mc_from_lava_2d
 ```
 
-Program wczytuje `ca_result.bin` (albo `ca_result.txt` — wtedy bez danych o stygnięciu: mobilność
+Program wczytuje `ca_result.bin` (albo `ca_result.txt`, wtedy bez danych o stygnięciu: mobilność
 wyłączona z ostrzeżeniem; plik bin v1: czas płynięcia liczony od kroku 0 z ostrzeżeniem) i uruchamia
 samo MC. `mc.domain` musi być `basalt`. Wymiary pochodzą z pliku, a ostrzeżenie o konflikcie pojawia się
 tylko wtedy, gdy config sam podaje `space`. `configs/mc_basalt.json` zawiera wyłącznie parametry MC.
@@ -154,7 +154,7 @@ Nowe configi: `mc_full_2d.json` (200×200, płaszczyzna x–y jak klasyczny rozr
 100 MCS, von Neumann, periodyczne), `mc_full_3d.json` (50³, Q = 50, 50 MCS, Moore, periodyczne),
 `lava_mc_2d.json`, `lava_mc_3d.json` (CA + MC `basalt`) i `mc_basalt.json` (do `--mc-from`).
 
-### Tryb full — klasyczny naiwny rozrost MC
+### Tryb full: klasyczny naiwny rozrost MC
 
 Wycinek 80×80 z `mc_full_2d`: stan początkowy (losowe orientacje) i po 100 MCS.
 
@@ -171,7 +171,7 @@ Liczba ziaren maleje, a średnia wielkość ziarna rośnie z każdym krokiem MCS
 
 ![liczba ziaren i średnia wielkość vs MCS, tryb full](img/mc_full_stats.png)
 
-### Tryb basalt — krystalizacja zastygłej lawy
+### Tryb basalt: krystalizacja zastygłej lawy
 
 Żeby kryształy były widoczne, parametry CA dobrałem tak, by bazalt miał miejscami grubość kilku komórek.
 Szeroki i głęboki krater (2D: promień 16, głębokość 9; 3D: promień 10, głębokość 6) wypełnia się
@@ -179,13 +179,13 @@ jeziorem lawy, które długo pozostaje płynne. Lawa przelewa się przez krawęd
 cienką warstwą, która szybko zastyga. W 3D jezioro ma grubość do 6 komórek (731 kolumn ma ≥ 3 komórki
 bazaltu).
 
-**2D (`lava_mc_2d`, 516 komórek bazaltu, 300 MCS)** — fragment z kraterem i lewym zboczem, z mobilnością
+**2D (`lava_mc_2d`, 516 komórek bazaltu, 300 MCS)**: fragment z kraterem i lewym zboczem, z mobilnością
 i bez (ta sama inicjalizacja):
 
 ![lava_mc_2d z mobilnością](img/lava_mc_2d_mob.png)
 ![lava_mc_2d bez mobilności](img/lava_mc_2d_nomob.png)
 
-**3D (`lava_mc_3d`, 4 291 komórek bazaltu, 200 MCS)** — mapa czasu w stanie płynnym i kryształy
+**3D (`lava_mc_3d`, 4 291 komórek bazaltu, 200 MCS)**: mapa czasu w stanie płynnym i kryształy
 w widoku z góry. Z mobilnością krater i jego okolice mają duże kryształy, a obrzeże pola lawy jest
 drobnokrystaliczne. Bez mobilności ziarna są duże wszędzie.
 
@@ -233,7 +233,7 @@ rośnie normalnie.
 ## 6. Czasy CA i MC
 
 MSVC Release, `times.json` [ms]; „ns/próbę” = `mcSim / (MCS · N_domena)`. Zapowiedź wykresu CA vs MC
-z etapu 5:
+w [kolejka-serie-dane.md](kolejka-serie-dane.md):
 
 | Config | Komórki | Domena MC | Kroki CA | caSim | MCS | mcSim | mcStats | ns/próbę | total |
 |---|---|---|---|---|---|---|---|---|---|
@@ -256,22 +256,22 @@ Wnioski:
 - W trybie `basalt` MC jest tanie w porównaniu z CA, bo domena to ~1,3% przestrzeni (4 291 z 320 000
   komórek): 82 ms MC wobec 1,4 s CA.
 - Mobilność przyspiesza MC (82 ms zamiast 174 ms w 3D): pominięta próba nie liczy energii.
-- Statystyki (union-find po całej siatce) kosztują 9–62% czasu `mcSim` — dlatego są poza `mcSim`.
+- Statystyki (union-find po całej siatce) kosztują 9–62% czasu `mcSim`, dlatego są poza `mcSim`.
 - Pomiary są zaszumione: 3 powtórzenia `mc_full_2d` dały 177–200 ms, `mc_full_3d` 768–867 ms.
-  W etapie 3 (profil) — więcej powtórzeń i przypięcie procesu do rdzenia P.
+  W profilu aplikacji ([profilowanie.md](profilowanie.md)): więcej powtórzeń i przypięcie procesu do rdzenia P.
 
-## 7. Kompilacja GCC (zaległe z etapu 1)
+## 7. Kompilacja GCC (zaległa z pierwszej wersji automatu)
 
-WSL (Ubuntu 22.04), **GCC 11.4.0**, CMake 3.22. Polecenie (z katalogu projektu — WSL startuje w bieżącym
+WSL (Ubuntu 22.04), **GCC 11.4.0**, CMake 3.22. Polecenie (z katalogu projektu; WSL startuje w bieżącym
 katalogu, więc ścieżka nie jest potrzebna; działa w PowerShell, `cmd` i Git Bash):
 
 ```
 wsl -e bash -lc "cmake --preset gcc-release && cmake --build --preset gcc-release -j 16 && ctest --preset gcc-release"
 ```
 
-Pierwsza kompilacja wykryła dwa błędy z etapu 1, niewidoczne w MSVC:
+Pierwsza kompilacja wykryła dwa błędy z pierwszej wersji automatu, niewidoczne w MSVC:
 1. **Linker:** plik `build-gcc-release/engine` kolidował z podkatalogiem `build-gcc-release/engine/`
-   (z `add_subdirectory`) — „cannot open output file”. Przy generatorach jednokonfiguracyjnych pliki
+   (z `add_subdirectory`): „cannot open output file”. Przy generatorach jednokonfiguracyjnych pliki
    wykonywalne trafiają teraz do `build-gcc-release/bin/` (MSVC bez zmian: `build\Release\engine.exe`).
 2. **Segfault w teście sąsiedztw:** `for (... : Neighborhood(...).variant(0))` iterował po polu obiektu
    tymczasowego, który ginie przed pętlą (niezdefiniowane zachowanie, w MSVC przypadkiem działało).
@@ -285,15 +285,15 @@ identyczne** dla `test_2d`, `classic_ref`, `lava_mc_2d`, `lava_mc_3d`, `mc_full_
 Pliki tekstowe różnią się tylko końcami linii (CRLF w Windows). Działa więc zasada „losowość tylko
 z hasha, bez `std::*_distribution`”.
 
-Czasy GCC (`-O3`, WSL): MC wyraźnie szybsze niż z MSVC — `mc_full_2d` 72 ms (18 ns/próbę) zamiast
+Czasy GCC (`-O3`, WSL): MC wyraźnie szybsze niż z MSVC: `mc_full_2d` 72 ms (18 ns/próbę) zamiast
 152 ms, `mc_full_3d` 334 ms zamiast 833 ms, `lava_mc_3d` CA 1 063 ms zamiast 1 426 ms. Przyczynę
-(rozwinięcie pętli po sąsiadach, 64-bitowe modulo w losowaniu) sprawdzimy profilerem w etapie 3.
-Czasy wczytywania w WSL (`readConfig` 18–110 ms) nie są miarodajne — pliki leżą na dysku Windows
+(rozwinięcie pętli po sąsiadach, 64-bitowe modulo w losowaniu) sprawdzimy profilerem ([profilowanie.md](profilowanie.md)).
+Czasy wczytywania w WSL (`readConfig` 18–110 ms) nie są miarodajne, bo pliki leżą na dysku Windows
 montowanym przez `/mnt/d`.
 
 ## 8. Testy
 
-`ctest`: 7 testów — testy jednostkowe (67 przypadków doctest, ok. 300 tys. asercji) i 6 testów dymnych
+`ctest`: 7 testów, czyli testy jednostkowe (67 przypadków doctest, ok. 300 tys. asercji) i 6 testów dymnych
 programu, w tym `mc_full_2d`, `lava_mc_2d` i `--mc-from` na jego wyniku. Nowe testy
 ([test_mc.cpp](../engine/tests/test_mc.cpp) i inne):
 - energia komórki i ΔE na ręcznych przykładach 2D i 3D, dla von Neumanna i Moore'a; energia całkowita;
@@ -310,9 +310,9 @@ programu, w tym `mc_full_2d`, `lava_mc_2d` i `--mc-from` na jego wyniku. Nowe te
 - zgodność vector/macierz CA z `solidStep` i `arrivalStep`; `arrivalStep` krateru = 0, ≤ `solidStep`;
 - walidacja nowych pól configu, `--mc-from` w CLI.
 
-## 9. Decyzje i odstępstwa od opisu etapu
+## 9. Decyzje i odstępstwa od pierwotnego opisu
 
-- **Spójność ziaren** wg sąsiedztwa MC (von Neumann albo Moore), a nie zawsze von Neumann — uzasadnienie
+- **Spójność ziaren** wg sąsiedztwa MC (von Neumann albo Moore), a nie zawsze von Neumann; uzasadnienie
   w punkcie 2 (cienkie, schodkowe warstwy bazaltu).
 - **acceptRate** liczony względem prób, które nie zostały pominięte przez mobilność.
 - **Domena basalt** obejmuje też pozostałą płynną lawę. Jej czas płynięcia liczymy do ostatniego kroku CA
@@ -324,7 +324,7 @@ programu, w tym `mc_full_2d`, `lava_mc_2d` i `--mc-from` na jego wyniku. Nowe te
   czas MC jest tam pomijalny.
 - Dodatki: `Neighborhood::variantFor` (wspólny wybór wariantu dla CA i MC), `configs/mc_basalt.json`,
   tryb `--color cooling` i opcje `--window`, `--crop`, `--title`, `--ca` w `plot_slice.py`.
-- Słabszy warunek testu „ziarna rosną” dla pentagonalnego (tylko „mniej niż na starcie”) — punkt 5.
+- Słabszy warunek testu „ziarna rosną” dla pentagonalnego (tylko „mniej niż na starcie”), punkt 5.
 
 ## 10. Znane ograniczenia
 
@@ -335,22 +335,22 @@ programu, w tym `mc_full_2d`, `lava_mc_2d` i `--mc-from` na jego wyniku. Nowe te
   najdłuższy czas). W obu configach lawy krater zostaje otoczony zastygłą lawą i CA kończy się „brakiem
   zmian” (`lava_mc_2d`: 202 kroki, `lava_mc_3d`: 133), zanim minie `eruptionSteps`. Krater zostaje wtedy
   płynną lawą o czasie ≈ końcu CA, porównywalnym z jeziorem.
-- W 2D jęzory na zboczu mają grubość 1 komórki — ziarna są tam ograniczone geometrią także bez mobilności.
+- W 2D jęzory na zboczu mają grubość 1 komórki, więc ziarna są tam ograniczone geometrią także bez mobilności.
 - Losowe pentagonalne w MC nie zgrubia struktury (punkt 5).
 - Naiwny algorytm marnuje większość prób: akceptacja 13% w `mc_full_2d`, 5–9% w trybie basalt.
   Optymalizacje (losowanie bez powtórzeń, orientacje tylko z sąsiadów, próby tylko na granicach,
   jedno przejście po sąsiadach, tablica exp) są oznaczone w kodzie `// OPTYMALIZACJA:`.
-- MC jest z natury sekwencyjne (każda próba widzi wynik poprzednich) — planowane zrównoleglenie
+- MC jest z natury sekwencyjne (każda próba widzi wynik poprzednich); planowane zrównoleglenie
   wymaga podziału na niesąsiadujące podzbiory (szachownica) albo pasy z synchronizacją ramek.
-- Zgodność GCC/MSVC sprawdziłem dla `kT = 0`. Dla `kT > 0` akceptacja zależy od `std::exp` — różnica
+- Zgodność GCC/MSVC sprawdziłem dla `kT = 0`. Dla `kT > 0` akceptacja zależy od `std::exp`, a różnica
   ostatniego bitu między bibliotekami mogłaby teoretycznie zmienić pojedynczą decyzję.
 - Statystyki liczą union-find po całej siatce przy każdym pomiarze (9–62% czasu `mcSim`).
 
-## 11. Co dalej — etap 3 (profil aplikacji)
+## 11. Co dalej: profil aplikacji
 
 - Profil czasu CA i MC w funkcji rozmiaru domeny, Q, sąsiedztwa i liczby MCS (skrypt `bench/run_profile.py`).
-- Profiler (VS Performance Profiler, gprof / callgrind w WSL): gorące miejsca MC — `hashRand`, 64-bitowe modulo
+- Profiler (VS Performance Profiler, gprof / callgrind w WSL): gorące miejsca MC, czyli `hashRand`, 64-bitowe modulo
   przy wyborze komórki i orientacji, pętla po sąsiadach; wyjaśnienie różnicy MSVC vs GCC.
 - Zapotrzebowanie na pamięć MC: 5 B na komórkę z ramką (orientacja + maska), 4 B mobilności,
   16 B na komórkę domeny (listy indeksów) i 12–16 B na komórkę przy liczeniu ziaren.
-- Pomiary z przypięciem do rdzenia P i większą liczbą powtórzeń; wykres CA vs MC (etap 5).
+- Pomiary z przypięciem do rdzenia P i większą liczbą powtórzeń; wykres CA vs MC ([kolejka-serie-dane.md](kolejka-serie-dane.md)).

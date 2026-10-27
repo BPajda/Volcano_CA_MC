@@ -25,7 +25,7 @@ SETTINGS_FILE = Path(__file__).resolve().parent / "settings.json"
 HOST = "127.0.0.1"  # celowo stałe — patrz opis modułu
 
 # Kandydaci na program silnika (względem katalogu projektu), w kolejności preferencji.
-# Release przed Debug: Debug jest kilka razy wolniejszy (docs/etap-3-profilowanie.md, punkt 3.4).
+# Release przed Debug: Debug jest kilka razy wolniejszy (docs/profilowanie.md, punkt 3.4).
 _EXE = ".exe" if sys.platform == "win32" else ""
 ENGINE_CANDIDATES = [
     f"build/Release/engine{_EXE}",                 # preset msvc-release (Visual Studio)

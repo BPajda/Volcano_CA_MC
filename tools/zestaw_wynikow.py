@@ -51,20 +51,20 @@ def mib(b) -> str:
 # ---------------------------------------------------------------- przypadki
 
 CASES = [
-    dict(name="etna_real", title="Etna — spływ lawy na prawdziwym terenie (CA, 3D)",
+    dict(name="etna_real", title="Etna: spływ lawy na prawdziwym terenie (CA, 3D)",
          check="Rozrost CA (lawa = ziarna z 3 kraterów szczytowych) na mapie wysokości z AWS Terrain Tiles; "
                "kratery w zadanych kolumnach (`vents.positions`).",
          args=["--config", "configs/etna_real.json", "--out", "results/etna_real"]),
-    dict(name="wezuwiusz_real", title="Wezuwiusz — wypełnienie krateru i przelew (CA, 3D)",
+    dict(name="wezuwiusz_real", title="Wezuwiusz: wypełnienie krateru i przelew (CA, 3D)",
          check="Wypełnianie zagłębienia (priority-flood) i przelew przez najniższe miejsce krawędzi; "
                "Monte Somma zatrzymuje lawę.",
          args=["--config", "configs/wezuwiusz_real.json", "--out", "results/wezuwiusz_real"]),
-    dict(name="test_2d", title="Przekrój 2D — reguły automatu",
+    dict(name="test_2d", title="Przekrój 2D: reguły automatu",
          check="Podstawowe reguły lawy w przekroju x–z: spadek, rozlewanie z podparciem, kierunek największego "
                "spadku, stygnięcie i zastyganie w bazalt.",
          args=["--config", "configs/test_2d.json", "--out", "results/test_2d"]),
     dict(name="classic_ref", title="Klasyczny rozrost ziaren CA (100³, 10 ziaren)",
-         check="Czysty rozrost ziaren CA (tryb `classic`, von Neumann, brzeg periodyczny) — "
+         check="Czysty rozrost ziaren CA (tryb `classic`, von Neumann, brzeg periodyczny): "
                "przypadek referencyjny do porównań wydajności.",
          args=["--config", "configs/classic_ref.json", "--out", "results/classic_ref"]),
     dict(name="lava_mc_2d_migawki", title="Lawa 2D + krystalizacja bazaltu MC (z migawkami MC)",
@@ -76,9 +76,9 @@ CASES = [
          check="To samo co wyżej w 3D (80×80×50, sąsiedztwo Moore'a).",
          args=["--config", "configs/lava_mc_3d.json", "--out", "results/lava_mc_3d"]),
     dict(name="mc_full_2d", title="Klasyczny naiwny Monte Carlo (200×200, Q = 50)",
-         check="Kroki 1–5 naiwnego algorytmu Monte Carlo na całej przestrzeni, bez CA — zgrubianie ziaren w czasie (MCS).",
+         check="Kroki 1–5 naiwnego algorytmu Monte Carlo na całej przestrzeni, bez CA: zgrubianie ziaren w czasie (MCS).",
          args=["--config", "configs/mc_full_2d.json", "--out", "results/mc_full_2d"]),
-    dict(name="heightmap_kaldera", title="Teren z pliku — kaldera z wyłomem",
+    dict(name="heightmap_kaldera", title="Teren z pliku: kaldera z wyłomem",
          check="Dane wejściowe z pliku (mapa wysokości CSV): lawa wypływa tylko przez wyłom w ścianie kaldery.",
          args=["--config", "configs/heightmap_kaldera.json", "--out", "results/heightmap_kaldera"]),
 ]
@@ -111,14 +111,14 @@ def meters_per_cell(cfg: dict | None) -> float | None:
 def result_rows(folder: Path) -> list[tuple[str, str]]:
     t, s, cfg = load(folder, "times.json"), load(folder, "stats.json"), load(folder, "config_used.json")
     if not t:
-        return [("wynik", "brak `times.json` — symulacja nie została policzona")]
+        return [("wynik", "brak `times.json`: symulacja nie została policzona")]
     rows: list[tuple[str, str]] = []
     sp = t.get("space") or [None] * 3
     rows.append(("siatka", f"{sp[0]} × {sp[1]} × {sp[2]} = {num(t.get('cells'))} komórek, "
                            f"sąsiedztwo {t.get('neighborhood')}, brzeg {t.get('boundary')}"))
     mode = t.get("mode")
     if mode in ("lava", "classic") and s:
-        rows.append(("kroki CA / koniec", f"{t.get('steps')} kroków — {t.get('stopReason')}"))
+        rows.append(("kroki CA / koniec", f"{t.get('steps')} kroków, {t.get('stopReason')}"))
         if mode == "lava":
             mpc = meters_per_cell(cfg)
             reach = s.get("maxReach")
@@ -133,12 +133,12 @@ def result_rows(folder: Path) -> list[tuple[str, str]]:
         else:
             rows.append(("ziarna", f"{s.get('grains')} ziaren, średnio {num(s.get('meanGrainSize'))} komórek "
                                    f"(najmniejsze {num(s.get('minGrainSize'))}, największe {num(s.get('maxGrainSize'))})"))
-        rows.append(("czas CA (`caSim`)", f"{ms(t.get('caSim'))} — {num(t['caSim'] * 1e6 / (t['cells'] * max(t['steps'], 1)), 1)} "
-                                          f"ns na komórkę i krok" if t.get("caSim") and t.get("steps") else ms(t.get("caSim"))))
+        rows.append(("czas CA (`caSim`)", f"{ms(t.get('caSim'))} ({num(t['caSim'] * 1e6 / (t['cells'] * max(t['steps'], 1)), 1)} "
+                                          f"ns na komórkę i krok)" if t.get("caSim") and t.get("steps") else ms(t.get("caSim"))))
     mc = (s or {}).get("mc")
     if mc:
         acc = 100 * mc["accepted"] / mc["attempts"] if mc.get("attempts") else None
-        rows.append(("MC: domena", f"{mc.get('domain')} — {num(mc.get('domainCells'))} komórek, Q = {mc.get('Q')}, "
+        rows.append(("MC: domena", f"{mc.get('domain')}: {num(mc.get('domainCells'))} komórek, Q = {mc.get('Q')}, "
                                    f"{mc.get('mcs')} MCS, kT = {mc.get('kT')}, mobilność: {mc.get('mobility')}"))
         rows.append(("MC: ziarna", f"{num(mc.get('grainsStart'))} → {num(mc.get('grainsEnd'))}; średnie ziarno "
                                    f"{num(mc.get('meanGrainSizeStart'), 2)} → {num(mc.get('meanGrainSizeEnd'), 2)} kom., "
@@ -154,7 +154,7 @@ def result_rows(folder: Path) -> list[tuple[str, str]]:
                                                  f"{num(lo['meanGrainSizeEnd'], 1)} kom. → **×{num(ratio, 1)}**"))
         if t.get("mcSim"):
             per = t["mcSim"] * 1e6 / mc["attempts"] if mc.get("attempts") else None
-            rows.append(("czas MC (`mcSim`)", f"{ms(t['mcSim'])} — {num(per, 1)} ns na próbę"))
+            rows.append(("czas MC (`mcSim`)", f"{ms(t['mcSim'])} ({num(per, 1)} ns na próbę)"))
     mem = t.get("memory") or {}
     if mem.get("peakRssBytes"):
         model = (mem.get("model") or {})
@@ -175,7 +175,7 @@ def section(i: int, c: dict, code: int | None, wall: float | None, log: str) -> 
     if code is None:
         status = "policzone wcześniej" if (folder / "times.json").exists() else "❌ brak wyniku"
     else:
-        status = f"✅ OK (kod 0, {num(wall, 1)} s z uruchomieniem procesu)" if code == 0 else f"❌ błąd — kod wyjścia {code}"
+        status = f"✅ OK (kod 0, {num(wall, 1)} s z uruchomieniem procesu)" if code == 0 else f"❌ błąd, kod wyjścia {code}"
     out = [f"## {i}. {c['title']}", "", f"**Co sprawdzamy:** {c['check']}", "",
            f"**Polecenie:** (podgląd w GUI: wynik `{c['name']}`)", "",
            "```powershell", cmd, "```", "", f"**Status:** {status}", "", "| | Wynik |", "|---|---|"]
@@ -211,7 +211,7 @@ def main() -> None:
     parts.append("\n".join([
         f"## {n}. Walidacja configu (błędne dane wejściowe)", "",
         "**Co sprawdzamy:** silnik sprawdza config przed liczeniem i zwraca błędy po polsku (tego samego używa "
-        "formularz GUI — przycisk **Sprawdź**).", "",
+        "formularz GUI, przycisk **Sprawdź**).", "",
         "**Polecenie:**", "", "```powershell",
         ".\\build\\Release\\engine.exe " + " ".join(a.replace("/", "\\") for a in vargs), "```", "",
         f"**Status:** {'✅ błąd wykryty (kod 1 = błąd configu)' if vcode == 1 else f'⚠️ nieoczekiwany kod {vcode}'}", "",
@@ -223,23 +223,23 @@ def main() -> None:
     bcode, bwall, bout = run(engine, ["--benchmark", "--quick"])
     parts.append("\n".join([
         f"## {n}. Benchmark: płaska tablica (vector) vs `vector<vector<vector>>` (macierz)", "",
-        "**Co sprawdzamy:** te same przypadki na obu reprezentacjach siatki — czas samego automatu (mediana) i czy "
+        "**Co sprawdzamy:** te same przypadki na obu reprezentacjach siatki: czas samego automatu (mediana) i czy "
         "wyniki są identyczne komórka po komórce (kolumna „zgodne”).", "",
         "**Polecenie:**", "", "```powershell", ".\\build\\Release\\engine.exe --benchmark --quick",
         "```", "",
         f"**Status:** {'✅ wszystkie wyniki zgodne (kod 0)' if bcode == 0 else ('❌ niezgodne wyniki (kod 4)' if bcode == 4 else f'❌ kod {bcode}')}"
-        f" — {num(bwall, 1)} s", "", "```", bout.strip()[-6000:], "```", ""]))
+        f", {num(bwall, 1)} s", "", "```", bout.strip()[-6000:], "```", ""]))
 
     t0 = load(ROOT / "results" / "etna_real", "times.json") or {}
     head = [
-        "# Zestawienie wyników — przykładowe przypadki (wulkan: CA + MC)", "",
+        "# Zestawienie wyników: przykładowe przypadki (wulkan: CA + MC)", "",
         f"Wygenerowane: {dt.datetime.now():%d.%m.%Y %H:%M} skryptem `tools/zestaw_wynikow.py` · "
         f"procesor: {t0.get('cpu', '—')} · kompilator: {t0.get('compiler', '—')} {t0.get('build', '')}", "",
         "Każdy punkt: co sprawdzamy, polecenie (z folderu `volcano-ca-mc`), wynik odczytany z plików silnika "
         "(`times.json`, `stats.json`). Wyniki są w `results\\<nazwa>\\` i można je obejrzeć w GUI "
         "(Podgląd 2D / 3D, Czasy i statystyki).", "",
         "> Czasy pochodzą z jednego uruchomienia (MSVC Release) i służą orientacji. Pomiary do profilu (3 powtórzenia, "
-        "przypięcie do rdzenia P) są w `docs/etap-3-profilowanie.md`, porównanie CA vs MC — w `docs/etap-5-kolejka-serie-dane.md`.", "",
+        "przypięcie do rdzenia P) są w `docs/profilowanie.md`, porównanie CA vs MC w `docs/kolejka-serie-dane.md`.", "",
         "| # | Przypadek | Status |", "|---|---|---|"]
     for i, (c, p) in enumerate(zip(CASES, parts), 1):
         st = p.split("**Status:** ", 1)[1].split("\n", 1)[0]
