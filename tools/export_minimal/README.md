@@ -7,8 +7,9 @@ zarodkami, a lawa rośnie po terenie (generowanym albo prawdziwym: Etna, Wezuwiu
 największego spadku, wypełnia krater, stygnie i zastyga w bazalt. Zastygły bazalt krystalizuje metodą Monte Carlo
 (model Pottsa) z mobilnością zależną od czasu stygnięcia. Obliczenia wykonuje silnik C++17 bez interfejsu
 (config JSON → symulacja → pliki wyników i `times.json`), a GUI w przeglądarce przygotowuje konfiguracje, kolejkuje
-zadania i pokazuje wyniki w 2D i 3D (także odtwarzanie erupcji krok po kroku), a zakładka **Wydajność** pokazuje
-wyniki optymalizacji i zrównoleglenia (OpenMP, MPI) na interaktywnych wykresach z opisem „Jak czytać”.
+zadania i pokazuje wyniki w 2D i 3D (także odtwarzanie erupcji krok po kroku). Druga część projektu przyspiesza
+silnik: optymalizacja sekwencyjna, OpenMP, wersja rozproszona MPI z typami pochodnymi i zapisem MPI-IO oraz testy
+wydajności, których wyniki pokazuje zakładka **Wydajność** na interaktywnych wykresach z opisem „Jak czytać”.
 
 ![Erupcja Etny w podglądzie 3D: odtwarzanie krok po kroku](docs/img/readme/gui_3_erupcja_3d.png)
 
@@ -99,10 +100,11 @@ engine/      silnik C++17: src/ (core, terrain, ca, mc, io, app, parallel: OpenM
              tests/ (doctest; mpi/: testy pod mpiexec), third_party/
 gui/         GUI: backend Python (FastAPI, tylko 127.0.0.1), frontend HTML/JS (static/), testy pytest (tests/)
 tools/       podgląd wyników (PNG), seria bez GUI, mapy wysokości, prawdziwy teren, eksport VTK
-bench/       skrypty pomiarów (profil, testy A/B, skalowanie OpenMP i MPI), mikrobenchmarki, dane cytowane w raporcie (results/)
+bench/       skrypty pomiarów (profil, testy A/B, skalowanie OpenMP i MPI), mikrobenchmarki, dane cytowane w raportach (results/)
 configs/     przykładowe konfiguracje JSON i mapy wysokości (heightmaps/)
 docs/pdf/    dokumentacja tematyczna w PDF (optymalizacja, OpenMP, MPI, testy wydajności i in.)
-raport.pdf   raport techniczny
+raport-1.pdf raport techniczny, część 1 (modele, GUI, profil)
+raport-2.pdf raport techniczny, część 2 (optymalizacja i obliczenia równoległe)
 ```
 
 Dane terenu Etny i Wezuwiusza pochodzą z AWS Terrain Tiles; wymagane przypisanie danych:
@@ -110,8 +112,20 @@ Dane terenu Etny i Wezuwiusza pochodzą z AWS Terrain Tiles; wymagane przypisani
 
 ## Opis projektu i wyniki
 
-Architektura, modele CA i MC, GUI i kolejkowanie zadań, wyniki symulacji oraz profil wydajności:
-**[raport.pdf](raport.pdf)**.
+- **[raport-1.pdf](raport-1.pdf)** (część 1): architektura, modele CA i MC, GUI i kolejkowanie zadań, wyniki
+  symulacji oraz profil wydajności.
+- **[raport-2.pdf](raport-2.pdf)** (część 2): optymalizacja sekwencyjna, OpenMP, MPI, typy pochodne MPI i MPI-IO
+  oraz testy wydajności (przyspieszenie, efektywność, pamięć główna i podręczna).
+
+Najważniejsze wyniki części 2 (wynik symulacji bitowo ten sam przy 1–8 wątkach i 1–8 procesach, w MSVC i GCC):
+
+- automat frontalny skraca erupcję Etny (1,8 mln komórek) z 32,3 s do 0,15 s;
+- OpenMP na 8 rdzeniach wydajnościowych przyspiesza fazę obliczeń 4,8–6,7×;
+- MPI na 7 procesach: 6,7× przy efektywności 0,95–0,96 (siatki o równej pracy na warstwę);
+- MPI-IO zapisuje wynik tekstowy 300³ w 0,73 s zamiast 1,84 s przy 4× mniejszej pamięci procesu 0;
+- łącznie od programu sprzed optymalizacji: Etna ×1 871, rozrost ziaren 300³ ×50, Monte Carlo ×39–47.
+
+Więcej w **[raport-2.pdf](raport-2.pdf)**.
 
 Dokumentacja tematyczna w PDF, od automatu komórkowego po testy wydajności wersji równoległych:
 [docs/pdf/](docs/pdf/) (tytuły w [docs/pdf/index.json](docs/pdf/index.json)). Te same pliki pobiera link

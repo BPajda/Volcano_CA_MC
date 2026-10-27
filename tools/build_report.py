@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Raport techniczny: docs/raport.md -> docs/raport.html -> docs/raport.pdf (Chromium przez Playwright,
-bez LaTeX-a). Wymaga: pip install --user markdown pygments pypdf (+ pymupdf dla --png).
+"""Raporty techniczne: docs/raport-N.md -> docs/raport-N.html -> docs/raport-N.pdf (Chromium przez Playwright,
+bez LaTeX-a); raport 1: architektura, modele CA i MC, GUI, profil; raport 2: optymalizacja, OpenMP, MPI, typy MPI
+i MPI-IO, testy wydajności. Wymaga: pip install --user markdown pygments pypdf (+ pymupdf dla --png).
 
-    python tools/build_report.py                 # HTML + PDF, liczba stron (kod wyjścia 1, gdy > --max-pages)
-    python tools/build_report.py --png DIR       # dodatkowo każda strona PDF jako PNG (do obejrzenia)
-    python tools/build_report.py --check         # tylko kontrola: nazwy funkcji i ścieżki z `…` istnieją w repozytorium
+    python tools/build_report.py                 # oba raporty: HTML + PDF, liczba stron (kod 1, gdy > --max-pages)
+    python tools/build_report.py 2               # tylko raport 2 (docs/raport-2.pdf)
+    python tools/build_report.py 2 --png DIR     # dodatkowo każda strona PDF jako PNG (DIR/raport-2/strona_NN.png)
+    python tools/build_report.py --check         # tylko kontrola: nazwy funkcji i ścieżki z `…` istnieją w repozytorium,
+                                                 # a wiersze listingów leżą w podanym zakresie linii pliku
 
 Układ: A4, marginesy 18 mm (dół 20 mm — stopka „str. X / Y”), tekst Cambria 10,5 pt (interlinia 1,3), nagłówki Inter,
 kod JetBrains Mono 8,5 pt (fonty GUI z gui/static/vendor/fonts/), nagłówki numerowane licznikami CSS, rysunki, tabele
@@ -20,9 +23,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
-SRC = DOCS / "raport.md"
-HTML = DOCS / "raport.html"
-PDF = DOCS / "raport.pdf"
+# Numer raportu -> (plik źródłowy bez rozszerzenia, podpis w stopce, czy sprawdzać linie listingów z obecnym kodem);
+# HTML to produkt pośredni (.gitignore). Listingi raportu 1 pokazują kod z chwili jego napisania — późniejsza
+# optymalizacja zmieniła te funkcje i numery linii, więc kontrola listingów dotyczy tylko raportu 2.
+REPORTS = {"1": ("raport-1", "Erupcja wulkanu: CA + MC", False),
+           "2": ("raport-2", "Erupcja wulkanu: CA + MC, część 2", True)}
+TITLE = "Erupcja wulkanu: spływ lawy (CA) i krystalizacja bazaltu (MC)"
 
 CSS = r"""
 @font-face { font-family: "Inter"; font-weight: 100 900; src: url("../gui/static/vendor/fonts/inter-latin-ext-wght-normal.woff2") format("woff2"); unicode-range: U+0100-024F, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF; }
@@ -108,23 +114,23 @@ td.r, th.r, .num td:not(:first-child), .num th:not(:first-child) { text-align: r
 
 FOOTER = ('<div style="width:100%; font-family: Inter, Segoe UI, sans-serif; font-size:7.5pt; color:#776d63; '
           'padding: 0 18mm; display:flex; justify-content:space-between;">'
-          '<span>Erupcja wulkanu: CA + MC · Bartosz Pajda</span>'
+          '<span>{label} · Bartosz Pajda</span>'
           '<span>str. <span class="pageNumber"></span> / <span class="totalPages"></span></span></div>')
 
 
-def build_html() -> str:
+def build_html(src: Path) -> str:
     import markdown
 
-    text = SRC.read_text(encoding="utf-8")
+    text = src.read_text(encoding="utf-8")
     body = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite", "attr_list", "md_in_html", "sane_lists"],
                              extension_configs={"codehilite": {"guess_lang": False, "css_class": "codehilite"}},
                              output_format="html5")
     return ("<!doctype html>\n<html lang=\"pl\"><head><meta charset=\"utf-8\">\n"
-            "<title>Erupcja wulkanu: spływ lawy (CA) i krystalizacja bazaltu (MC)</title>\n"
+            f"<title>{TITLE}</title>\n"
             f"<style>{CSS}</style></head>\n<body>\n{body}\n</body></html>\n")
 
 
-def render_pdf(html_path: Path, pdf_path: Path) -> None:
+def render_pdf(html_path: Path, pdf_path: Path, label: str = REPORTS["1"][1]) -> None:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -134,7 +140,7 @@ def render_pdf(html_path: Path, pdf_path: Path) -> None:
         page.evaluate("() => document.fonts.ready")
         page.wait_for_timeout(300)
         page.pdf(path=str(pdf_path), format="A4", print_background=True, display_header_footer=True,
-                 header_template="<span></span>", footer_template=FOOTER,
+                 header_template="<span></span>", footer_template=FOOTER.replace("{label}", label),
                  margin={"top": "17mm", "bottom": "19mm", "left": "18mm", "right": "18mm"})
         browser.close()
 
@@ -154,9 +160,9 @@ def render_png(pdf_path: Path, out: Path, dpi: int) -> None:
     print(f"strony PNG ({dpi} dpi): {out}")
 
 
-def check_names() -> int:
+def check_names(src: Path, listings: bool = True) -> int:
     """Każda nazwa funkcji / klasy (`Klasa::metoda()`, `funkcja()`) i ścieżka pliku z `…` w raporcie musi istnieć."""
-    text = SRC.read_text(encoding="utf-8")
+    text = src.read_text(encoding="utf-8")
     spans = set(re.findall(r"`([^`\n]+)`", text))
     code = {}
     for base in ("engine/src", "gui", "tools", "bench"):
@@ -176,31 +182,64 @@ def check_names() -> int:
         if re.fullmatch(r"[\w.\-/<>*{}]+/[\w.\-<>*{}]+\.(?:cpp|hpp|py|js|json|md|csv|bin|png|sh|txt)", s) and not any(c in s for c in "<>*{}"):
             if not ((ROOT / s).exists() or (DOCS / s).exists()):
                 problems.append(f"ścieżka {s}: nie istnieje")
+    problems += check_listings(text) if listings else []
     for p in problems:
         print("  BŁĄD:", p)
-    print(f"kontrola nazw: {len(spans)} fragmentów `…`, problemów: {len(problems)}")
+    print(f"kontrola nazw i listingów ({src.name}): {len(spans)} fragmentów `…`, problemów: {len(problems)}")
     return len(problems)
+
+
+LST_HEAD = re.compile(r'<p class="lst-head"><b>(Listing \d+)\.</b> <code>([^<]+)</code>, linie (\d+)[–-](\d+)')
+
+
+def check_listings(text: str) -> list[str]:
+    """Każdy wiersz kodu listingu (poza skrótami z „…”) jest wierszem pliku z nagłówka listingu, w podanym zakresie
+    linii i w tej samej kolejności (porównanie bez wcięć)."""
+    problems = []
+    for m in LST_HEAD.finditer(text):
+        name, path, a, b = m.group(1), m.group(2), int(m.group(3)), int(m.group(4))
+        f = ROOT / path
+        if not f.is_file():
+            problems.append(f"{name}: brak pliku {path}")
+            continue
+        lines = [ln.strip() for ln in f.read_text(encoding="utf-8").splitlines()[a - 1:b]]
+        block = text[m.end():].split("```cpp", 1)[1].split("```", 1)[0]
+        pos = 0
+        for code in (ln.strip() for ln in block.strip("\n").splitlines()):
+            if not code or "…" in code:
+                continue
+            try:
+                pos = lines.index(code, pos) + 1
+            except ValueError:
+                problems.append(f"{name}: wiersz spoza {path}:{a}–{b} (albo nie po kolei): {code}")
+    return problems
 
 
 def main() -> int:
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(errors="replace")
     ap = argparse.ArgumentParser()
-    ap.add_argument("--png", default=None, help="katalog na PNG stron")
+    ap.add_argument("raport", nargs="?", choices=sorted(REPORTS), help="numer raportu (domyślnie oba)")
+    ap.add_argument("--png", default=None, help="katalog na PNG stron (podkatalog raport-N/)")
     ap.add_argument("--dpi", type=int, default=110)
     ap.add_argument("--max-pages", type=int, default=10)
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
-    if args.check:
-        return 1 if check_names() else 0
-    HTML.write_text(build_html(), encoding="utf-8", newline="\n")
-    render_pdf(HTML, PDF)
-    n = page_count(PDF)
-    print(f"zapisano {PDF.relative_to(ROOT).as_posix()} — {n} stron (limit {args.max_pages})")
-    if args.png:
-        render_png(PDF, Path(args.png), args.dpi)
-    bad = check_names()
-    return 1 if n > args.max_pages or bad else 0
+    bad = 0
+    for key in [args.raport] if args.raport else sorted(REPORTS):
+        stem, label, listings = REPORTS[key]
+        src, html, pdf = DOCS / f"{stem}.md", DOCS / f"{stem}.html", DOCS / f"{stem}.pdf"
+        if args.check:
+            bad += check_names(src, listings)
+            continue
+        html.write_text(build_html(src), encoding="utf-8", newline="\n")
+        render_pdf(html, pdf, label)
+        n = page_count(pdf)
+        print(f"zapisano {pdf.relative_to(ROOT).as_posix()} — {n} stron (limit {args.max_pages})")
+        if args.png:
+            render_png(pdf, Path(args.png) / stem, args.dpi)
+        bad += check_names(src, listings) + (n > args.max_pages)
+    return 1 if bad else 0
 
 
 if __name__ == "__main__":

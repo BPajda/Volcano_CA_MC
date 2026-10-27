@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Eksport wersji minimalnej projektu: kod, README, raport PDF i PDF-y dokumentacji, do osobnego folderu (repozytorium).
+"""Eksport wersji minimalnej projektu: kod, README, raporty PDF i PDF-y dokumentacji, do osobnego folderu (repozytorium).
 
     python tools/export_minimal.py                          # domyślnie ../volcano-ca-mc-minimal
     python tools/export_minimal.py ..\\volcano-ca-mc-minimal
@@ -10,19 +10,23 @@ Co robi:
      komendą po kolejnych zmianach (eksport → commit w folderze minimalnym → push).
   2. Kopiuje pliki z listy „kopiuj” (COPY niżej — lista dozwolonych, nie lista pomijanych): silnik z testami, GUI
      z testami pytest, narzędzia potrzebne do działania, configi i mapy wysokości, skrypty pomiarów z danymi cytowanymi
-     w raporcie, pliki CMake, `.gitignore`, `docs/raport.pdf` → `raport.pdf`, PDF-y dokumentów `docs/pdf/` (link
+     w raportach, pliki CMake, `.gitignore`, `docs/raport-1.pdf` → `raport-1.pdf` i `docs/raport-2.pdf` → `raport-2.pdf`,
+     PDF-y dokumentów `docs/pdf/` (link
      „Pobierz PDF” zakładki „Wydajność” działa także tutaj), szablon `tools/export_minimal/README.md` → `README.md`
      i obrazki, których ten README używa.
   3. W skopiowanych plikach Markdown odnośniki do dokumentacji z `docs/` (której w tej wersji nie ma) zamienia na
-     odnośniki do PDF-u tego dokumentu z `docs/pdf/`, a gdy go nie ma — do `raport.pdf`.
+     odnośniki do PDF-u tego dokumentu z `docs/pdf/`, a gdy go nie ma — do raportu: `docs/raport-N.md` → `raport-N.pdf`,
+     pliki części 2 (optymalizacja, OpenMP, MPI, testy wydajności, zakładka „Wydajność”) → `raport-2.pdf`, reszta →
+     `raport-1.pdf`.
   4. Sprawdza wynik: (a) odnośniki i obrazki we wszystkich plikach .md wskazują istniejące pliki, (b) ścieżki do
      `docs/` w kodzie — błąd poza komentarzami i opisami (w GUI to byłyby martwe linki), w komentarzach tylko
      informacja, (c) słownictwo spoza projektu — 0 trafień wzorców z lokalnego pliku `tools/export_minimal/slownictwo.txt`
-     (w .gitignore; bez niego ta kontrola jest pomijana z ostrzeżeniem), także w tekście PDF-ów dokumentacji (pypdf).
+     (w .gitignore; bez niego ta kontrola jest pomijana z ostrzeżeniem), także w tekście PDF-ów dokumentacji i raportów
+     (pypdf).
      Kod wyjścia 1, gdy kontrola wykryła błędy.
 
 Folder docelowy nie może być katalogiem projektu ani go zawierać; niepusty folder bez śladów poprzedniego eksportu
-(README.md + raport.pdf + engine/) wymaga opcji --force.
+(README.md + raport-1.pdf albo dawny raport.pdf + engine/) wymaga opcji --force.
 """
 
 from __future__ import annotations
@@ -58,11 +62,12 @@ COPY: list[tuple[str, str]] = [
     ("bench/*.sh", "bench"),
     ("bench/README.md", "bench/README.md"),
     ("bench/micro", "bench/micro"),             # mc_kernels.cpp, omp_overhead.cpp, bandwidth.cpp — cele CMake o tych nazwach
-    ("bench/results/*.csv", "bench/results"),   # dane pomiarowe cytowane w raporcie (bez bench/profiles/)
+    ("bench/results/*.csv", "bench/results"),   # dane pomiarowe cytowane w raportach (bez bench/profiles/)
     ("CMakeLists.txt", "CMakeLists.txt"),
     ("CMakePresets.json", "CMakePresets.json"),
     (".gitignore", ".gitignore"),
-    ("docs/raport.pdf", "raport.pdf"),
+    ("docs/raport-1.pdf", "raport-1.pdf"),       # część 1: architektura, modele CA i MC, GUI i kolejkowanie, profil
+    ("docs/raport-2.pdf", "raport-2.pdf"),       # część 2: optymalizacja, OpenMP, MPI, typy MPI i MPI-IO, testy wydajności
     ("docs/pdf", "docs/pdf"),                   # PDF-y dokumentów + index.json (tytuły) dla /api/doc/pdf zakładki „Wydajność”
 ]
 # Obrazki używane przez README wersji minimalnej (sprawdzane z szablonem — każdy musi być na tej liście).
@@ -73,7 +78,8 @@ EXCLUDE = [
     "*/__pycache__/*", "*/.pytest_cache/*", "*.pyc",
     "gui/settings.json",
     # skrypty zrzutów ekranu i pomiarów przez przeglądarkę (piszą do docs/) — zostają testy pytest i conftest.py
-    "gui/tests/screenshots.py", "gui/tests/ui_shots.py", "gui/tests/raport_shots.py", "gui/tests/palette_check.py",
+    "gui/tests/screenshots.py", "gui/tests/ui_shots.py", "gui/tests/raport_shots.py", "gui/tests/raport2_shots.py",
+    "gui/tests/palette_check.py",
     "gui/tests/run_ca_vs_mc.py",
 ]
 # W .gitignore wersji minimalnej pomijamy blok konwencji pracy lokalnej (od tej linii do końca pliku).
@@ -95,6 +101,9 @@ def load_vocab(path: Path) -> re.Pattern | None:
     return re.compile("|".join(f"(?:{p})" for p in pats), re.IGNORECASE) if pats else None
 
 MD_LINK = re.compile(r"(!?)\[([^\]\n]*)\]\(([^)\s]+)\)")
+# Raport, do którego prowadzi odnośnik do pliku z docs/ bez PDF-u w docs/pdf/: raport-N.md → raport-N.pdf, pliki części 2
+# (nazwy dokumentów i obrazków jak w docs/: optymalizacja, OpenMP, MPI, testy, zakładka „Wydajność”) → raport 2.
+PART2 = re.compile(r"^(raport-2|optymalizacja|openmp|mpi|testy|zakladka|gui_wydajnosc)")
 DOCS_REF = re.compile(r"(?<![\w/.\-])((?:\.\./)*docs[/\\][\w.\-/\\*{}<>]*[\w*}>])")
 
 
@@ -117,9 +126,10 @@ def check_target(dest: Path, force: bool) -> None:
         sys.exit(f"{d} istnieje i nie jest folderem.")
     if d.exists() and not force:
         content = [p for p in d.iterdir() if p.name != ".git"]
-        looks_like_export = (d / "README.md").is_file() and (d / "raport.pdf").is_file() and (d / "engine").is_dir()
+        report = (d / "raport-1.pdf").is_file() or (d / "raport.pdf").is_file()  # raport.pdf: eksport sprzed podziału
+        looks_like_export = (d / "README.md").is_file() and report and (d / "engine").is_dir()
         if content and not looks_like_export:
-            sys.exit(f"{d} nie jest pusty i nie wygląda na poprzedni eksport (README.md, raport.pdf, engine/) — "
+            sys.exit(f"{d} nie jest pusty i nie wygląda na poprzedni eksport (README.md, raport-1.pdf, engine/) — "
                      f"wybierz inny folder albo użyj --force.")
 
 
@@ -196,15 +206,24 @@ def target_of(md: Path, link: str, dest: Path) -> Path | None:
     return (dest / path.lstrip("/")) if path.startswith("/") else (md.parent / path)
 
 
+def report_for(t: Path) -> str:
+    """Raport (plik w katalogu głównym eksportu) zamiast pliku z docs/, który nie ma PDF-u w docs/pdf/."""
+    if t.stem in ("raport-1", "raport-2"):
+        return f"{t.stem}.pdf"
+    return "raport-2.pdf" if PART2.match(t.name) else "raport-1.pdf"
+
+
 def rewrite_markdown(dest: Path) -> int:
     """Odnośniki do nieistniejących plików z docs/ → PDF tego dokumentu z docs/pdf/ (jeśli jest w eksporcie), inaczej
-    raport.pdf (w każdym pliku .md poza README.md w katalogu głównym)."""
+    raport-1.pdf albo raport-2.pdf (report_for; w każdym pliku .md poza README.md w katalogu głównym)."""
     changed = 0
     for md in sorted(dest.rglob("*.md")):
         if md == dest / "README.md" or ".git" in md.relative_to(dest).parts:
             continue
         text = md.read_text(encoding="utf-8")
-        to_pdf = os.path.relpath(dest / "raport.pdf", md.parent).replace(os.sep, "/")
+
+        def to_pdf(name: str) -> str:
+            return os.path.relpath(dest / name, md.parent).replace(os.sep, "/")
 
         def doc_pdf(stem: str) -> Path | None:
             p = dest / "docs" / "pdf" / f"{stem}.pdf"
@@ -220,24 +239,26 @@ def rewrite_markdown(dest: Path) -> int:
                 rel_pdf = os.path.relpath(pdf, md.parent).replace(os.sep, "/")
                 new_label = f"`docs/pdf/{pdf.name}`" if ("docs/" in label or label.strip("`").endswith(".md")) else label
                 return f"{bang}[{new_label}]({rel_pdf})"
-            new_label = "raport.pdf" if ("docs/" in label or label.strip("`").endswith(".md")) else label
-            return f"{bang}[{new_label}]({to_pdf})"
+            rep_name = report_for(t)
+            new_label = rep_name if ("docs/" in label or label.strip("`").endswith(".md")) else label
+            return f"{bang}[{new_label}]({to_pdf(rep_name)})"
 
         new = MD_LINK.sub(repl_link, text)
-        # Kilka odnośników do raportu z rzędu (po zamianie) → jeden.
-        pdf_link = re.escape(f"[raport.pdf]({to_pdf})")
-        new = re.sub(rf"{pdf_link}(?:(?:,\s*|\s+i\s+){pdf_link})+", f"[raport.pdf]({to_pdf})", new)
+        # Kilka odnośników do tego samego raportu z rzędu (po zamianie) → jeden.
+        for rep_name in ("raport-1.pdf", "raport-2.pdf"):
+            pdf_link = re.escape(f"[{rep_name}]({to_pdf(rep_name)})")
+            new = re.sub(rf"{pdf_link}(?:(?:,\s*|\s+i\s+){pdf_link})+", f"[{rep_name}]({to_pdf(rep_name)})", new)
 
-        # Wzmianki `docs/<plik>.md` (bez odnośnika) → `raport.pdf`.
+        # Wzmianki `docs/<plik>.md` (bez odnośnika) → `docs/pdf/<plik>.pdf` albo raport.
         def repl_tick(m: re.Match) -> str:
             path = m.group(1)
             t = (md.parent / path) if path.startswith("../") else (dest / path)
             if t.exists():
                 return m.group(0)
-            return f"`docs/pdf/{t.stem}.pdf`" if doc_pdf(t.stem) else "`raport.pdf`"
+            return f"`docs/pdf/{t.stem}.pdf`" if doc_pdf(t.stem) else f"`{report_for(t)}`"
 
         new = re.sub(r"`((?:\.\./)*docs/[\w.\-/]+\.md)`", repl_tick, new)
-        new = re.sub(r"`raport\.pdf`(?:(?:,\s*|\s+i\s+)`raport\.pdf`)+", "`raport.pdf`", new)
+        new = re.sub(r"`(raport-[12]\.pdf)`(?:(?:,\s*|\s+i\s+)`\1`)+", r"`\1`", new)
         if new != text:
             md.write_text(new, encoding="utf-8", newline="\n")
             changed += 1
@@ -360,14 +381,14 @@ def check_vocab(dest: Path, rx: re.Pattern) -> list[str]:
 
 
 def check_vocab_pdf(dest: Path, rx: re.Pattern) -> list[str]:
-    """Słownictwo w tekście PDF-ów dokumentacji (docs/pdf/*.pdf); raport ma własną kontrolę przy budowaniu."""
-    pdfs = sorted((dest / "docs" / "pdf").glob("*.pdf"))
+    """Słownictwo w tekście PDF-ów dokumentacji (docs/pdf/*.pdf) i raportów w katalogu głównym (raport-*.pdf)."""
+    pdfs = sorted(dest.glob("raport-*.pdf")) + sorted((dest / "docs" / "pdf").glob("*.pdf"))
     if not pdfs:
         return []
     try:
         from pypdf import PdfReader
     except ImportError:
-        print("  UWAGA: brak pypdf — słownictwo w PDF-ach dokumentacji niesprawdzone (pip install --user pypdf)")
+        print("  UWAGA: brak pypdf — słownictwo w PDF-ach niesprawdzone (pip install --user pypdf)")
         return []
     hits = []
     for f in pdfs:
@@ -443,7 +464,7 @@ def main() -> int:
     print(f"Wersja minimalna: {dest}")
     print(f"  usunięto poprzednią zawartość: {removed} elementów (bez .git/)")
     print(f"  skopiowano: {len(copied)} plików, {size / 2**20:.1f} MB")
-    print(f"  pliki .md z odnośnikami do docs/ zamienionymi na PDF (docs/pdf/ albo raport.pdf): {rewritten}")
+    print(f"  pliki .md z odnośnikami do docs/ zamienionymi na PDF (docs/pdf/ albo raport-1/2.pdf): {rewritten}")
     return check(dest, args.verbose, vocab_file)
 
 

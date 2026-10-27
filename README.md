@@ -32,8 +32,11 @@ są po polsku.
 - **Deterministyczne wyniki:** losowość pochodzi z funkcji skrótu położenia komórki, więc wynik jest bitowo
   identyczny dla obu reprezentacji siatki (płaska tablica i `vector<vector<vector>>`), dla MSVC i GCC oraz dla każdej
   liczby wątków OpenMP (`--threads`) i procesów MPI.
+- **Obliczenia równoległe OpenMP:** `--threads N` dzieli warstwy przestrzeni między wątki (harmonogram z configu,
+  przypinanie do rdzeni wydajnościowych); MC liczy się wielowątkowo w trybie szachownicy (`mc.update = checkerboard`).
 - **Wersja rozproszona (MPI):** `mpiexec -n 8 engine_mpi …` dzieli przestrzeń na pasy warstw między procesy
-  z wymianą warstw brzegowych (MS-MPI na Windows, OpenMPI na Linuksie), także w trybie hybrydowym procesy × wątki.
+  z wymianą warstw brzegowych (MS-MPI na Windows, OpenMPI na Linuksie), także w trybie hybrydowym procesy × wątki;
+  opcjonalnie wymiana i rozsyłanie configu typami pochodnymi MPI i równoległy zapis wyniku przez MPI-IO.
 
 | Kratery na mapie (Etna) | Kryształy MC na przekroju wulkanu | Kolejka zadań z serią |
 |---|---|---|
@@ -53,6 +56,10 @@ ctest --preset msvc-release                    # 12 testów (doctest + testy dym
 
 # Pierwsza symulacja: przekrój 2D wulkanu -> results\test_2d\ (ca_result.*, times.json, stats.json)
 .\build\Release\engine.exe --config configs\test_2d.json --out results\test_2d
+
+# Ta sama lawa 3D na 8 wątkach OpenMP i na 4 procesach MPI (MS-MPI; wynik bitowo ten sam)
+.\build\Release\engine.exe --config configs\test_3d.json --out results\test_3d_t8 --threads 8 --high-priority
+mpiexec -n 4 .\build\Release\engine_mpi.exe --config configs\test_3d.json --out results\test_3d_mpi4 --high-priority
 
 # GUI: http://127.0.0.1:8000
 python -m pip install --user -r gui\requirements.txt
@@ -92,66 +99,60 @@ Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie
 
 ## Wybrane wyniki
 
+**Symulacja i profil:**
+
 - Na tej samej siatce naiwne MC jest **4–56× wolniejsze** od CA. W 2D przewaga CA maleje z rozmiarem (25× → 4×),
   bo liczba kroków CA rośnie jak bok siatki; w 3D zostaje ~30×.
 - Mobilność ze stygnięcia daje w wolno stygnącej lawie ziarna średnio **5,0× większe** niż w szybko zastygłej
   (`lava_mc_3d`; bez mobilności 2,2×, tyle wynika z samej geometrii cienkiej warstwy).
 - Profil: w CA lawy **68–83% czasu** zajmowało przeszukiwanie sąsiadów komórek powietrza, które w 99,99% przypadków
-  nic nie znajduje, stąd automat frontalny jako pierwsza optymalizacja. Różnica MSVC/GCC w MC (2–3×) to był jeden
-  skok warunkowy w pętli energii.
-- **Optymalizacja sekwencyjna** (automat frontalny, MC bez skoku warunkowego, przesunięcia liniowe sąsiadów, tańsze
-  statystyki i zapis): erupcja Etny (1,8 mln komórek) liczy się **~200× szybciej** (automat: 13,1 s → 39 ms), CA classic
-  7–17×, MC 1,4–2×, pamięć CA 2D 91 → 28–36 B na komórkę, przy wynikach **bitowo identycznych** z wersją sprzed zmian,
-  co sprawdza test A/B każdego kroku ([docs/optymalizacja-sekwencyjna.md](docs/optymalizacja-sekwencyjna.md)).
-- **OpenMP** (podział przestrzeni na warstwy między wątki, 8 rdzeni wydajnościowych): faza obliczeń przyspiesza
-  **4,8–6,7×** przy 8 wątkach (pełny przebieg lawy 6,3×, MC w nowym trybie szachownicy 6,1–6,2×), a wynik jest bitowo
-  ten sam dla każdej liczby wątków. Cały przebieg przyspiesza 2,1–6,2×, bo przygotowanie terenu, statystyki ziaren i zapis są
-  sekwencyjne (prawo Amdahla) ([docs/openmp.md](docs/openmp.md)).
-- **MPI** (pasy warstw między procesy, ten sam wynik bitowo): MC szachownicą i CA classic 2D przyspieszają prawie
-  liniowo: **6,7× na 7 procesach**, szybciej niż OpenMP na 8 wątkach; lawa skupia się w kilku warstwach, więc stałe
-  pasy mają nierówną pracę (pełny przebieg 5,4×, automat frontalny ≤ 2,6×), a małą Etnę MPI wręcz spowalnia, bo wymiana
-  warstw trwa dłużej niż krok ([docs/mpi.md](docs/mpi.md)).
-- **Wersje równoległe: podsumowanie** (testy wydajności): lawę najlepiej liczy OpenMP, siatki o równej pracy na
-  komórkę MPI na 7 procesach (E = 0,95–0,96); łącznie z optymalizacją sekwencyjną erupcja Etny liczy się
-  **~1 900× szybciej** niż przed zmianami, CA classic 3D ~50×, MC ~40–47×. Przy rosnącym zadaniu (skalowanie słabe)
-  MC i lawa utrzymują E = 0,87–1,00 na 8 rdzeniach, a CA classic ogranicza przepustowość pamięci RAM, nasycona już
-  przy 6 rdzeniach ([docs/testy-wydajnosci.md](docs/testy-wydajnosci.md)).
-- Model pamięci z kodu (~40 B na komórkę w CA 3D) zgadza się z pomiarem szczytu procesu z dokładnością 0–4%.
+  nic nie znajduje; różnica MSVC/GCC w MC (2–3×) to był jeden skok warunkowy w pętli energii. Model pamięci z kodu
+  (~40 B na komórkę w CA 3D) zgadza się z pomiarem szczytu procesu z dokładnością 0–4%.
 
 ![Czas symulacji CA i MC vs liczba komórek, 2D i 3D, z krotnością MC/CA](docs/img/raport/ca_vs_mc.png)
 
-Zestawienie wyników przykładowych przypadków: [docs/wyniki.md](docs/wyniki.md); raport techniczny (10 stron):
-[docs/raport.pdf](docs/raport.pdf).
+**Optymalizacja i obliczenia równoległe** (wynik bitowo ten sam przy 1–8 wątkach i 1–8 procesach, w MSVC i GCC):
+
+- **Optymalizacja sekwencyjna:** automat frontalny liczy tylko komórki, które mogą się zmienić, więc erupcja Etny
+  (1,8 mln komórek) trwa **0,15 s zamiast 32,3 s** ([docs/optymalizacja-sekwencyjna.md](docs/optymalizacja-sekwencyjna.md)).
+- **OpenMP** (warstwy przestrzeni między wątki, 8 rdzeni wydajnościowych): faza obliczeń przyspiesza **4,8–6,7×**
+  (pełny przebieg lawy 6,3×); MC w trybie szachownicy jest przy tym 3–4× szybsze już na jednym wątku
+  ([docs/openmp.md](docs/openmp.md)).
+- **MPI** (pasy warstw z warstwami brzegowymi): siatki o równej pracy na warstwę przyspieszają **6,7× na 7 procesach**
+  (E = 0,95–0,96), lawę ogranicza nierówna praca pasów ([docs/mpi.md](docs/mpi.md)); **MPI-IO** zapisuje wynik
+  tekstowy 300³ w 0,73 s zamiast 1,84 s przy 4× mniejszej pamięci procesu 0
+  ([docs/mpi-typy-i-zapis.md](docs/mpi-typy-i-zapis.md)).
+- **Łącznie** od programu sprzed optymalizacji: Etna **×1 871** (algorytm ×375 · OpenMP ×4,98), rozrost ziaren 300³
+  ×50, MC ×39–47; przy rosnącym zadaniu (skalowanie słabe) MC i lawa utrzymują E_w = 0,87–1,00 na 8 rdzeniach, a rozrost
+  ziaren ogranicza przepustowość RAM ([docs/testy-wydajnosci.md](docs/testy-wydajnosci.md)).
+
+![Łączne przyspieszenie fazy obliczeń: algorytm, szachownica MC i najlepszy wariant równoległy](docs/img/testy_schodki.png)
+
+Zestawienie wyników przykładowych przypadków: [docs/wyniki.md](docs/wyniki.md).
+
+## Raporty techniczne
+
+- [docs/raport-1.pdf](docs/raport-1.pdf) (10 stron): architektura, modele CA i MC, GUI i kolejkowanie zadań, wyniki
+  symulacji, profil wydajności.
+- [docs/raport-2.pdf](docs/raport-2.pdf) (10 stron): optymalizacja sekwencyjna, OpenMP, MPI, typy pochodne MPI
+  i MPI-IO, testy wydajności.
+
+Źródła `docs/raport-1.md` i `docs/raport-2.md`; budowanie: `python tools/build_report.py` (oba) albo z numerem raportu.
 
 ## Dokumentacja
 
 Spis dokumentacji (dokumenty tematyczne od automatu komórkowego po zakładkę „Wydajność”, każdy także jako PDF,
-oraz architektura, uruchamianie, wyniki i raport): [docs/README.md](docs/README.md).
+oraz architektura, uruchamianie, wyniki i raporty): [docs/README.md](docs/README.md).
 
 ## Dalszy rozwój
 
-- **Optymalizacja sekwencyjna: zrobiona** ([docs/optymalizacja-sekwencyjna.md](docs/optymalizacja-sekwencyjna.md)):
-  automat frontalny, przesunięcia liniowe sąsiadów, ramka tylko w osiach używanych przez sąsiedztwo, MC bez skoku warunkowego, tańsze statystyki MC i zapis plików tekstowych.
-  Do zrobienia: warianty MC zmieniające proces losowy (próby tylko na granicach ziaren, losowanie bez powtórzeń,
-  propozycja orientacji z sąsiadów) z walidacją statystyczną, mniejsze typy pól.
-- **OpenMP: zrobione** ([docs/openmp.md](docs/openmp.md)): automat (frontalny i pełny przebieg) i MC w trybie
-  szachownicy na 1–8 wątkach, przypinanie do rdzeni wydajnościowych, `--threads`, `--thread-stats`. Do zrobienia: równoległe etykiety ziaren MC
-  (dziś ~50% czasu MC przy 8 wątkach), równoległe przygotowanie terenu.
-- **MPI: zrobione** ([docs/mpi.md](docs/mpi.md)): program `engine_mpi`, pasy warstw z warstwami brzegowymi
-  wymienianymi przed każdym krokiem (w MC po każdym kolorze szachownicy), wariant wymiany tylko zmienionych warstw, tryb hybrydowy, przypinanie
-  procesów do rdzeni wydajnościowych. Do zrobienia: pasy ważone pracą albo podział w poziomie dla lawy, równoległe
-  etykiety ziaren MC ([docs/mpi.md, punkt 11](docs/mpi.md#11-wnioski-dla-typów-mpi-i-mpi-io)).
-- **Typy pochodne MPI i MPI-IO: zrobione** (opcje `mpi.pack`, `mpi.bcast`, `mpi.io`; pliki bajtowo te same):
-  wymiana warstw typem `MPI_Type_create_struct` bez pakowania skraca wymianę o 25–50%, a równoległy zapis MPI-IO
-  zapisuje duże wyniki do 3× szybciej przy 4× mniejszej pamięci procesu 0
-  ([docs/mpi-typy-i-zapis.md](docs/mpi-typy-i-zapis.md)).
-- **Testy wydajności: zrobione** ([docs/testy-wydajnosci.md](docs/testy-wydajnosci.md)): zestawienie przyspieszenia
-  i efektywności, skalowanie słabe, pamięć główna wątków i procesów, pamięć podręczna (symulacja cachegrind, czas na komórkę vs rozmiar siatki, przepustowość).
-  Do zrobienia: mniejszy ruch do pamięci w CA classic (mniejsze typy pól, bloki mieszczące się w L2), podział lawy
-  w poziomie, pomiar na klastrze.
-- **Wyniki w GUI: zrobione** ([docs/zakladka-wydajnosc.md](docs/zakladka-wydajnosc.md)): zakładka „Wydajność”
-  z wynikami optymalizacji, OpenMP, MPI i testów wydajności, z linkiem „Pobierz PDF” pod każdym wykresem (dane z plików
-  pomiarów przez `tools/wydajnosc_gui.py`).
+- Pasy MPI ważone pracą albo podział w poziomie dla lawy (dziś dolny pas dostaje prawie całą lawę).
+- Równoległe etykiety ziaren MC (union-find w pasach i łączenie na granicach; dziś ~50% czasu MC przy 8 wątkach).
+- Mniejszy ruch do pamięci w rozroście ziaren (mniejsze typy pól, bloki mieszczące się w L2) i tańsza lista
+  kandydatów automatu frontalnego.
+- Warianty MC zmieniające proces losowy (próby tylko na granicach ziaren, losowanie bez powtórzeń) z walidacją
+  statystyczną.
+- Uruchamianie `engine_mpi` z kolejki GUI i pomiar na klastrze z równoległym systemem plików.
 
 ## Dane terenu
 

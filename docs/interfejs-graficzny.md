@@ -401,7 +401,7 @@ Co dalej: **kolejka, serie i dane wejściowe** ([kolejka-serie-dane.md](kolejka-
 - **wykres CA vs MC**: dane są w `times.json` każdego wyniku (`/api/result/details`); Chart.js jest w `vendor/`.
   Strona „Wyniki serii” zbierze `caSim`/`mcSim` wszystkich zadań serii, plus eksport PNG/CSV;
 - MC na wyniku CA z wybranego zadania (`mcFrom`) już działa w backendzie i formularzu;
-- raport techniczny (`docs/raport.md`) ze zrzutami GUI.
+- raport techniczny (`docs/raport-1.md`) ze zrzutami GUI.
 
 ## 8. Pliki
 

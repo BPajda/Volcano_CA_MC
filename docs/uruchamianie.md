@@ -579,10 +579,16 @@ python gui\tests\palette_check.py --wykresy   # kontrast i daltonizm kolorów wy
 ### 7.7 PDF dokumentów
 
 ```powershell
-python tools\build_docs_pdf.py               # docs\*.md (bez raport.md i spisu README.md) -> docs\pdf\<nazwa>.pdf + docs\pdf\index.json
+python tools\build_docs_pdf.py               # docs\*.md (bez raportów i spisu README.md) -> docs\pdf\<nazwa>.pdf + docs\pdf\index.json
 python tools\build_docs_pdf.py openmp mpi    # wybrane dokumenty (nazwy plików bez .md)
-python tools\build_report.py                 # raport: docs\raport.md -> docs\raport.pdf (osobny skrypt)
+python tools\build_report.py                 # oba raporty: docs\raport-1.md, raport-2.md -> docs\raport-1.pdf, raport-2.pdf
+python tools\build_report.py 2 --png results\raport2_strony   # jeden raport (1 albo 2), strony także jako PNG
+python tools\raport_wykresy.py 2             # rysunki raportu 2 -> docs\img\raport-2\ (dane z bench\results\)
+python gui\tests\raport2_shots.py            # zrzut zakładki „Wydajność” do raportu 2 (sam uruchamia GUI)
 ```
+
+- Raporty mają osobny skrypt: A4, limit 10 stron (kod 1, gdy więcej), kontrola nazw funkcji i ścieżek z tekstu,
+  a w raporcie 2 także zgodności wierszy listingów z podanym zakresem linii pliku (`--check`: tylko kontrola).
 
 - Wymaga Playwright z Chromium (jak zrzuty GUI) i pakietów `markdown`, `pygments`, `pypdf`; po każdej zmianie dokumentu
   w `docs\` zbuduj jego PDF ponownie. Skrypt sprawdza obrazki i elementy szersze niż strona (kod 1 przy problemie).

@@ -1,4 +1,4 @@
-"""Zrzuty GUI do raportu (docs/raport.md) — cztery ekrany jednej historii: konfiguracja → kolejka → erupcja 3D →
+"""Zrzuty GUI do raportu 1 (docs/raport-1.md) — cztery ekrany jednej historii: konfiguracja → kolejka → erupcja 3D →
 krystalizacja MC. Zapis do docs/img/raport/gui_1_konfiguracja.png, gui_2_kolejka.png, gui_3_erupcja_3d.png,
 gui_4_krystalizacja_mc.png (domyślnie motyw jasny — raport jest drukowany na białym tle; --theme dark — ciemny;
 okno 1600×900, deviceScaleFactor 2).

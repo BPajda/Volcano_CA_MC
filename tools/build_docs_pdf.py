@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """PDF dokumentów: docs/<nazwa>.md -> docs/pdf/<nazwa>.pdf (Chromium przez Playwright, styl jak raport
-tools/build_report.py). Bez raport.md (ma własny skrypt) i bez spisu docs/README.md.
+tools/build_report.py). Bez raportów raport-1.md i raport-2.md (własny skrypt) i bez spisu docs/README.md.
 
     python tools/build_docs_pdf.py                    # wszystkie dokumenty + docs/pdf/index.json (tytuły, strony)
     python tools/build_docs_pdf.py openmp mpi         # wybrane dokumenty (nazwy bez .md)
@@ -34,7 +34,7 @@ import build_report as br  # noqa: E402  (wspólny styl i licznik stron z raport
 ROOT = br.ROOT
 DOCS = br.DOCS
 OUT = DOCS / "pdf"
-SKIP = {"raport.md", "README.md"}
+SKIP = {"raport-1.md", "raport-2.md", "README.md"}  # raporty mają własny skrypt (build_report.py)
 AUTHOR = "Bartosz Pajda"
 SUBTITLE = "volcano-ca-mc: dokumentacja techniczna"
 
@@ -124,7 +124,7 @@ def build_html(md_path: Path, titles: dict[str, str], date: str) -> tuple[str, s
 # rozdzielczość niż ~300 dpi w tej ramce nic nie daje, a pełne zrzuty stron GUI (1280 × 3700 px) ważą po kilkaset KB.
 PRINT_DPI = 300
 PRINT_BOX_PX = (round(174 / 25.4 * PRINT_DPI), round(120 / 25.4 * PRINT_DPI))
-SCREENSHOT = re.compile(r"^img/(gui_|ui_|real_|replay_|raport/gui_|readme/)")  # zrzuty ekranu (JPEG); reszta — wykresy
+SCREENSHOT = re.compile(r"^img/(gui_|ui_|real_|replay_|raport/gui_|raport-2/gui_|readme/)")  # zrzuty ekranu (JPEG); reszta — wykresy
 IMG_SRC = re.compile(r'(<img\b[^>]*\bsrc=")(img/[^"]+)(")')
 
 

@@ -30,7 +30,8 @@ Każdy dokument tematyczny i przewodnik ma też wersję PDF w [`pdf/`](pdf/) (ty
 | [Architektura](architektura.md) | Droga jednej symulacji od configu do pliku wynikowego, kluczowe miejsca w kodzie, słowniczek i najczęstsze pytania. |
 | [Uruchamianie](uruchamianie.md) | Instalacja, budowanie (MSVC, GCC), testy, silnik, GUI, serie i pomiary oraz pełny opis opcji, configu i plików wynikowych. |
 | [Wyniki](wyniki.md) | Zestawienie wyników przykładowych przypadków (czasy, statystyki CA i MC, pamięć) generowane przez `tools/zestaw_wynikow.py`. |
-| [Raport (PDF)](raport.pdf) | Raport techniczny (10 stron) o architekturze, modelach CA i MC, interfejsie, wynikach i profilu wydajności; źródło [`raport.md`](raport.md), budowanie `python tools/build_report.py`. |
+| [Raport, część 1 (PDF)](raport-1.pdf) | Raport techniczny (10 stron) o architekturze, modelach CA i MC, interfejsie, wynikach i profilu wydajności; źródło [`raport-1.md`](raport-1.md), budowanie `python tools/build_report.py 1`. |
+| [Raport, część 2 (PDF)](raport-2.pdf) | Raport techniczny (10 stron) o optymalizacji sekwencyjnej, OpenMP, MPI, typach pochodnych MPI i MPI-IO oraz testach wydajności; źródło [`raport-2.md`](raport-2.md), budowanie `python tools/build_report.py 2`. |
 
 ## Opisy katalogów
 
@@ -46,6 +47,7 @@ Dane do wykresów: [`data/`](data/) (seria CA vs MC), [`../bench/results/`](../b
 [`../bench/results/mpi/`](../bench/results/mpi/) (skalowanie, zgodność, narzut, dobór przypadków i plan pomiaru wersji MPI, dziennik `POSTEP.md`),
 [`../bench/results/mpi_io/`](../bench/results/mpi_io/) (zgodność, narzut, dobór przypadków i plan pomiaru typów MPI i MPI-IO, dziennik `POSTEP.md`),
 [`../bench/results/testy/`](../bench/results/testy/) (zestawienie S / E, pamięć, cachegrind, procesor i plan pomiaru testów wydajności, dziennik `POSTEP.md`);
-obrazy: [`img/`](img/) (zrzuty GUI i wykresy), [`img/raport/`](img/raport/) (rysunki raportu: `python gui/tests/raport_shots.py`,
-`python tools/raport_wykresy.py`), [`img/readme/`](img/readme/) (zrzuty do README:
+obrazy: [`img/`](img/) (zrzuty GUI i wykresy), [`img/raport/`](img/raport/) (rysunki raportu 1: `python gui/tests/raport_shots.py`,
+`python tools/raport_wykresy.py 1`), [`img/raport-2/`](img/raport-2/) (rysunki raportu 2: `python tools/raport_wykresy.py 2`,
+`python gui/tests/raport2_shots.py`), [`img/readme/`](img/readme/) (zrzuty do README:
 `python gui/tests/raport_shots.py --shots 3,4 --etna etna_real --theme dark --out docs/img/readme`).

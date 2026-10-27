@@ -13,7 +13,7 @@ Do mechanizmów wejścia/wyjścia doszły: **import mapy wysokości z CSV albo o
 przykładowe mapy z configami, **eksport wyniku do ZIP** i **do VTK (`.vti`, ParaView)**, eksport tabeli serii do CSV.
 
 Algorytmy CA i MC się nie zmieniły: wyniki są bitowo identyczne z programem sprzed tych zmian (punkt 7).
-Raport techniczny powstał później ([raport.md](raport.md)); razem z kolejką powstały dwa przewodniki:
+Raport techniczny powstał później ([raport-1.md](raport-1.md)); razem z kolejką powstały dwa przewodniki:
 **[architektura.md](architektura.md)** i **[uruchamianie.md](uruchamianie.md)**.
 
 ## 1. Funkcje → realizacja
@@ -423,7 +423,7 @@ Pełna weryfikacja z 10.10.2026 (wieczór), po ostatnich poprawkach (punkt 11).
 - `tools/make_heightmaps.py` zapisuje obok CSV obraz PNG mapy (przykład do importu obrazu w GUI).
 - Szablon „Lawa: liczba kraterów” korzysta z presetu `test_3d`, a przykładowe mapy mają 100×100×45, mniejsze
   niż w pierwszej wersji (120×120×60, 10–20 s), żeby demonstracja trwała ~3 s.
-- Raport techniczny (`docs/raport.md`) wtedy jeszcze nie powstał; zamiast niego przewodniki
+- Raport techniczny (`docs/raport-1.md`) wtedy jeszcze nie powstał; zamiast niego przewodniki
   `docs/architektura.md` i `docs/uruchamianie.md`.
 
 ## 9. Ograniczenia i co dalej

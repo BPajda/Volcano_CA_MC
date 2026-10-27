@@ -89,7 +89,7 @@ volcano-ca-mc/
 │                                       etna_real, etna_real_boczna, wezuwiusz_real), heightmaps/ (mapy CSV + PNG + JSON, README z przypisaniem
 │                                       danych); gui/ i series/: generowane (poza repozytorium)
 ├── results/                            wyniki (poza repozytorium); results/gui/: zadania i serie z GUI
-└── docs/                               dokumenty tematyczne *.md (spis: docs/README.md), przewodniki (architektura, uruchamianie), pdf/, raport, img/, data/
+└── docs/                               dokumenty tematyczne *.md (spis: docs/README.md), przewodniki (architektura, uruchamianie), pdf/, raporty raport-1 i raport-2, img/, data/
 ```
 
 ## 3. Droga jednej symulacji: od `engine --config` do pliku wynikowego
